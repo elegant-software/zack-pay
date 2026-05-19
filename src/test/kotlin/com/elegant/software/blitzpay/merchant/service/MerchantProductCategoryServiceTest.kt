@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.merchant.application
 
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.RenameProductCategoryRequest
+import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryDurationRequest
 import com.elegant.software.blitzpay.merchant.domain.MerchantProductCategory
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
@@ -120,6 +121,52 @@ class MerchantProductCategoryServiceTest {
     }
 
     @Test
+    fun `updateDuration succeeds with valid duration`() {
+        val existing = category(name = "Haircut")
+        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
+        whenever(categoryRepository.save(existing)).thenReturn(existing)
+
+        val response = service.updateDuration(merchantId, existing.id, UpdateProductCategoryDurationRequest(30))
+
+        assertEquals(30, response.estimatedDurationMinutes)
+    }
+
+    @Test
+    fun `updateDuration succeeds with null duration`() {
+        val existing = category(name = "Haircut", estimatedDurationMinutes = 30)
+        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
+        whenever(categoryRepository.save(existing)).thenReturn(existing)
+
+        val response = service.updateDuration(merchantId, existing.id, UpdateProductCategoryDurationRequest(null))
+
+        assertEquals(null, response.estimatedDurationMinutes)
+    }
+
+    @Test
+    fun `updateDuration throws for invalid duration`() {
+        val existing = category(name = "Haircut")
+        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
+
+        assertFailsWith<IllegalArgumentException> {
+            service.updateDuration(merchantId, existing.id, UpdateProductCategoryDurationRequest(0))
+        }
+    }
+
+    @Test
+    fun `updateDuration throws for duration exceeding limit`() {
+        val existing = category(name = "Haircut")
+        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
+
+        assertFailsWith<IllegalArgumentException> {
+            service.updateDuration(merchantId, existing.id, UpdateProductCategoryDurationRequest(481))
+        }
+    }
+
+    @Test
     fun `delete succeeds when no active products assigned`() {
         val existing = category(name = "Drinks")
         whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
@@ -147,11 +194,13 @@ class MerchantProductCategoryServiceTest {
     private fun category(
         id: UUID = UUID.randomUUID(),
         name: String,
+        estimatedDurationMinutes: Int? = null,
         createdAt: Instant = Instant.now()
     ) = MerchantProductCategory(
         id = id,
         merchantApplicationId = merchantId,
         name = name,
+        estimatedDurationMinutes = estimatedDurationMinutes,
         createdAt = createdAt,
         updatedAt = createdAt
     )

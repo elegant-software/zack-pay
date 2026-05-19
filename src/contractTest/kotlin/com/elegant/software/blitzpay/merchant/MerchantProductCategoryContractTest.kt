@@ -4,6 +4,7 @@ import com.elegant.software.blitzpay.contract.ContractVerifierBase
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.ProductCategoryResponse
 import com.elegant.software.blitzpay.merchant.api.RenameProductCategoryRequest
+import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryDurationRequest
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -71,6 +72,50 @@ class MerchantProductCategoryContractTest : ContractVerifierBase() {
     }
 
     @Test
+    fun `PATCH product category duration returns 200`() {
+        val merchantId = UUID.randomUUID()
+        val categoryId = UUID.randomUUID()
+        whenever(
+            merchantProductCategoryService.updateDuration(
+                eq(merchantId),
+                eq(categoryId),
+                any<UpdateProductCategoryDurationRequest>()
+            )
+        ).thenReturn(categoryResponse(id = categoryId, name = "Haircut", estimatedDurationMinutes = 30))
+
+        webTestClient.patch()
+            .uri("/v1/merchants/$merchantId/product-categories/$categoryId/duration")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"estimatedDurationMinutes":30}""")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.estimatedDurationMinutes").isEqualTo(30)
+    }
+
+    @Test
+    fun `PATCH product category duration with null clears duration`() {
+        val merchantId = UUID.randomUUID()
+        val categoryId = UUID.randomUUID()
+        whenever(
+            merchantProductCategoryService.updateDuration(
+                eq(merchantId),
+                eq(categoryId),
+                any<UpdateProductCategoryDurationRequest>()
+            )
+        ).thenReturn(categoryResponse(id = categoryId, name = "Haircut", estimatedDurationMinutes = null))
+
+        webTestClient.patch()
+            .uri("/v1/merchants/$merchantId/product-categories/$categoryId/duration")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"estimatedDurationMinutes":null}""")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.estimatedDurationMinutes").doesNotExist()
+    }
+
+    @Test
     fun `DELETE product categories returns 204`() {
         val merchantId = UUID.randomUUID()
         val categoryId = UUID.randomUUID()
@@ -129,10 +174,12 @@ class MerchantProductCategoryContractTest : ContractVerifierBase() {
 
     private fun categoryResponse(
         id: UUID = UUID.randomUUID(),
-        name: String
+        name: String,
+        estimatedDurationMinutes: Int? = null
     ) = ProductCategoryResponse(
         id = id,
         name = name,
+        estimatedDurationMinutes = estimatedDurationMinutes,
         createdAt = Instant.parse("2026-04-29T10:00:00Z"),
         updatedAt = Instant.parse("2026-04-29T10:00:00Z")
     )

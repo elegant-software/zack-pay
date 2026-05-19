@@ -75,3 +75,5 @@ databaseChangeLog:
       file: db/changelog/20260519-001-backfill-geofence-radius.sql
   - include:
       file: db/changelog/20260519-002-backfill-location-consistency.sql
+  - include:
+      file: db/changelog/20260519-001-service-category-duration.sql

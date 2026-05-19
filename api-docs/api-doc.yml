@@ -1169,6 +1169,38 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchants/{merchantId}/product-categories/{categoryId}/duration:
+    patch:
+      tags:
+      - Merchant Product Categories
+      summary: Update estimated service duration for a product category
+      operationId: updateDuration
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductCategoryDurationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProductCategoryResponse"
   /{version}/merchant/orders/{orderId}/items/{itemId}/price:
     patch:
       tags:
@@ -1567,6 +1599,9 @@ components:
           format: uuid
         name:
           type: string
+        estimatedDurationMinutes:
+          type: integer
+          format: int32
         createdAt:
           type: string
           format: date-time
@@ -2512,6 +2547,9 @@ components:
       properties:
         name:
           type: string
+        estimatedDurationMinutes:
+          type: integer
+          format: int32
       required:
       - name
     CreateBranchRequest:
@@ -2844,6 +2882,12 @@ components:
           format: int32
       required:
       - quantity
+    UpdateProductCategoryDurationRequest:
+      type: object
+      properties:
+        estimatedDurationMinutes:
+          type: integer
+          format: int32
     MerchantItemPriceOverrideRequest:
       type: object
       properties:

@@ -84,6 +84,14 @@ _Avoid_: standalone payment type
 The ability for a customer to reserve a time slot with the merchant.
 _Avoid_: visit, booking slot only
 
+**Service Category**:
+A merchant-defined classification for services that can be ordered or scheduled, such as haircut, shave, or color treatment.
+_Avoid_: product category, service type, offering type
+
+**Estimated Service Duration**:
+The expected duration in minutes for completing a service within a Service Category, used for appointment scheduling and capacity planning.
+_Avoid_: appointment duration, slot duration, time required
+
 **Order**:
 A customer order always placed against a specific Branch of a Merchant.
 _Avoid_: merchant-only order
@@ -121,6 +129,11 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 - **Merchant Offering** is configured at the **Merchant** level only; branch-level overrides are out of scope in this context
 - Customer actions such as order creation and appointment booking are allowed only when the corresponding **Merchant Offering** is enabled
 - **Merchant Status** acts as a global gate; an inactive merchant disables branch-facing flows even if a branch itself is active
+- A **Merchant** owns zero or more **Service Category** entries
+- A **Service Category** belongs to exactly one **Merchant**
+- A **Service Category** may have zero or one **Estimated Service Duration**
+- **Estimated Service Duration** is stored in minutes and must be positive when present
+- **Estimated Service Duration** is capped at 480 minutes (8 hours) for operational sanity
 - **Walk-In Ordering** is decided by the backend using the customer's geolocation relative to the branch
 - **Pre-Order** may be used regardless of the customer's proximity to the branch
 - The customer requests an **Order Type**, and the backend validates it against merchant offerings and geolocation rules
@@ -232,6 +245,15 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 >
 > **Dev:** "If a merchant is inactive but a branch is active, can that branch still serve traffic?"
 > **Domain expert:** "No. An inactive **Merchant** disables branch-facing flows globally."
+>
+> **Dev:** "What is a **Service Category**?"
+> **Domain expert:** "A merchant-defined classification for services like haircut, shave, or color treatment. They belong to the **Merchant**, not individual branches."
+>
+> **Dev:** "Does every **Service Category** need an **Estimated Service Duration**?"
+> **Domain expert:** "No. Duration is optional, but when provided it must be positive and capped at 8 hours for sanity."
+>
+> **Dev:** "Is duration the appointment slot size or the service time?"
+> **Domain expert:** "It's the expected service time. Appointment slot sizing and staff availability are separate concerns."
 
 ## Flagged ambiguities
 
@@ -271,3 +293,7 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 - Merchant and branch could have shared the same optionality rules. Resolved: **Merchant** address/location are optional, while **Branch** address/location are mandatory.
 - Branch location could have meant only postal address. Resolved: every **Branch** requires both a structured postal address and geospatial location data.
 - Branch validity could have depended on an external place provider. Resolved: `googlePlaceId` and other **Place Enrichment** data are optional for both **Merchant** and **Branch**.
+- "Product category" could have been used for inventory, services, or menu items. Resolved: use **Service Category** for merchant-defined service classifications relevant to ordering and appointments.
+- Estimated duration could have been mandatory for all service categories. Resolved: **Estimated Service Duration** is optional; services without duration can exist but cannot be scheduled.
+- Service duration could have been conflated with appointment slot size or staff availability. Resolved: **Estimated Service Duration** models only the expected service time; slot sizing and staff schedules are separate concerns.
+- Service categories could have been branch-specific. Resolved: **Service Category** belongs to **Merchant** and applies uniformly across all branches.

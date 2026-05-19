@@ -3,6 +3,7 @@ package com.elegant.software.blitzpay.merchant.application
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.ProductCategoryResponse
 import com.elegant.software.blitzpay.merchant.api.RenameProductCategoryRequest
+import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryDurationRequest
 import com.elegant.software.blitzpay.merchant.domain.MerchantProductCategory
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
@@ -33,7 +34,8 @@ class MerchantProductCategoryService(
         val saved = categoryRepository.save(
             MerchantProductCategory(
                 merchantApplicationId = merchantId,
-                name = normalizedName
+                name = normalizedName,
+                estimatedDurationMinutes = request.estimatedDurationMinutes
             )
         )
         log.info("Product category created: id={} merchant={}", saved.id, merchantId)
@@ -71,6 +73,17 @@ class MerchantProductCategoryService(
         return saved.toResponse()
     }
 
+    fun updateDuration(merchantId: UUID, categoryId: UUID, request: UpdateProductCategoryDurationRequest): ProductCategoryResponse {
+        requireMerchantExists(merchantId)
+        val category = categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)
+            ?: throw NoSuchElementException("Category not found: $categoryId")
+
+        category.updateDuration(request.estimatedDurationMinutes)
+        val saved = categoryRepository.save(category)
+        log.info("Product category duration updated: id={} merchant={} duration={}", categoryId, merchantId, request.estimatedDurationMinutes)
+        return saved.toResponse()
+    }
+
     fun delete(merchantId: UUID, categoryId: UUID) {
         requireMerchantExists(merchantId)
         val category = categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)
@@ -99,6 +112,7 @@ class MerchantProductCategoryService(
     private fun MerchantProductCategory.toResponse() = ProductCategoryResponse(
         id = id,
         name = name,
+        estimatedDurationMinutes = estimatedDurationMinutes,
         createdAt = createdAt,
         updatedAt = updatedAt
     )

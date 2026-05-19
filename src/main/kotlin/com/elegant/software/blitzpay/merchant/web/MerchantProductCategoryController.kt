@@ -3,6 +3,7 @@ package com.elegant.software.blitzpay.merchant.web
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.ProductCategoryResponse
 import com.elegant.software.blitzpay.merchant.api.RenameProductCategoryRequest
+import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryDurationRequest
 import com.elegant.software.blitzpay.merchant.application.MerchantProductCategoryService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -54,6 +56,17 @@ class MerchantProductCategoryController(
         @RequestBody request: RenameProductCategoryRequest,
     ): Mono<ResponseEntity<ProductCategoryResponse>> =
         Mono.fromCallable { merchantProductCategoryService.rename(merchantId, categoryId, request) }
+            .subscribeOn(Schedulers.boundedElastic())
+            .map { ResponseEntity.ok(it) }
+
+    @Operation(summary = "Update estimated service duration for a product category")
+    @PatchMapping("/{categoryId}/duration")
+    fun updateDuration(
+        @PathVariable merchantId: UUID,
+        @PathVariable categoryId: UUID,
+        @RequestBody request: UpdateProductCategoryDurationRequest,
+    ): Mono<ResponseEntity<ProductCategoryResponse>> =
+        Mono.fromCallable { merchantProductCategoryService.updateDuration(merchantId, categoryId, request) }
             .subscribeOn(Schedulers.boundedElastic())
             .map { ResponseEntity.ok(it) }
 

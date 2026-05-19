@@ -136,7 +136,7 @@ class MerchantProductToolsTest {
         val merchantId = UUID.randomUUID()
         val categoryId = UUID.randomUUID()
         whenever(merchantProductCategoryService.findByName(merchantId, "Drinks")).thenReturn(
-            ProductCategoryResponse(categoryId, "Drinks", Instant.now(), Instant.now())
+            ProductCategoryResponse(categoryId, "Drinks", null, Instant.now(), Instant.now())
         )
 
         val result = categoryTools.getCategoryIdByName(merchantId.toString(), "Drinks")
@@ -159,7 +159,7 @@ class MerchantProductToolsTest {
         val merchantId = UUID.randomUUID()
         val categoryId = UUID.randomUUID()
         whenever(merchantProductCategoryService.findByName(merchantId, "Drinks")).thenReturn(
-            ProductCategoryResponse(categoryId, "Drinks", Instant.now(), Instant.now())
+            ProductCategoryResponse(categoryId, "Drinks", null, Instant.now(), Instant.now())
         )
 
         val result = categoryTools.getOrCreateCategoryId(merchantId.toString(), "Drinks")
@@ -174,7 +174,7 @@ class MerchantProductToolsTest {
         whenever(merchantProductCategoryService.findByName(merchantId, "Wine")).thenReturn(null)
         whenever(
             merchantProductCategoryService.create(eq(merchantId), any<CreateProductCategoryRequest>())
-        ).thenReturn(ProductCategoryResponse(categoryId, "Wine", Instant.now(), Instant.now()))
+        ).thenReturn(ProductCategoryResponse(categoryId, "Wine", null, Instant.now(), Instant.now()))
 
         val result = categoryTools.getOrCreateCategoryId(merchantId.toString(), "Wine")
 
@@ -185,7 +185,7 @@ class MerchantProductToolsTest {
     @Test
     fun `listProductCategories delegates to service`() {
         val merchantId = UUID.randomUUID()
-        val categories = listOf(ProductCategoryResponse(UUID.randomUUID(), "Snacks", Instant.now(), Instant.now()))
+        val categories = listOf(ProductCategoryResponse(UUID.randomUUID(), "Snacks", null, Instant.now(), Instant.now()))
         whenever(merchantProductCategoryService.list(merchantId)).thenReturn(categories)
 
         val result = categoryTools.listProductCategories(merchantId.toString())
@@ -691,6 +691,7 @@ class MerchantProductToolsTest {
         ProductCategoryResponse(
             id = id,
             name = name,
+            estimatedDurationMinutes = null,
             createdAt = Instant.now(),
             updatedAt = Instant.now()
         )
