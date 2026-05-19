@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create release tag and GitHub Release
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           NEXT_VERSION: ${{ needs.notes.outputs.next_version }}
           RELEASE_NOTES_MARKDOWN: ${{ needs.notes.outputs.release_notes_markdown }}
