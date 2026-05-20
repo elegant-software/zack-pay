@@ -3,8 +3,7 @@ package com.elegant.software.blitzpay.merchant
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.ProductCategoryResponse
-import com.elegant.software.blitzpay.merchant.api.RenameProductCategoryRequest
-import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryDurationRequest
+import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryRequest
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -54,10 +53,10 @@ class MerchantProductCategoryContractTest : ContractVerifierBase() {
         val merchantId = UUID.randomUUID()
         val categoryId = UUID.randomUUID()
         whenever(
-            merchantProductCategoryService.rename(
+            merchantProductCategoryService.update(
                 eq(merchantId),
                 eq(categoryId),
-                any<RenameProductCategoryRequest>()
+                any<UpdateProductCategoryRequest>()
             )
         ).thenReturn(categoryResponse(id = categoryId, name = "Soft Drinks"))
 
@@ -72,47 +71,25 @@ class MerchantProductCategoryContractTest : ContractVerifierBase() {
     }
 
     @Test
-    fun `PATCH product category duration returns 200`() {
+    fun `PUT product category with duration returns 200`() {
         val merchantId = UUID.randomUUID()
         val categoryId = UUID.randomUUID()
         whenever(
-            merchantProductCategoryService.updateDuration(
+            merchantProductCategoryService.update(
                 eq(merchantId),
                 eq(categoryId),
-                any<UpdateProductCategoryDurationRequest>()
+                any<UpdateProductCategoryRequest>()
             )
         ).thenReturn(categoryResponse(id = categoryId, name = "Haircut", estimatedDurationMinutes = 30))
 
-        webTestClient.patch()
-            .uri("/v1/merchants/$merchantId/product-categories/$categoryId/duration")
+        webTestClient.put()
+            .uri("/v1/merchants/$merchantId/product-categories/$categoryId")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"estimatedDurationMinutes":30}""")
+            .bodyValue("""{"name":"Haircut","estimatedDurationMinutes":30}""")
             .exchange()
             .expectStatus().isOk
             .expectBody()
             .jsonPath("$.estimatedDurationMinutes").isEqualTo(30)
-    }
-
-    @Test
-    fun `PATCH product category duration with null clears duration`() {
-        val merchantId = UUID.randomUUID()
-        val categoryId = UUID.randomUUID()
-        whenever(
-            merchantProductCategoryService.updateDuration(
-                eq(merchantId),
-                eq(categoryId),
-                any<UpdateProductCategoryDurationRequest>()
-            )
-        ).thenReturn(categoryResponse(id = categoryId, name = "Haircut", estimatedDurationMinutes = null))
-
-        webTestClient.patch()
-            .uri("/v1/merchants/$merchantId/product-categories/$categoryId/duration")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"estimatedDurationMinutes":null}""")
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.estimatedDurationMinutes").doesNotExist()
     }
 
     @Test

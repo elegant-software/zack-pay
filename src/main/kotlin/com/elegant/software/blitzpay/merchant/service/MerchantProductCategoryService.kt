@@ -2,10 +2,10 @@ package com.elegant.software.blitzpay.merchant.application
 
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.ProductCategoryResponse
-import com.elegant.software.blitzpay.merchant.api.RenameProductCategoryRequest
-import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryDurationRequest
+import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.domain.MerchantProductCategory
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
 import org.slf4j.LoggerFactory
@@ -19,6 +19,7 @@ class MerchantProductCategoryService(
     private val categoryRepository: MerchantProductCategoryRepository,
     private val productRepository: MerchantProductRepository,
     private val merchantApplicationRepository: MerchantApplicationRepository,
+    private val offeringAssignmentRepository: MerchantOfferingAssignmentRepository,
 ) {
     private val log = LoggerFactory.getLogger(MerchantProductCategoryService::class.java)
 
@@ -31,6 +32,7 @@ class MerchantProductCategoryService(
             "A category named '$normalizedName' already exists for this merchant"
         }
 
+        if (request.estimatedDurationMinutes != null) requireAppointmentBookingEnabled(merchantId)
         val saved = categoryRepository.save(
             MerchantProductCategory(
                 merchantApplicationId = merchantId,
@@ -57,7 +59,7 @@ class MerchantProductCategoryService(
             ?.toResponse()
     }
 
-    fun rename(merchantId: UUID, categoryId: UUID, request: RenameProductCategoryRequest): ProductCategoryResponse {
+    fun update(merchantId: UUID, categoryId: UUID, request: UpdateProductCategoryRequest): ProductCategoryResponse {
         requireMerchantExists(merchantId)
         val category = categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)
             ?: throw NoSuchElementException("Category not found: $categoryId")
@@ -66,21 +68,12 @@ class MerchantProductCategoryService(
         require(duplicate == null || duplicate.id == category.id) {
             "A category named '$normalizedName' already exists for this merchant"
         }
+        if (request.estimatedDurationMinutes != null) requireAppointmentBookingEnabled(merchantId)
 
         category.rename(normalizedName)
-        val saved = categoryRepository.save(category)
-        log.info("Product category renamed: id={} merchant={}", categoryId, merchantId)
-        return saved.toResponse()
-    }
-
-    fun updateDuration(merchantId: UUID, categoryId: UUID, request: UpdateProductCategoryDurationRequest): ProductCategoryResponse {
-        requireMerchantExists(merchantId)
-        val category = categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)
-            ?: throw NoSuchElementException("Category not found: $categoryId")
-
         category.updateDuration(request.estimatedDurationMinutes)
         val saved = categoryRepository.save(category)
-        log.info("Product category duration updated: id={} merchant={} duration={}", categoryId, merchantId, request.estimatedDurationMinutes)
+        log.info("Product category updated: id={} merchant={}", categoryId, merchantId)
         return saved.toResponse()
     }
 
@@ -94,6 +87,12 @@ class MerchantProductCategoryService(
         }
         categoryRepository.deleteById(categoryId)
         log.info("Product category deleted: id={} merchant={}", categoryId, merchantId)
+    }
+
+    private fun requireAppointmentBookingEnabled(merchantId: UUID) {
+        require(offeringAssignmentRepository.existsByMerchantApplicationIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")) {
+            "Estimated service duration requires Appointment Booking to be enabled for this merchant"
+        }
     }
 
     private fun requireMerchantExists(merchantId: UUID) {

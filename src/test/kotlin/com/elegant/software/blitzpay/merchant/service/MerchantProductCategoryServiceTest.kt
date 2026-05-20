@@ -1,10 +1,10 @@
 package com.elegant.software.blitzpay.merchant.application
 
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
-import com.elegant.software.blitzpay.merchant.api.RenameProductCategoryRequest
-import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryDurationRequest
+import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.domain.MerchantProductCategory
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
 import org.junit.jupiter.api.Test
@@ -22,10 +22,12 @@ class MerchantProductCategoryServiceTest {
     private val categoryRepository = mock<MerchantProductCategoryRepository>()
     private val productRepository = mock<MerchantProductRepository>()
     private val merchantApplicationRepository = mock<MerchantApplicationRepository>()
+    private val offeringAssignmentRepository = mock<MerchantOfferingAssignmentRepository>()
     private val service = MerchantProductCategoryService(
         categoryRepository,
         productRepository,
-        merchantApplicationRepository
+        merchantApplicationRepository,
+        offeringAssignmentRepository,
     )
     private val merchantId = UUID.randomUUID()
 
@@ -59,6 +61,29 @@ class MerchantProductCategoryServiceTest {
     }
 
     @Test
+    fun `create with duration throws when appointment booking not enabled`() {
+        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, "Haircut")).thenReturn(null)
+        whenever(offeringAssignmentRepository.existsByMerchantApplicationIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")).thenReturn(false)
+
+        assertFailsWith<IllegalArgumentException> {
+            service.create(merchantId, CreateProductCategoryRequest("Haircut", estimatedDurationMinutes = 30))
+        }
+    }
+
+    @Test
+    fun `create with duration succeeds when appointment booking enabled`() {
+        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, "Haircut")).thenReturn(null)
+        whenever(offeringAssignmentRepository.existsByMerchantApplicationIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")).thenReturn(true)
+        whenever(categoryRepository.save(any<MerchantProductCategory>())).thenAnswer { it.arguments[0] }
+
+        val response = service.create(merchantId, CreateProductCategoryRequest("Haircut", estimatedDurationMinutes = 30))
+
+        assertEquals(30, response.estimatedDurationMinutes)
+    }
+
+    @Test
     fun `create throws for duplicate name ignoring case`() {
         whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
         whenever(categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, "Drinks")).thenReturn(
@@ -83,31 +108,31 @@ class MerchantProductCategoryServiceTest {
     }
 
     @Test
-    fun `rename succeeds`() {
+    fun `update succeeds with new name`() {
         val existing = category(name = "Drinks")
         whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
         whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
         whenever(categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, "Soft Drinks")).thenReturn(null)
         whenever(categoryRepository.save(existing)).thenReturn(existing)
 
-        val response = service.rename(merchantId, existing.id, RenameProductCategoryRequest("Soft Drinks"))
+        val response = service.update(merchantId, existing.id, UpdateProductCategoryRequest("Soft Drinks"))
 
         assertEquals("Soft Drinks", response.name)
     }
 
     @Test
-    fun `rename throws for missing category`() {
+    fun `update throws for missing category`() {
         val categoryId = UUID.randomUUID()
         whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
         whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)).thenReturn(null)
 
         assertFailsWith<NoSuchElementException> {
-            service.rename(merchantId, categoryId, RenameProductCategoryRequest("Soft Drinks"))
+            service.update(merchantId, categoryId, UpdateProductCategoryRequest("Soft Drinks"))
         }
     }
 
     @Test
-    fun `rename throws for duplicate target name`() {
+    fun `update throws for duplicate target name`() {
         val existing = category(name = "Drinks")
         whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
         whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
@@ -116,53 +141,60 @@ class MerchantProductCategoryServiceTest {
         )
 
         assertFailsWith<IllegalArgumentException> {
-            service.rename(merchantId, existing.id, RenameProductCategoryRequest("Wine"))
+            service.update(merchantId, existing.id, UpdateProductCategoryRequest("Wine"))
         }
     }
 
     @Test
-    fun `updateDuration succeeds with valid duration`() {
+    fun `update with duration succeeds when appointment booking enabled`() {
         val existing = category(name = "Haircut")
         whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
         whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
+        whenever(categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, "Haircut")).thenReturn(existing)
+        whenever(offeringAssignmentRepository.existsByMerchantApplicationIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")).thenReturn(true)
         whenever(categoryRepository.save(existing)).thenReturn(existing)
 
-        val response = service.updateDuration(merchantId, existing.id, UpdateProductCategoryDurationRequest(30))
+        val response = service.update(merchantId, existing.id, UpdateProductCategoryRequest("Haircut", estimatedDurationMinutes = 30))
 
         assertEquals(30, response.estimatedDurationMinutes)
     }
 
     @Test
-    fun `updateDuration succeeds with null duration`() {
+    fun `update with duration throws when appointment booking not enabled`() {
+        val existing = category(name = "Haircut")
+        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
+        whenever(categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, "Haircut")).thenReturn(existing)
+        whenever(offeringAssignmentRepository.existsByMerchantApplicationIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")).thenReturn(false)
+
+        assertFailsWith<IllegalArgumentException> {
+            service.update(merchantId, existing.id, UpdateProductCategoryRequest("Haircut", estimatedDurationMinutes = 30))
+        }
+    }
+
+    @Test
+    fun `update with null duration clears duration without offering check`() {
         val existing = category(name = "Haircut", estimatedDurationMinutes = 30)
         whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
         whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
+        whenever(categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, "Haircut")).thenReturn(existing)
         whenever(categoryRepository.save(existing)).thenReturn(existing)
 
-        val response = service.updateDuration(merchantId, existing.id, UpdateProductCategoryDurationRequest(null))
+        val response = service.update(merchantId, existing.id, UpdateProductCategoryRequest("Haircut", estimatedDurationMinutes = null))
 
         assertEquals(null, response.estimatedDurationMinutes)
     }
 
     @Test
-    fun `updateDuration throws for invalid duration`() {
+    fun `update with invalid duration throws`() {
         val existing = category(name = "Haircut")
         whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
         whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
+        whenever(categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, "Haircut")).thenReturn(existing)
+        whenever(offeringAssignmentRepository.existsByMerchantApplicationIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")).thenReturn(true)
 
         assertFailsWith<IllegalArgumentException> {
-            service.updateDuration(merchantId, existing.id, UpdateProductCategoryDurationRequest(0))
-        }
-    }
-
-    @Test
-    fun `updateDuration throws for duration exceeding limit`() {
-        val existing = category(name = "Haircut")
-        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
-        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, existing.id)).thenReturn(existing)
-
-        assertFailsWith<IllegalArgumentException> {
-            service.updateDuration(merchantId, existing.id, UpdateProductCategoryDurationRequest(481))
+            service.update(merchantId, existing.id, UpdateProductCategoryRequest("Haircut", estimatedDurationMinutes = 481))
         }
     }
 

@@ -134,6 +134,8 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 - A **Service Category** may have zero or one **Estimated Service Duration**
 - **Estimated Service Duration** is stored in minutes and must be positive when present
 - **Estimated Service Duration** is capped at 480 minutes (8 hours) for operational sanity
+- **Estimated Service Duration** may only be written (on create or update) when the **Merchant** has **Appointment Booking** enabled; writing it without that offering is rejected
+- Disabling **Appointment Booking** does not clear existing **Estimated Service Duration** values; they are inert and preserved for if the offering is re-enabled
 - **Walk-In Ordering** is decided by the backend using the customer's geolocation relative to the branch
 - **Pre-Order** may be used regardless of the customer's proximity to the branch
 - The customer requests an **Order Type**, and the backend validates it against merchant offerings and geolocation rules
@@ -254,6 +256,12 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 >
 > **Dev:** "Is duration the appointment slot size or the service time?"
 > **Domain expert:** "It's the expected service time. Appointment slot sizing and staff availability are separate concerns."
+>
+> **Dev:** "Can a merchant that doesn't offer **Appointment Booking** still set an **Estimated Service Duration** on a category?"
+> **Domain expert:** "No. Duration is only meaningful for appointment scheduling, so writing it without **Appointment Booking** enabled is rejected. Storing it silently would create invisible, unusable data."
+>
+> **Dev:** "If a merchant disables **Appointment Booking**, do we clear all the durations they've set?"
+> **Domain expert:** "No. We leave them in place — they're inert without the offering, and clearing them on toggle would be a destructive, irreversible side-effect. If the offering is re-enabled, the durations are still there."
 
 ## Flagged ambiguities
 
@@ -297,3 +305,6 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 - Estimated duration could have been mandatory for all service categories. Resolved: **Estimated Service Duration** is optional; services without duration can exist but cannot be scheduled.
 - Service duration could have been conflated with appointment slot size or staff availability. Resolved: **Estimated Service Duration** models only the expected service time; slot sizing and staff schedules are separate concerns.
 - Service categories could have been branch-specific. Resolved: **Service Category** belongs to **Merchant** and applies uniformly across all branches.
+- Estimated service duration could have been accepted for any merchant regardless of their offerings. Resolved: **Estimated Service Duration** may only be written when **Appointment Booking** is enabled; the write is rejected otherwise.
+- Disabling **Appointment Booking** could have triggered a cascade-clear of all stored durations. Resolved: existing durations are left in place and treated as inert; clearing on toggle is destructive and non-reversible.
+- Duration update could have had its own dedicated endpoint (`PATCH /product-categories/{id}/duration`). Resolved: duration is maintained through the standard category update endpoint (`PUT /product-categories/{id}`) alongside name; a dedicated endpoint was a smell that duplicated the create path's optionality.

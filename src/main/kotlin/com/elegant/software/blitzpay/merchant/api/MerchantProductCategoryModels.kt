@@ -8,9 +8,10 @@ data class CreateProductCategoryRequest(
     val estimatedDurationMinutes: Int? = null,
 )
 
-data class RenameProductCategoryRequest(val name: String)
-
-data class UpdateProductCategoryDurationRequest(val estimatedDurationMinutes: Int?)
+data class UpdateProductCategoryRequest(
+    val name: String,
+    val estimatedDurationMinutes: Int? = null,
+)
 
 data class ProductCategoryResponse(
     val id: UUID,
