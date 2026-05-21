@@ -153,8 +153,8 @@ paths:
     put:
       tags:
       - Merchant Product Categories
-      summary: Rename a product category
-      operationId: rename
+      summary: Update a product category
+      operationId: update_1
       parameters:
       - name: merchantId
         in: path
@@ -172,7 +172,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RenameProductCategoryRequest"
+              $ref: "#/components/schemas/UpdateProductCategoryRequest"
         required: true
       responses:
         "200":
@@ -329,7 +329,7 @@ paths:
       tags:
       - Merchant Branches
       summary: Update a branch under a merchant
-      operationId: update_1
+      operationId: update_2
       parameters:
       - name: merchantId
         in: path
@@ -408,7 +408,7 @@ paths:
       tags:
       - Merchant Onboarding
       summary: Update editable merchant details and optional status
-      operationId: update_2
+      operationId: update_3
       parameters:
       - name: id
         in: path
@@ -1169,38 +1169,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
-  /{version}/merchants/{merchantId}/product-categories/{categoryId}/duration:
-    patch:
-      tags:
-      - Merchant Product Categories
-      summary: Update estimated service duration for a product category
-      operationId: updateDuration
-      parameters:
-      - name: merchantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: categoryId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateProductCategoryDurationRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ProductCategoryResponse"
   /{version}/merchant/orders/{orderId}/items/{itemId}/price:
     patch:
       tags:
@@ -1584,11 +1552,14 @@ components:
       - status
       - unitPrice
       - updatedAt
-    RenameProductCategoryRequest:
+    UpdateProductCategoryRequest:
       type: object
       properties:
         name:
           type: string
+        estimatedDurationMinutes:
+          type: integer
+          format: int32
       required:
       - name
     ProductCategoryResponse:
@@ -1944,6 +1915,8 @@ components:
       type: object
       properties:
         merchantName:
+          type: string
+        businessType:
           type: string
         merchantStatus:
           type: string
@@ -2882,12 +2855,6 @@ components:
           format: int32
       required:
       - quantity
-    UpdateProductCategoryDurationRequest:
-      type: object
-      properties:
-        estimatedDurationMinutes:
-          type: integer
-          format: int32
     MerchantItemPriceOverrideRequest:
       type: object
       properties:
