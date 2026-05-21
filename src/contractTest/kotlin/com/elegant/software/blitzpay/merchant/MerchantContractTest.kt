@@ -5,6 +5,7 @@ import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
 import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.domain.MerchantProduct
+import com.elegant.software.blitzpay.merchant.domain.PostalAddress
 import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
 import com.elegant.software.blitzpay.storage.PresignedUpload
 import jakarta.persistence.Query
@@ -281,10 +282,12 @@ class MerchantContractTest : ContractVerifierBase() {
                     id = branchId,
                     merchantApplicationId = merchantId,
                     name = "Old Branch",
-                    addressLine1 = "Old Street 1",
-                    city = "Berlin",
-                    postalCode = "10115",
-                    country = "DE"
+                    address = PostalAddress(
+                        addressLine1 = "Old Street 1",
+                        city = "Berlin",
+                        postalCode = "10115",
+                        country = "DE",
+                    ),
                 ).also {
                     it.location = com.elegant.software.blitzpay.merchant.domain.MerchantLocation(
                         latitude = 52.52,
