@@ -59,6 +59,10 @@ class MerchantApplication(
     @Column(nullable = false)
     var status: MerchantOnboardingStatus = MerchantOnboardingStatus.DRAFT,
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "merchant_mobility", nullable = false, length = 32)
+    var merchantMobility: MerchantMobility = MerchantMobility.BRICK_AND_MORTAR,
+
     @Column(nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 

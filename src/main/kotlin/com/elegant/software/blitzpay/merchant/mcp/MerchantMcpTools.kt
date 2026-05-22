@@ -43,10 +43,13 @@ class MerchantMcpTools(
         Merchant
           businessType unknown → merchant_list_active_verticals  (discover valid merchant vertical codes first)
           always upsert       → merchant_upsert  (creates or updates, including logo)
+          food truck / street seller / circus / pop-up → pass mobility = "MOBILE" to merchant_upsert
+          fixed location (shop, restaurant, salon)     → mobility defaults to "BRICK_AND_MORTAR"
 
         Branches
           1 branch   → branch_id_by_name_or_create
           2+ branches → branches_bulk_upsert  (never loop the single-branch tool; supports all attributes)
+          MOBILE merchant branches → address fields are the depot/registered address, NOT the operating location
 
         Products
           1 product  → product_id_by_name_or_create
@@ -58,7 +61,7 @@ class MerchantMcpTools(
 
         RECOMMENDED WORKFLOW ORDER
         ══════════════════════════
-        1. merchant_upsert             — create or update the merchant (returns applicationId)
+        1. merchant_upsert             — create or update the merchant (returns applicationId); set mobility if MOBILE
         2. branches_bulk_upsert        — create or update all branches with full attributes
         3. categories_bulk_create      — (optional) pre-create all categories in one call
         4. products_bulk_upsert        — create all products, referencing categoryName
@@ -93,6 +96,8 @@ class MerchantMcpTools(
     @McpTool(
         name = "merchant_upsert",
         description = "Create or update a merchant by name. Always upserts — creates when not found, updates profile when found. " +
+            "Pass mobility = \"MOBILE\" for food trucks, street sellers, circuses, pop-up theatres, or any merchant that operates from variable locations. " +
+            "Omit mobility (or pass \"BRICK_AND_MORTAR\") for fixed-location merchants. " +
             "Optionally uploads a logo via logoBase64 or logoFilePath. " +
             "Returns full merchant details; use the returned applicationId as merchantId in subsequent branch and product calls."
     )
@@ -109,6 +114,7 @@ class MerchantMcpTools(
         logoBase64: String? = null,
         logoFilePath: String? = null,
         logoContentType: String? = null,
+        mobility: String? = null,
     ): MerchantDetailsResponse {
         val existing = merchantRegistrationService.findByName(merchantName)
         val merchantId: UUID
@@ -125,7 +131,8 @@ class MerchantMcpTools(
                         businessType = businessType ?: "RETAIL",
                         registrationNumber = normalizedRegistrationNumber,
                         operatingCountry = operatingCountry,
-                        primaryBusinessAddress = primaryBusinessAddress ?: "Unknown"
+                        primaryBusinessAddress = primaryBusinessAddress ?: "Unknown",
+                        merchantMobility = mobility,
                     ),
                     primaryContact = MerchantPrimaryContactRequest(
                         fullName = contactFullName ?: "Merchant Owner",
@@ -147,7 +154,8 @@ class MerchantMcpTools(
                     contactFullName = contactFullName ?: current.contactFullName,
                     contactEmail = contactEmail ?: current.contactEmail,
                     contactPhoneNumber = contactPhoneNumber ?: current.contactPhoneNumber,
-                    activePaymentChannels = current.activePaymentChannels
+                    activePaymentChannels = current.activePaymentChannels,
+                    merchantMobility = mobility,
                 )
             )
         }

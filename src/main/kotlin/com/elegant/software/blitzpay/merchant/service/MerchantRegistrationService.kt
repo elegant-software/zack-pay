@@ -4,6 +4,7 @@ import com.elegant.software.blitzpay.merchant.api.MerchantActivated
 import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
 import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
 import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
+import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
@@ -62,6 +63,11 @@ class MerchantRegistrationService(
         val applicationReference = "BLTZ-" + UUID.randomUUID().toString().take(8).uppercase()
         val now = Instant.now()
 
+        val mobility = request.businessProfile.merchantMobility
+            ?.uppercase()
+            ?.let { runCatching { MerchantMobility.valueOf(it) }.getOrElse { throw IllegalArgumentException("Unknown merchantMobility: ${request.businessProfile.merchantMobility}. Valid values: ${MerchantMobility.entries.joinToString()}") } }
+            ?: MerchantMobility.BRICK_AND_MORTAR
+
         val application = MerchantApplication(
             applicationReference = applicationReference,
             merchantName = request.businessProfile.legalBusinessName,
@@ -78,7 +84,8 @@ class MerchantRegistrationService(
                 fullName = request.primaryContact.fullName,
                 email = request.primaryContact.email,
                 phoneNumber = request.primaryContact.phoneNumber
-            )
+            ),
+            merchantMobility = mobility,
         )
         if (activateDirectly) {
             application.registerDirect(now)

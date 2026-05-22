@@ -34,7 +34,8 @@ data class MerchantBusinessProfileRequest(
     val businessType: String,
     val registrationNumber: String,
     val operatingCountry: String,
-    val primaryBusinessAddress: String
+    val primaryBusinessAddress: String,
+    val merchantMobility: String? = null,
 )
 
 data class MerchantPrimaryContactRequest(
@@ -59,6 +60,7 @@ data class UpdateMerchantRequest(
     val contactPhoneNumber: String? = null,
     val activePaymentChannels: Set<MerchantPaymentChannel>? = null,
     val status: MerchantOnboardingStatus? = null,
+    val merchantMobility: String? = null,
 )
 
 data class MerchantPersonRequest(
@@ -134,6 +136,7 @@ data class MerchantDetailsResponse(
     val address: MerchantAddress = MerchantAddress(),
     val location: MerchantLocationInfo? = null,
     val offerings: Set<String> = emptySet(),
+    val merchantMobility: String = "BRICK_AND_MORTAR",
 )
 
 data class MerchantVerticalResponse(

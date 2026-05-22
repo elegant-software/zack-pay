@@ -45,12 +45,36 @@ Branch-specific website, email, and phone details that replace the merchant's pu
 _Avoid_: requiring every branch to duplicate merchant contact info
 
 **Branch Address**:
-A structured postal address for a Branch and is mandatory because a Branch is an operational location.
+A structured postal address for a Branch and is mandatory because a Branch is an operational location. For a `MOBILE` branch this is the depot or registered business address, not the operational serving location.
 _Avoid_: optional branch address, free-text branch address
 
 **Branch Location**:
-Geospatial data for a Branch, including coordinates and geofence radius, and is mandatory because a Branch is an operational location.
+Geospatial data for a Branch, including coordinates and geofence radius, and is mandatory because a Branch is an operational location. For a `MOBILE` branch this is the depot location and is never used for proximity or Walk-In Ordering checks while an Appearance is active.
 _Avoid_: optional branch coordinates
+
+**Merchant Mobility**:
+The operational mode of a Merchant, either `MOBILE` or `BRICK_AND_MORTAR`. `MOBILE` merchants operate from scheduled Appearances at variable locations; `BRICK_AND_MORTAR` merchants operate from fixed Branch Locations.
+_Avoid_: merchant type, mobile flag, fixed flag
+
+**Appearance**:
+A scheduled commitment by a `MOBILE` branch to be present at a specific location during a defined time window. Carries a Declared Appearance Location set at creation and an optional Live Position updated during operation. An Appearance with an optional name.
+_Avoid_: event, session, slot, deployment, engagement
+
+**Declared Appearance Location**:
+The lat/lng coordinates set when an Appearance is created. Used for customer discovery of upcoming and active Appearances. Serves as the fallback location when no Live Position has been pushed.
+_Avoid_: planned location, scheduled location
+
+**Live Position**:
+The current GPS coordinates pushed by the merchant's device during an active Appearance. Overrides the Declared Appearance Location for proximity and geofence checks while present. Never required; the Declared Appearance Location is always the fallback.
+_Avoid_: real-time location, GPS broadcast, current coordinates
+
+**Active Appearance**:
+An Appearance whose time window contains the current moment (`startTime <= now <= endTime`). The effective location of an Active Appearance is the Live Position when present, otherwise the Declared Appearance Location.
+_Avoid_: live event, open slot, current appearance
+
+**Currently Happening**:
+The read-side query that returns all Active Appearances, optionally filtered by proximity to the caller's lat/lng and radius.
+_Avoid_: live feed, active events, ongoing appearances
 
 **Merchant Address**:
 A structured postal address for a Merchant using the same field shape as a Branch address, but all fields are optional.
@@ -119,6 +143,19 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 - An **Order** has exactly one **Order Type**
 - A **Merchant** may have zero or one **Merchant Address**
 - A **Merchant** may have zero or one **Merchant Location**
+- A **Merchant** has exactly one **Merchant Mobility** (`MOBILE` or `BRICK_AND_MORTAR`)
+- All **Branch**es of a `MOBILE` **Merchant** are implicitly mobile; a `MOBILE` **Merchant** cannot have `BRICK_AND_MORTAR` branches and vice versa
+- A `MOBILE` **Branch** may have zero or more **Appearance**s
+- A `BRICK_AND_MORTAR` **Branch** does not have **Appearance**s
+- An **Appearance** belongs to exactly one **Branch**
+- An **Appearance** has exactly one **Declared Appearance Location**
+- An **Appearance** may have zero or one **Live Position**
+- An **Appearance** may have zero or one name
+- An **Active Appearance**'s effective location is its **Live Position** when present, otherwise its **Declared Appearance Location**
+- Walk-In Ordering for a `MOBILE` branch uses the **Active Appearance**'s effective location for geofence checks, not the **Branch Location**
+- The **Branch Location** of a `MOBILE` branch is the depot location and is never used for proximity checks while an **Appearance** is active
+- Any authenticated user of the owning **Merchant** may push a **Live Position** update to an **Appearance**
+- A `MOBILE` **Branch** may not have two **Appearance**s whose time windows overlap; the system rejects the creation of an overlapping **Appearance** at write time
 - A **Merchant** enables zero or more **Merchant Offering** entries
 - All **Branch**es of the same **Merchant** inherit the same **Merchant Offering** set
 - **Appointment Booking** is independent from **Pre-Order** and **Walk-In Ordering**
@@ -265,6 +302,13 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 
 ## Flagged ambiguities
 
+- Overlapping **Appearance**s on the same branch could have been allowed with a last-write-wins rule. Resolved: overlaps are rejected at write time; the Walk-In Ordering geofence fallback requires an unambiguous declared location.
+- **Live Position** push could have been restricted to a specific branch-operator role. Resolved: any authenticated user of the owning **Merchant** may push a **Live Position**; role-based restriction is out of scope for now.
+- Mobile merchant location could have been modelled as a real-time broadcast only, with no time window. Resolved: an **Appearance** carries a mandatory time window; the **Live Position** is an optional enrichment on top of it, not the primary concept.
+- The `MOBILE`/`BRICK_AND_MORTAR` distinction could have lived on the Branch. Resolved: it lives on the **Merchant**; all branches of a **Merchant** share the same **Merchant Mobility**. A business with a mixed fleet must register as separate merchants.
+- An **Appearance** could have stored only a time window with no pre-declared location. Resolved: the **Declared Appearance Location** is mandatory at creation time so customers can discover and plan around future **Appearance**s.
+- Walk-In Ordering geofence for `MOBILE` branches could have used the depot **Branch Location**. Resolved: it uses the **Active Appearance**'s effective location (Live Position falling back to Declared Appearance Location).
+- "event" was used informally to describe time-windowed mobile presence. Resolved: use **Appearance** to avoid collision with domain integration events published via Spring `ApplicationEventPublisher`.
 - "merchant" was previously used to mean both the operational business and the onboarding/application record. Resolved: this context uses **Merchant** only for the operational business; onboarding is out of scope here.
 - "OrderOnly", "OrderAndPayLater", and "Appointment" could have been modelled at merchant or branch scope. Resolved: they are **Merchant Offering** values configured once per **Merchant** and inherited by all **Branch**es.
 - "OrderOnly", "OrderAndPayLater", and "Appointment" could have been modelled as exclusive modes. Resolved: they are combinable **Merchant Offering** values.
