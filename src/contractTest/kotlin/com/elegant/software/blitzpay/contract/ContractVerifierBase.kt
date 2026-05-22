@@ -16,6 +16,7 @@ import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingReposit
 import com.elegant.software.blitzpay.merchant.domain.MerchantOffering
 import com.elegant.software.blitzpay.merchant.repository.MerchantVerticalRepository
 import com.elegant.software.blitzpay.merchant.repository.MonitoringRecordRepository
+import com.elegant.software.blitzpay.merchant.repository.MerchantBranchAppearanceRepository
 import com.elegant.software.blitzpay.merchant.repository.ProximityEventRepository
 import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistrationRepository
 import com.elegant.software.blitzpay.payments.push.persistence.PaymentStatusRepository
@@ -115,6 +116,9 @@ abstract class ContractVerifierBase {
 
     @MockitoBean
     protected lateinit var monitoringRecordRepository: MonitoringRecordRepository
+
+    @MockitoBean
+    protected lateinit var merchantBranchAppearanceRepository: MerchantBranchAppearanceRepository
 
     @MockitoBean
     protected lateinit var proximityEventRepository: ProximityEventRepository
