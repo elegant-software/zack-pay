@@ -81,6 +81,14 @@ For each prompt, document:
 
 Prompts should be discoverable and narrowly scoped. Do not hide critical behavior in vague prompt names.
 
+### Prompt vs Tool Guidance
+
+- Use an MCP **guide tool** as the primary contract for workflow routing, tool selection, operation order, idempotency notes, and bulk-vs-single decision rules.
+- Use MCP **prompts** only as an optional client-side UX layer for reusable workflow scaffolds, argument collection, and form-like onboarding flows.
+- Do **not** move critical routing or execution guidance from the guide tool into prompts only. Many MCP clients have stronger tool support than prompt support, and some clients may ignore prompts entirely.
+- If both exist, the guide tool is the canonical source of truth and prompts must defer to it explicitly.
+- Prompt completions should be reserved for constrained prompt arguments, such as codes or enumerated values, not as a replacement for tool discovery.
+
 ---
 
 ## 6. Schema and Compatibility Rules

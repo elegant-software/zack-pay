@@ -4,6 +4,7 @@ import com.elegant.software.blitzpay.merchant.api.CreateBranchRequest
 import com.elegant.software.blitzpay.merchant.api.MerchantBusinessProfileRequest
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
 import com.elegant.software.blitzpay.merchant.api.MerchantPrimaryContactRequest
+import com.elegant.software.blitzpay.merchant.api.MerchantVerticalResponse
 import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateMerchantRequest
 import com.elegant.software.blitzpay.merchant.application.MerchantBranchService
@@ -11,6 +12,7 @@ import com.elegant.software.blitzpay.merchant.application.MerchantLogoPolicy
 import com.elegant.software.blitzpay.merchant.application.MerchantLogoService
 import com.elegant.software.blitzpay.merchant.application.MerchantManagementService
 import com.elegant.software.blitzpay.merchant.application.MerchantRegistrationService
+import com.elegant.software.blitzpay.merchant.application.MerchantVerticalService
 import com.elegant.software.blitzpay.storage.StorageService
 import org.springframework.ai.mcp.annotation.McpTool
 import org.springframework.stereotype.Component
@@ -26,6 +28,7 @@ class MerchantMcpTools(
     private val merchantManagementService: MerchantManagementService,
     private val merchantLogoService: MerchantLogoService,
     private val merchantBranchService: MerchantBranchService,
+    private val merchantVerticalService: MerchantVerticalService,
     private val storageService: StorageService,
 ) {
 
@@ -38,7 +41,8 @@ class MerchantMcpTools(
         TOOL SELECTION
         ══════════════
         Merchant
-          always upsert  → merchant_upsert  (creates or updates, including logo)
+          businessType unknown → merchant_list_active_verticals  (discover valid merchant vertical codes first)
+          always upsert       → merchant_upsert  (creates or updates, including logo)
 
         Branches
           1 branch   → branch_id_by_name_or_create
@@ -62,11 +66,20 @@ class MerchantMcpTools(
         IDEMPOTENCY & RESPONSES
         ═══════════════════════
         • merchant_upsert is idempotent by merchantName — re-running updates the merchant safely.
+        • If businessType is unknown, call merchant_list_active_verticals before merchant_upsert.
         • branches_bulk_upsert is idempotent by branchName — re-running updates branches safely.
         • productCode is the idempotency key for products — re-running the same payload is safe.
         • Bulk responses include IDs in all buckets (created / updated / skipped / failed).
         • categoryName is resolved or created automatically; no separate category lookup required.
     """.trimIndent()
+
+    @McpTool(
+        name = "merchant_list_active_verticals",
+        description = "List valid merchant businessType codes and display names from the active merchant vertical catalog. " +
+            "Use this before merchant_upsert when businessType is unknown or needs validation."
+    )
+    fun listActiveMerchantVerticals(): List<MerchantVerticalResponse> =
+        merchantVerticalService.listActive()
 
     @McpTool(
         name = "merchant_id_by_name",

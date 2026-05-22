@@ -14,11 +14,14 @@ import com.elegant.software.blitzpay.merchant.application.MerchantManagementServ
 import com.elegant.software.blitzpay.merchant.application.MerchantProductCategoryService
 import com.elegant.software.blitzpay.merchant.application.MerchantProductService
 import com.elegant.software.blitzpay.merchant.application.MerchantRegistrationService
+import com.elegant.software.blitzpay.merchant.application.MerchantVerticalService
+import com.elegant.software.blitzpay.merchant.api.MerchantVerticalResponse
 import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
 import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
 import com.elegant.software.blitzpay.storage.StorageService
+import io.modelcontextprotocol.spec.McpSchema.CompleteRequest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -42,6 +45,7 @@ class MerchantProductToolsTest {
     private val merchantManagementService = mock<MerchantManagementService>()
     private val merchantLogoService = mock<MerchantLogoService>()
     private val merchantProductCategoryService = mock<MerchantProductCategoryService>()
+    private val merchantVerticalService = mock<MerchantVerticalService>()
     private val storageService = mock<StorageService>()
 
     private val merchantTools = MerchantMcpTools(
@@ -49,6 +53,7 @@ class MerchantProductToolsTest {
         merchantManagementService = merchantManagementService,
         merchantLogoService = merchantLogoService,
         merchantBranchService = merchantBranchService,
+        merchantVerticalService = merchantVerticalService,
         storageService = storageService,
     )
 
@@ -59,6 +64,10 @@ class MerchantProductToolsTest {
     private val productTools = ProductMcpTools(
         merchantProductService = merchantProductService,
         merchantProductCategoryService = merchantProductCategoryService,
+    )
+
+    private val merchantPrompts = MerchantMcpPrompts(
+        merchantVerticalService = merchantVerticalService,
     )
 
     @Test
@@ -191,6 +200,49 @@ class MerchantProductToolsTest {
         val result = categoryTools.listProductCategories(merchantId.toString())
 
         assertEquals(categories, result)
+    }
+
+    @Test
+    fun `listActiveMerchantVerticals delegates to service`() {
+        val verticals = listOf(
+            MerchantVerticalResponse(code = "RETAIL", displayName = "Retail"),
+            MerchantVerticalResponse(code = "RESTAURANT", displayName = "Restaurant"),
+        )
+        whenever(merchantVerticalService.listActive()).thenReturn(verticals)
+
+        val result = merchantTools.listActiveMerchantVerticals()
+
+        assertEquals(verticals, result)
+    }
+
+    @Test
+    fun `completeMerchantOnboardingArgument suggests active business types by prefix`() {
+        whenever(merchantVerticalService.listActive()).thenReturn(
+            listOf(
+                MerchantVerticalResponse(code = "RETAIL", displayName = "Retail"),
+                MerchantVerticalResponse(code = "RESTAURANT", displayName = "Restaurant"),
+                MerchantVerticalResponse(code = "SERVICES", displayName = "Services"),
+            )
+        )
+
+        val result = merchantPrompts.completeMerchantOnboardingArgument(
+            CompleteRequest.CompleteArgument("businessType", "RES")
+        )
+
+        assertEquals(listOf("RESTAURANT"), result)
+    }
+
+    @Test
+    fun `completeMerchantOnboardingArgument ignores unsupported prompt arguments`() {
+        whenever(merchantVerticalService.listActive()).thenReturn(
+            listOf(MerchantVerticalResponse(code = "RETAIL", displayName = "Retail"))
+        )
+
+        val result = merchantPrompts.completeMerchantOnboardingArgument(
+            CompleteRequest.CompleteArgument("merchantName", "Ca")
+        )
+
+        assertEquals(emptyList<String>(), result)
     }
 
     @Test
