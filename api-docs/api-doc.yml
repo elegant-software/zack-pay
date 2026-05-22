@@ -107,7 +107,7 @@ paths:
                 unitPrice:
                   type: string
                 description:
-                  type: string
+                  $ref: "#/components/schemas/FormDescription"
                 categoryId:
                   type: string
                 productCode:
@@ -809,7 +809,7 @@ paths:
                 unitPrice:
                   type: string
                 description:
-                  type: string
+                  $ref: "#/components/schemas/FormDescription"
                 categoryId:
                   type: string
                 productCode:
@@ -3424,3 +3424,4 @@ components:
           type: string
         templated:
           type: boolean
+    FormDescription: {}
