@@ -5,6 +5,7 @@ import com.elegant.software.blitzpay.merchant.api.MerchantOfferingResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateMerchantRequest
 import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
 import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
+import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
@@ -93,6 +94,37 @@ class MerchantManagementServiceTest {
         assertEquals(MerchantOperationalStatus.INACTIVE, response.merchantStatus)
         assertEquals(setOf(MerchantPaymentChannel.STRIPE, MerchantPaymentChannel.TRUELAYER), response.activePaymentChannels)
         assertEquals(MerchantOnboardingStatus.ACTIVE, response.status)
+    }
+
+    @Test
+    fun `update merchant changes merchant mobility`() {
+        val application = MerchantApplication(
+            applicationReference = "BLTZ-MOB",
+            businessProfile = BusinessProfile(
+                legalBusinessName = "Mobile Merchant GmbH",
+                businessType = "RETAIL",
+                registrationNumber = "DE-MOB",
+                operatingCountry = "DE",
+                primaryBusinessAddress = "Mobility Street 1"
+            ),
+            primaryContact = PrimaryContact(
+                fullName = "Mobility Owner",
+                email = "mobility@example.com",
+                phoneNumber = "+4912340000"
+            ),
+            merchantMobility = MerchantMobility.BRICK_AND_MORTAR
+        )
+        whenever(repository.findById(application.id)).thenReturn(Optional.of(application))
+        whenever(repository.save(any<MerchantApplication>())).thenAnswer { it.getArgument<MerchantApplication>(0) }
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(application.id)).thenReturn(emptyList())
+
+        val response = service.update(
+            application.id,
+            UpdateMerchantRequest(merchantMobility = "MOBILE")
+        )
+
+        assertEquals(MerchantMobility.MOBILE, application.merchantMobility)
+        assertEquals("MOBILE", response.merchantMobility)
     }
 
     @Test
