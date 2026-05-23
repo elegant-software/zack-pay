@@ -186,8 +186,6 @@ class MerchantBranchService(
             geofenceRadiusMeters = geofenceRadiusMeters,
             googlePlaceId = googlePlaceId
         )
-        existing.active = false
-        existing.status = MerchantEntityStatus.INACTIVE
         return merchantBranchRepository.save(existing).toResponse()
     }
 

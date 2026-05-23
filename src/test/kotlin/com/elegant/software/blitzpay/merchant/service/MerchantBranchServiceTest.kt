@@ -162,6 +162,52 @@ class MerchantBranchServiceTest {
     }
 
     @Test
+    fun `upsertByName preserves active status for existing active branch`() {
+        val merchantId = UUID.randomUUID()
+        val existingBranch = MerchantBranch(
+            merchantApplicationId = merchantId,
+            name = "Main Branch",
+            active = true,
+            status = com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus.ACTIVE,
+            address = com.elegant.software.blitzpay.merchant.domain.PostalAddress(
+                addressLine1 = "Old Street 1",
+                city = "Berlin",
+                postalCode = "10115",
+                country = "DE",
+            ),
+        ).also {
+            it.location = com.elegant.software.blitzpay.merchant.domain.MerchantLocation(
+                latitude = 52.52,
+                longitude = 13.405,
+                geofenceRadiusMeters = 150
+            )
+        }
+        whenever(merchantRepository.existsById(merchantId)).thenReturn(true)
+        whenever(branchRepository.findByNameAndMerchantApplicationId("Main Branch", merchantId)).thenReturn(existingBranch)
+        whenever(branchRepository.save(any<MerchantBranch>())).thenAnswer { it.arguments[0] }
+
+        val response = service.upsertByName(
+            merchantId = merchantId,
+            branchName = "Main Branch",
+            addressLine1 = "New Street 2",
+            city = "Berlin",
+            postalCode = "10117",
+            country = "DE",
+            latitude = 52.521,
+            longitude = 13.406,
+            geofenceRadiusMeters = 175,
+        )
+
+        assertEquals(true, response.active)
+        assertEquals("ACTIVE", response.status)
+
+        val branchCaptor = argumentCaptor<MerchantBranch>()
+        verify(branchRepository).save(branchCaptor.capture())
+        assertEquals(true, branchCaptor.firstValue.active)
+        assertEquals(com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus.ACTIVE, branchCaptor.firstValue.status)
+    }
+
+    @Test
     fun `update branch stores contact and activation state`() {
         val merchantId = UUID.randomUUID()
         val branch = MerchantBranch(
