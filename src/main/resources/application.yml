@@ -83,6 +83,11 @@ stripe:
   secret-key: ${STRIPE_SECRET_KEY:}
   publishable-key: ${EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY:}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  connect-webhook-secret: ${STRIPE_CONNECT_WEBHOOK_SECRET:}
+  connect:
+    return-url: ${STRIPE_CONNECT_RETURN_URL:}
+    api-base-url: ${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}
+    app-deep-link: ${STRIPE_CONNECT_APP_DEEP_LINK:}
 
 braintree:
   merchant-id: ${BRAINTREE_MERCHANT_ID:}

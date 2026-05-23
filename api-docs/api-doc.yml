@@ -26,6 +26,8 @@ tags:
   description: Manage scheduled location appearances for MOBILE merchant branches
 - name: Geofence
   description: Geofence region discovery for mobile clients
+- name: Stripe Connect
+  description: Stripe Connect Express account onboarding for merchants
 - name: Invoices
   description: EU-standard ZUGFeRD / Factur-X invoice generation
 - name: Payment Status
@@ -489,6 +491,30 @@ paths:
             '*/*':
               schema:
                 type: object
+  /{version}/webhooks/stripe/connect:
+    post:
+      tags:
+      - stripe-webhook-controller
+      operationId: receiveConnect
+      parameters:
+      - name: Stripe-Signature
+        in: header
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
   /{version}/webhooks/stripe:
     post:
       tags:
@@ -567,6 +593,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProximityResponse"
+  /{version}/payments/stripe/pay-by-bank/create-checkout-session:
+    post:
+      tags:
+      - stripe-payment-controller
+      summary: Create a hosted Stripe Checkout Session for Pay by Bank and return
+        the redirect URL.
+      operationId: createPayByBankCheckoutSession
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePayByBankCheckoutSessionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CreatePayByBankCheckoutSessionResponse"
   /{version}/payments/stripe/create-intent:
     post:
       tags:
@@ -750,6 +796,27 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchants/{merchantId}/stripe-connect:
+    post:
+      tags:
+      - Stripe Connect
+      summary: Start Stripe Connect onboarding — creates an Express account and returns
+        the hosted onboarding URL
+      operationId: startOnboarding
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
   /{version}/merchants/{merchantId}/products:
     get:
       tags:
@@ -1365,6 +1432,47 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchants/{merchantId}/stripe-connect/status:
+    get:
+      tags:
+      - Stripe Connect
+      summary: Get Stripe Connect onboarding status for this merchant
+      operationId: getStatus
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ConnectStatusResponse"
+  /{version}/merchants/{merchantId}/stripe-connect/refresh:
+    get:
+      tags:
+      - Stripe Connect
+      summary: Refresh an expired Connect onboarding URL — Stripe redirects here when
+        the onboarding link expires
+      operationId: refreshOnboardingUrl
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
   /{version}/merchants/{merchantId}/branches/{branchId}/appearances/{appearanceId}:
     get:
       tags:
@@ -1556,6 +1664,18 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/CurrentlyHappeningResponse"
+  /stripe-connect/return:
+    get:
+      tags:
+      - stripe-connect-return-controller
+      operationId: onReturn
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
   /actuator/metrics/{requiredMetricName}:
     get:
       tags:
@@ -2456,6 +2576,48 @@ components:
       required:
       - action
       - recorded
+    CreatePayByBankCheckoutSessionRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        orderId:
+          type: string
+        merchantId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        successUrl:
+          type: string
+        cancelUrl:
+          type: string
+      required:
+      - orderId
+    CreatePayByBankCheckoutSessionResponse:
+      type: object
+      properties:
+        paymentRequestId:
+          type: string
+          format: uuid
+        checkoutUrl:
+          type: string
+        checkoutSessionId:
+          type: string
+        connectedAccountId:
+          type: string
+      required:
+      - checkoutSessionId
+      - checkoutUrl
+      - connectedAccountId
+      - paymentRequestId
     CreateIntentRequest:
       type: object
       properties:
@@ -2489,8 +2651,11 @@ components:
           type: string
         publishableKey:
           type: string
+        connectedAccountId:
+          type: string
       required:
       - clientSecret
+      - connectedAccountId
       - paymentIntent
       - paymentRequestId
       - publishableKey
@@ -3227,6 +3392,28 @@ components:
       - status
       - totalAmountMinor
       - usesDeferredPayment
+    ConnectStatusResponse:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        chargesEnabled:
+          type: boolean
+        detailsSubmitted:
+          type: boolean
+        enabledPaymentFlows:
+          type: array
+          items:
+            type: string
+            enum:
+            - CARD
+            - PAY_BY_BANK
+          uniqueItems: true
+      required:
+      - chargesEnabled
+      - connected
+      - detailsSubmitted
+      - enabledPaymentFlows
     MerchantVerticalResponse:
       type: object
       properties:

@@ -1,5 +1,8 @@
 package com.elegant.software.blitzpay.contract
 
+import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
+import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
 import com.elegant.software.blitzpay.order.repository.OrderItemRepository
@@ -22,6 +25,8 @@ import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistratio
 import com.elegant.software.blitzpay.payments.push.persistence.PaymentStatusRepository
 import com.elegant.software.blitzpay.payments.push.persistence.ProcessedWebhookEventRepository
 import com.elegant.software.blitzpay.payments.push.persistence.PushDeliveryAttemptRepository
+import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantStripeConnectRepository
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusUpdateGateway
 import com.elegant.software.blitzpay.storage.StorageService
@@ -148,6 +153,12 @@ abstract class ContractVerifierBase {
     protected lateinit var paymentAttemptRepository: PaymentAttemptRepository
 
     @MockitoBean
+    protected lateinit var merchantStripeConnectRepository: MerchantStripeConnectRepository
+
+    @MockitoBean
+    protected lateinit var stripeConnectGateway: StripeConnectGateway
+
+    @MockitoBean
     protected lateinit var entityManager: EntityManager
 
     @BeforeEach
@@ -172,6 +183,29 @@ abstract class ContractVerifierBase {
                 branchId = java.util.UUID.fromString("00000000-0000-0000-0000-000000000002"),
                 totalAmountMinor = 1099,
                 currency = "EUR"
+            )
+        )
+        whenever(stripeConnectGateway.findConnectedAccountId(any())).thenReturn("acct_test_contract")
+        whenever(stripeConnectGateway.isChargesEnabled(any())).thenReturn(true)
+        whenever(stripeConnectGateway.isDetailsSubmitted(any())).thenReturn(true)
+        whenever(stripeConnectGateway.isPayByBankEnabled(any())).thenReturn(true)
+        whenever(stripeConnectGateway.getDetails(any())).thenReturn(
+            MerchantDetailsResponse(
+                applicationId = java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                applicationReference = "REF-001",
+                merchantName = "Test Merchant",
+                registrationNumber = "12345678",
+                businessType = "RESTAURANT",
+                operatingCountry = "GB",
+                legalBusinessName = "Test Merchant Ltd",
+                primaryBusinessAddress = "1 Test Street, London",
+                contactFullName = "John Doe",
+                contactEmail = "john@testmerchant.com",
+                contactPhoneNumber = "+441234567890",
+                activePaymentChannels = emptySet(),
+                status = MerchantOnboardingStatus.ACTIVE,
+                submittedAt = null,
+                lastUpdatedAt = java.time.Instant.EPOCH,
             )
         )
         whenever(orderGateway.linkPaymentAttempt(any(), any(), any(), anyOrNull())).thenReturn(

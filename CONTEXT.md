@@ -300,6 +300,22 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 > **Dev:** "If a merchant disables **Appointment Booking**, do we clear all the durations they've set?"
 > **Domain expert:** "No. We leave them in place — they're inert without the offering, and clearing them on toggle would be a destructive, irreversible side-effect. If the offering is re-enabled, the durations are still there."
 
+**Connected Account**:
+The Stripe Express account representing a Merchant's financial identity on the BlitzPay platform. Created when a Merchant enables Stripe as a payment channel.
+_Avoid_: Stripe account, integration account, intermediate account
+
+**Connected Account ID**:
+The Stripe-issued identifier (`acct_XXXX`) for a Merchant's Connected Account. Stored at the Merchant level. Used when creating direct charges on behalf of that Merchant.
+_Avoid_: Stripe user ID, stripe_id, integration ID
+
+**Connect Onboarding**:
+The Stripe-hosted process a Merchant completes to create and verify their Connected Account. Triggered when the Merchant enables Stripe as a payment channel in the merchant app. Considered complete only when Stripe confirms `charges_enabled: true` via webhook.
+_Avoid_: Stripe onboarding, account setup, payment onboarding
+
+**Connect Onboarding URL**:
+The one-time Stripe-generated URL returned to the merchant app, directing the Merchant to Stripe's hosted identity and banking verification form. Expires if unused; a dedicated refresh endpoint generates a replacement.
+_Avoid_: Stripe link, onboarding link, redirect URL
+
 ## Flagged ambiguities
 
 - Overlapping **Appearance**s on the same branch could have been allowed with a last-write-wins rule. Resolved: overlaps are rejected at write time; the Walk-In Ordering geofence fallback requires an unambiguous declared location.
