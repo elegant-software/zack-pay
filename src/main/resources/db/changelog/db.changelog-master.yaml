@@ -81,3 +81,7 @@ databaseChangeLog:
       file: db/changelog/20260522-001-merchant-mobility.sql
   - include:
       file: db/changelog/20260522-002-merchant-branch-appearances.sql
+  - include:
+      file: db/changelog/20260522-003-merchant-stripe-connect.sql
+  - include:
+      file: db/changelog/20260525-001-stripe-connect-pay-by-bank.sql

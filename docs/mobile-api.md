@@ -22,6 +22,47 @@ Initiates a TrueLayer payment and returns the IDs needed to open the bank redire
 }
 ```
 
+---
+
+## 1b. Create a Stripe Pay by Bank checkout session
+
+**`POST /v1/payments/stripe/pay-by-bank/create-checkout-session`**
+
+Creates a hosted Stripe Checkout Session for the Pay by Bank flow on the merchant's connected account.
+
+**Request body**
+```json
+{
+  "orderId": "ORDER-123",
+  "merchantId": "00000000-0000-0000-0000-000000000001",
+  "branchId": "00000000-0000-0000-0000-000000000002",
+  "successUrl": "blitzpay://payment/success",
+  "cancelUrl": "blitzpay://payment/cancel"
+}
+```
+
+Optional fields:
+
+- `amount`: overrides the order total when needed
+- `currency`: defaults to the order currency; only `EUR` and `GBP` are accepted by this route
+- `productId`: used for branch/price resolution if the client does not send a branch directly
+
+**Response `200 OK`**
+```json
+{
+  "paymentRequestId": "550e8400-e29b-41d4-a716-446655440000",
+  "checkoutUrl": "https://checkout.stripe.com/pay/cs_test_123",
+  "checkoutSessionId": "cs_test_123",
+  "connectedAccountId": "acct_123"
+}
+```
+
+**Errors**
+- `400 Bad Request` — invalid request, unsupported currency, or missing `successUrl`
+- `404 Not Found` — order not found
+- `409 Conflict` — order is not payable
+- `503 Service Unavailable` — Stripe Pay by Bank is not enabled for the merchant
+
 **Response `202 Accepted`**
 ```json
 {
