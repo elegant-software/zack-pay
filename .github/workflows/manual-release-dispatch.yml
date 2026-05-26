@@ -6,101 +6,96 @@ on:
       release_boundary:
         description: 'Tag to diff from (e.g. v1.2.3). Leave blank to use latest tag.'
         required: false
+        type: string
         default: ''
       base_branch:
-        description: 'Branch to collect merged PRs from'
+        description: 'Branch to check for changes after the release boundary'
         required: false
+        type: string
         default: main
 
-permissions:
-  contents: write
-  pull-requests: read
+permissions: {}
+
+concurrency:
+  group: manual-release-${{ inputs.base_branch }}
+  cancel-in-progress: false
 
 jobs:
-  notes:
-    uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/release-notes.yml@main
-    with:
-      base_branch: ${{ inputs.base_branch }}
-      release_boundary: ${{ inputs.release_boundary }}
-    permissions:
-      contents: write
-      pull-requests: read
-
-  summary:
-    needs: notes
+  plan:
     runs-on: ubuntu-latest
-    if: always()
+    permissions:
+      contents: read
+    outputs:
+      release_required: ${{ steps.evaluate.outputs.release_required }}
     steps:
-      - name: Print release decision
-        run: |
-          echo "release_required : ${{ needs.notes.outputs.release_required }}"
-          echo "version_bump     : ${{ needs.notes.outputs.version_bump }}"
-          echo "next_version     : ${{ needs.notes.outputs.next_version }}"
-          echo "included PRs     : ${{ needs.notes.outputs.included_pr_count }}"
-          echo "decision_reason  : ${{ needs.notes.outputs.decision_reason }}"
+      - name: Checkout repository history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
-      - name: Print release notes
-        if: needs.notes.outputs.release_required == 'true'
+      - name: Test release automation modules
+        run: node --test .github/scripts/release/*.test.*
+
+      - name: Build release plan from commits after boundary
+        id: evaluate
+        env:
+          BASE_BRANCH: ${{ inputs.base_branch }}
+          RELEASE_BOUNDARY: ${{ inputs.release_boundary }}
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: node .github/scripts/release/evaluate-release.mjs
+
+      - name: Add plan to workflow summary
+        env:
+          RELEASE_REQUIRED: ${{ steps.evaluate.outputs.release_required }}
+          VERSION_BUMP: ${{ steps.evaluate.outputs.version_bump }}
+          NEXT_VERSION: ${{ steps.evaluate.outputs.next_version }}
+          CHANGED_COMMIT_COUNT: ${{ steps.evaluate.outputs.changed_commit_count }}
+          DECISION_REASON: ${{ steps.evaluate.outputs.decision_reason }}
         run: |
-          cat <<'EOF'
-          ${{ needs.notes.outputs.release_notes_markdown }}
-          EOF
+          {
+          echo "## Manual release plan"
+          echo
+          echo '```text'
+          echo "release_required : $RELEASE_REQUIRED"
+          echo "version_bump     : $VERSION_BUMP"
+          echo "next_version     : $NEXT_VERSION"
+          echo "changed commits  : $CHANGED_COMMIT_COUNT"
+          echo "decision_reason  : $DECISION_REASON"
+          echo '```'
+          echo
+          cat release-output/release-notes.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release plan
+        if: steps.evaluate.outputs.release_required == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-release-plan
+          path: release-output/
+          if-no-files-found: error
+          retention-days: 7
 
   publish:
-    needs: notes
-    if: needs.notes.outputs.release_required == 'true'
+    needs: plan
+    if: needs.plan.outputs.release_required == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
+      - name: Checkout release publisher
+        uses: actions/checkout@v6
+
+      - name: Download release plan
+        uses: actions/download-artifact@v4
+        with:
+          name: manual-release-plan
+          path: release-output/
+
       - name: Create release tag and GitHub Release
         uses: actions/github-script@v9
-        env:
-          NEXT_VERSION: ${{ needs.notes.outputs.next_version }}
-          RELEASE_NOTES_MARKDOWN: ${{ needs.notes.outputs.release_notes_markdown }}
         with:
-          github-token: ${{ secrets.MONO_REPO_DISPATCH_TOKEN }}
+          github-token: ${{ secrets.RELEASE_PUBLISH_TOKEN }}
           script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const nextVersion = (process.env.NEXT_VERSION || "").trim();
-            const releaseNotesMarkdown = process.env.RELEASE_NOTES_MARKDOWN || "";
-
-            if (!nextVersion) {
-              throw new Error("NEXT_VERSION output is empty while release_required=true.");
-            }
-
-            const tagName = `v${nextVersion}`;
-
-            let tagExists = false;
-            try {
-              await github.rest.git.getRef({ owner, repo, ref: `tags/${tagName}` });
-              tagExists = true;
-            } catch (error) {
-              if (error.status !== 404) throw error;
-            }
-
-            if (!tagExists) {
-              await github.rest.git.createRef({
-                owner,
-                repo,
-                ref: `refs/tags/${tagName}`,
-                sha: context.sha,
-              });
-            }
-
-            try {
-              await github.rest.repos.createRelease({
-                owner,
-                repo,
-                tag_name: tagName,
-                name: tagName,
-                body: releaseNotesMarkdown || "No release notes generated.",
-                generate_release_notes: false,
-              });
-              core.info(`Created release ${tagName}.`);
-            } catch (error) {
-              if (error.status === 422) {
-                core.info(`Release ${tagName} already exists. Skipping creation.`);
-              } else {
-                throw error;
-              }
-            }
+            const publishRelease = require("./.github/scripts/release/publish-release.cjs");
+            await publishRelease({ github, context, core });
