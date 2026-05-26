@@ -3,11 +3,12 @@ package com.elegant.software.blitzpay.merchant.repository
 import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.util.UUID
 
-interface MerchantApplicationRepository : JpaRepository<MerchantApplication, UUID> {
+interface MerchantApplicationRepository : JpaRepository<MerchantApplication, UUID>, JpaSpecificationExecutor<MerchantApplication> {
     fun findByBusinessProfileLegalBusinessName(legalBusinessName: String): MerchantApplication?
 
     fun findByApplicationReference(applicationReference: String): MerchantApplication?
