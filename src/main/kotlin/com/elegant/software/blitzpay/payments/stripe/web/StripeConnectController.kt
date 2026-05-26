@@ -9,12 +9,14 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import reactor.core.publisher.Mono
 import java.util.UUID
 
+data class StartOnboardingRequest(val returnUrl: String? = null, val refreshUrl: String? = null)
 data class ConnectOnboardingResponse(val onboardingUrl: String)
 enum class ConnectPaymentFlow { CARD, PAY_BY_BANK }
 data class ConnectStatusResponse(
@@ -35,8 +37,11 @@ class StripeConnectController(
     @PostMapping
     fun startOnboarding(
         @PathVariable merchantId: UUID,
+        @RequestBody(required = false) body: StartOnboardingRequest? = null,
     ): Mono<ResponseEntity<Any>> {
-        return stripeConnectService.createOnboardingUrl(merchantId, stripeProperties.connect.returnUrl, refreshUrl(merchantId))
+        val returnUrl = body?.returnUrl?.takeIf { it.isNotBlank() } ?: stripeProperties.connect.returnUrl
+        val refreshUrl = body?.refreshUrl?.takeIf { it.isNotBlank() } ?: refreshUrl(merchantId)
+        return stripeConnectService.createOnboardingUrl(merchantId, returnUrl, refreshUrl)
             .map { url -> ResponseEntity.ok(ConnectOnboardingResponse(url) as Any) }
             .onErrorResume(StripeException::class.java) { ex ->
                 Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -68,8 +73,12 @@ class StripeConnectController(
     @GetMapping("/refresh")
     fun refreshOnboardingUrl(
         @PathVariable merchantId: UUID,
+        @RequestParam(required = false) returnUrl: String? = null,
+        @RequestParam(required = false) refreshUrl: String? = null,
     ): Mono<ResponseEntity<Any>> {
-        return stripeConnectService.createRefreshUrl(merchantId, stripeProperties.connect.returnUrl, refreshUrl(merchantId))
+        val resolvedReturn = returnUrl?.takeIf { it.isNotBlank() } ?: stripeProperties.connect.returnUrl
+        val resolvedRefresh = refreshUrl?.takeIf { it.isNotBlank() } ?: refreshUrl(merchantId)
+        return stripeConnectService.createRefreshUrl(merchantId, resolvedReturn, resolvedRefresh)
             .map { url -> ResponseEntity.ok(ConnectOnboardingResponse(url) as Any) }
             .onErrorResume(NoSuchElementException::class.java) { ex ->
                 Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND)
