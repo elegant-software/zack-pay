@@ -22,6 +22,8 @@ tags:
   description: Mobile geofence enter and exit event recording
 - name: Merchant Branches
   description: Manage branches under a merchant
+- name: Merchant Provider Accounts
+  description: Manage which Payment Service Providers are enabled for a merchant
 - name: Appearances
   description: Manage scheduled location appearances for MOBILE merchant branches
 - name: Geofence
@@ -43,9 +45,58 @@ tags:
   description: Create and inspect orders for shoppers
 - name: Merchant Location
   description: Geolocation and geofencing for merchants
+- name: Merchant Search
+  description: Full-text and filter-based merchant search
 - name: Merchant Products
   description: Product catalog management for merchants
 paths:
+  /{version}/merchants/{merchantId}/provider-accounts/{pspCode}:
+    put:
+      tags:
+      - Merchant Provider Accounts
+      summary: Enable a PSP for a merchant — creates the provider account record if
+        it does not exist
+      operationId: enable
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: pspCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProviderAccountResponse"
+    delete:
+      tags:
+      - Merchant Provider Accounts
+      summary: Disable a PSP for a merchant — sets enabled=false without deleting
+        the record
+      operationId: disable
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: pspCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
   /{version}/merchants/{merchantId}/products/{productId}:
     get:
       tags:
@@ -810,6 +861,11 @@ paths:
         schema:
           type: string
           format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartOnboardingRequest"
       responses:
         "200":
           description: OK
@@ -1096,6 +1152,27 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MerchantSummary"
+  /{version}/merchants/search:
+    post:
+      tags:
+      - Merchant Search
+      summary: Search merchants
+      description: "Full-text search across merchant, branch, and product fields,\
+        \ with optional enum filters. All fields are optional — an empty body returns\
+        \ the 50 most recently updated merchants."
+      operationId: search
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MerchantSearchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MerchantSearchResponse"
   /{version}/merchants:
     post:
       tags:
@@ -1466,6 +1543,16 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: returnUrl
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: refreshUrl
+        in: query
+        required: false
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -1473,6 +1560,28 @@ paths:
             '*/*':
               schema:
                 type: object
+  /{version}/merchants/{merchantId}/provider-accounts:
+    get:
+      tags:
+      - Merchant Provider Accounts
+      summary: List all provider accounts for a merchant
+      operationId: list_6
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProviderAccountResponse"
   /{version}/merchants/{merchantId}/branches/{branchId}/appearances/{appearanceId}:
     get:
       tags:
@@ -1537,7 +1646,7 @@ paths:
       tags:
       - Merchant Verticals
       summary: List all active merchant verticals
-      operationId: list_6
+      operationId: list_7
       responses:
         "200":
           description: OK
@@ -1822,6 +1931,28 @@ paths:
           description: No Content
 components:
   schemas:
+    ProviderAccountResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        pspCode:
+          type: string
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - enabled
+      - id
+      - pspCode
+      - updatedAt
     ProductResponse:
       type: object
       properties:
@@ -2011,15 +2142,6 @@ components:
           type: string
         contactPhoneNumber:
           type: string
-        activePaymentChannels:
-          type: array
-          items:
-            type: string
-            enum:
-            - PAYPAL
-            - STRIPE
-            - TRUELAYER
-          uniqueItems: true
         latitude:
           type: number
           format: double
@@ -2056,7 +2178,6 @@ components:
           format: date-time
       required:
       - active
-      - activePaymentChannels
       - branchCode
       - createdAt
       - id
@@ -2157,15 +2278,6 @@ components:
           type: string
         contactPhoneNumber:
           type: string
-        activePaymentChannels:
-          type: array
-          items:
-            type: string
-            enum:
-            - PAYPAL
-            - STRIPE
-            - TRUELAYER
-          uniqueItems: true
         latitude:
           type: number
           format: double
@@ -2179,7 +2291,6 @@ components:
           type: string
       required:
       - active
-      - activePaymentChannels
       - name
     SetLogoRequest:
       type: object
@@ -2328,15 +2439,6 @@ components:
           type: string
         contactPhoneNumber:
           type: string
-        activePaymentChannels:
-          type: array
-          items:
-            type: string
-            enum:
-            - PAYPAL
-            - STRIPE
-            - TRUELAYER
-          uniqueItems: true
         status:
           type: string
           enum:
@@ -2388,15 +2490,6 @@ components:
           type: string
         contactPhoneNumber:
           type: string
-        activePaymentChannels:
-          type: array
-          items:
-            type: string
-            enum:
-            - PAYPAL
-            - STRIPE
-            - TRUELAYER
-          uniqueItems: true
         status:
           type: string
           enum:
@@ -2435,7 +2528,6 @@ components:
         merchantMobility:
           type: string
       required:
-      - activePaymentChannels
       - address
       - applicationId
       - applicationReference
@@ -2520,17 +2612,13 @@ components:
           type: string
         contactPhoneNumber:
           type: string
-        activePaymentChannels:
+        activePspCodes:
           type: array
           items:
             type: string
-            enum:
-            - PAYPAL
-            - STRIPE
-            - TRUELAYER
           uniqueItems: true
       required:
-      - activePaymentChannels
+      - activePspCodes
       - branchId
       - name
     MerchantContext:
@@ -2543,14 +2631,10 @@ components:
           type: string
         logoUrl:
           type: string
-        activePaymentChannels:
+        activePspCodes:
           type: array
           items:
             type: string
-            enum:
-            - PAYPAL
-            - STRIPE
-            - TRUELAYER
           uniqueItems: true
         deferredPaymentAvailable:
           type: boolean
@@ -2559,7 +2643,7 @@ components:
           items:
             $ref: "#/components/schemas/BranchContext"
       required:
-      - activePaymentChannels
+      - activePspCodes
       - branches
       - deferredPaymentAvailable
       - merchantId
@@ -2947,6 +3031,13 @@ components:
       - capturedAt
       - latitude
       - longitude
+    StartOnboardingRequest:
+      type: object
+      properties:
+        returnUrl:
+          type: string
+        refreshUrl:
+          type: string
     CreateProductCategoryRequest:
       type: object
       properties:
@@ -3002,15 +3093,6 @@ components:
           type: string
         contactPhoneNumber:
           type: string
-        activePaymentChannels:
-          type: array
-          items:
-            type: string
-            enum:
-            - PAYPAL
-            - STRIPE
-            - TRUELAYER
-          uniqueItems: true
         latitude:
           type: number
           format: double
@@ -3023,7 +3105,6 @@ components:
         googlePlaceId:
           type: string
       required:
-      - activePaymentChannels
       - name
     MerchantLogoUploadRequest:
       type: object
@@ -3046,6 +3127,91 @@ components:
       - expiresAt
       - storageKey
       - uploadUrl
+    MerchantSearchRequest:
+      type: object
+      properties:
+        q:
+          type: string
+        businessTypes:
+          type: array
+          items:
+            type: string
+        merchantMobilities:
+          type: array
+          items:
+            type: string
+        statuses:
+          type: array
+          items:
+            type: string
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+      required:
+      - page
+      - size
+    MerchantSearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/MerchantSearchResultItem"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+      required:
+      - page
+      - results
+      - size
+      - totalElements
+      - totalPages
+    MerchantSearchResultItem:
+      type: object
+      properties:
+        applicationId:
+          type: string
+          format: uuid
+        merchantName:
+          type: string
+        legalBusinessName:
+          type: string
+        merchantCode:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        businessType:
+          type: string
+        merchantMobility:
+          type: string
+        status:
+          type: string
+        lastUpdatedAt:
+          type: string
+          format: date-time
+      required:
+      - applicationId
+      - businessType
+      - lastUpdatedAt
+      - legalBusinessName
+      - merchantCode
+      - merchantMobility
+      - merchantName
+      - status
     CreateMerchantRequest:
       type: object
       properties:
@@ -3455,17 +3621,7 @@ components:
           type: string
         contactPhoneNumber:
           type: string
-        activePaymentChannels:
-          type: array
-          items:
-            type: string
-            enum:
-            - PAYPAL
-            - STRIPE
-            - TRUELAYER
-          uniqueItems: true
       required:
-      - activePaymentChannels
       - branchId
       - name
     NearbyMerchantResponse:

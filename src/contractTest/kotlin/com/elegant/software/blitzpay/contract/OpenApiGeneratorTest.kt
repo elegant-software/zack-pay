@@ -2,13 +2,16 @@ package com.elegant.software.blitzpay.contract
 
 import org.junit.jupiter.api.Test
 import java.io.File
-import java.nio.file.Paths
+import java.time.Duration
 
 class OpenApiGeneratorTest : ContractVerifierBase() {
 
     @Test
     fun `generate OpenAPI specification`() {
-        val response = webTestClient.get()
+        val response = webTestClient.mutate()
+            .responseTimeout(Duration.ofSeconds(15))
+            .build()
+            .get()
             .uri("/api-docs.yaml") // Springdoc provides YAML at .yaml suffix
             .exchange()
             .expectStatus().isOk

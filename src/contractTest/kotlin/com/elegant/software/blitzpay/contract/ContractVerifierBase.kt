@@ -27,6 +27,8 @@ import com.elegant.software.blitzpay.payments.push.persistence.ProcessedWebhookE
 import com.elegant.software.blitzpay.payments.push.persistence.PushDeliveryAttemptRepository
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
 import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
+import com.elegant.software.blitzpay.merchant.repository.MerchantStripeProviderAccountRepository
+import com.elegant.software.blitzpay.merchant.repository.PaymentServiceProviderRepository
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusUpdateGateway
 import com.elegant.software.blitzpay.storage.StorageService
@@ -154,6 +156,12 @@ abstract class ContractVerifierBase {
 
     @MockitoBean
     protected lateinit var merchantProviderAccountRepository: MerchantProviderAccountRepository
+
+    @MockitoBean
+    protected lateinit var merchantStripeProviderAccountRepository: MerchantStripeProviderAccountRepository
+
+    @MockitoBean
+    protected lateinit var paymentServiceProviderRepository: PaymentServiceProviderRepository
 
     @MockitoBean
     protected lateinit var stripeConnectGateway: StripeConnectGateway
