@@ -13,8 +13,8 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import jakarta.persistence.CascadeType
-import jakarta.persistence.Enumerated
 import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import java.time.Instant
 import java.util.UUID
 
@@ -93,15 +93,6 @@ class MerchantApplication(
         joinColumns = [JoinColumn(name = "merchant_application_id")]
     )
     var reviewDecisions: MutableList<ReviewDecision> = mutableListOf()
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-        name = "merchant_application_payment_channels",
-        joinColumns = [JoinColumn(name = "merchant_application_id")]
-    )
-    @Column(name = "payment_channel", nullable = false, length = 32)
-    @Enumerated(EnumType.STRING)
-    var activePaymentChannels: MutableSet<MerchantPaymentChannel> = linkedSetOf()
 
     @Embedded
     @AttributeOverrides(
@@ -193,7 +184,6 @@ class MerchantApplication(
         primaryBusinessAddress: String,
         primaryContact: PrimaryContact,
         businessType: String? = null,
-        activePaymentChannels: Set<MerchantPaymentChannel> = this.activePaymentChannels,
         nextStatus: MerchantOnboardingStatus? = null,
         changedAt: Instant = Instant.now()
     ) {
@@ -206,7 +196,6 @@ class MerchantApplication(
         publicEmail = primaryContact.email
         publicPhoneNumber = primaryContact.phoneNumber
         this.primaryContact = primaryContact
-        this.activePaymentChannels = activePaymentChannels.toMutableSet()
 
         if (nextStatus != null && nextStatus != status) {
             transitionTo(nextStatus, changedAt)

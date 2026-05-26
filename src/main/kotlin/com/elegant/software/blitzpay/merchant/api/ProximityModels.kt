@@ -1,6 +1,5 @@
 package com.elegant.software.blitzpay.merchant.api
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
 import java.util.UUID
 
 data class ProximityLocation(
@@ -28,14 +27,14 @@ data class BranchContext(
     val contactFullName: String? = null,
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
-    val activePaymentChannels: Set<MerchantPaymentChannel> = emptySet(),
+    val activePspCodes: Set<String> = emptySet(),
 )
 
 data class MerchantContext(
     val merchantId: UUID,
     val name: String,
     val logoUrl: String? = null,
-    val activePaymentChannels: Set<MerchantPaymentChannel> = emptySet(),
+    val activePspCodes: Set<String> = emptySet(),
     val deferredPaymentAvailable: Boolean = false,
     val branches: List<BranchContext> = emptyList(),
 )

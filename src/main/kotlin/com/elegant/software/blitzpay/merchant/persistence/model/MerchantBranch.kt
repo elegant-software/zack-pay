@@ -1,12 +1,8 @@
 package com.elegant.software.blitzpay.merchant.domain
 
 import jakarta.persistence.Column
-import jakarta.persistence.CollectionTable
 import jakarta.persistence.Embedded
-import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.Index
@@ -66,15 +62,6 @@ class MerchantBranch(
     @Embedded
     var location: MerchantLocation? = null,
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-        name = "merchant_branch_payment_channels",
-        joinColumns = [JoinColumn(name = "merchant_branch_id")]
-    )
-    @Column(name = "payment_channel", nullable = false, length = 32)
-    @Enumerated(EnumType.STRING)
-    var activePaymentChannels: MutableSet<MerchantPaymentChannel> = linkedSetOf(),
-
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 
@@ -99,7 +86,6 @@ class MerchantBranch(
         websiteOverride: String?,
         contactEmail: String?,
         contactPhoneNumber: String?,
-        activePaymentChannels: Set<MerchantPaymentChannel>,
         location: MerchantLocation?,
         at: Instant = Instant.now(),
     ) {
@@ -117,7 +103,6 @@ class MerchantBranch(
         this.websiteOverride = websiteOverride
         this.contactEmail = contactEmail
         this.contactPhoneNumber = contactPhoneNumber
-        this.activePaymentChannels = activePaymentChannels.toMutableSet()
         this.location = location
         this.updatedAt = at
     }

@@ -8,7 +8,6 @@ import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
 import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
 import com.elegant.software.blitzpay.merchant.domain.MerchantOffering
 import com.elegant.software.blitzpay.merchant.domain.MerchantOfferingAssignment
 import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
@@ -84,7 +83,6 @@ class MerchantManagementServiceTest {
             UpdateMerchantRequest(
                 merchantName = "New Name GmbH",
                 merchantStatus = MerchantOperationalStatus.INACTIVE,
-                activePaymentChannels = setOf(MerchantPaymentChannel.STRIPE, MerchantPaymentChannel.TRUELAYER),
                 status = MerchantOnboardingStatus.ACTIVE
             )
         )
@@ -92,7 +90,6 @@ class MerchantManagementServiceTest {
         assertEquals("New Name GmbH", response.legalBusinessName)
         assertEquals("New Name GmbH", response.merchantName)
         assertEquals(MerchantOperationalStatus.INACTIVE, response.merchantStatus)
-        assertEquals(setOf(MerchantPaymentChannel.STRIPE, MerchantPaymentChannel.TRUELAYER), response.activePaymentChannels)
         assertEquals(MerchantOnboardingStatus.ACTIVE, response.status)
     }
 
@@ -156,7 +153,6 @@ class MerchantManagementServiceTest {
                 contactFullName = "Contact",
                 contactEmail = "evt@example.com",
                 contactPhoneNumber = "+490000",
-                activePaymentChannels = emptySet()
             )
         )
 
@@ -195,7 +191,6 @@ class MerchantManagementServiceTest {
                 contactFullName = "Contact",
                 contactEmail = "same@example.com",
                 contactPhoneNumber = "+490000",
-                activePaymentChannels = emptySet()
             )
         )
 

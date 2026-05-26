@@ -1,6 +1,5 @@
 package com.elegant.software.blitzpay.merchant.api
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
 import java.time.Instant
 import java.util.UUID
 
@@ -15,7 +14,6 @@ data class CreateBranchRequest(
     val website: String? = null,
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
-    val activePaymentChannels: Set<MerchantPaymentChannel> = emptySet(),
     val latitude: Double? = null,
     val longitude: Double? = null,
     val geofenceRadiusMeters: Int? = null,
@@ -34,7 +32,6 @@ data class UpdateBranchRequest(
     val website: String? = null,
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
-    val activePaymentChannels: Set<MerchantPaymentChannel> = emptySet(),
     val latitude: Double? = null,
     val longitude: Double? = null,
     val geofenceRadiusMeters: Int? = null,
@@ -56,7 +53,6 @@ data class BranchResponse(
     val website: String? = null,
     val contactEmail: String?,
     val contactPhoneNumber: String?,
-    val activePaymentChannels: Set<MerchantPaymentChannel>,
     val latitude: Double?,
     val longitude: Double?,
     val geofenceRadiusMeters: Int?,
@@ -82,7 +78,6 @@ data class BulkBranchInput(
     val contactFullName: String? = null,
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
-    val activePaymentChannels: List<String> = emptyList(),
     val latitude: Double? = null,
     val longitude: Double? = null,
     val geofenceRadiusMeters: Int? = null,

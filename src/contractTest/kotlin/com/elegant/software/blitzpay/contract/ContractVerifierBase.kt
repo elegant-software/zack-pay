@@ -26,7 +26,7 @@ import com.elegant.software.blitzpay.payments.push.persistence.PaymentStatusRepo
 import com.elegant.software.blitzpay.payments.push.persistence.ProcessedWebhookEventRepository
 import com.elegant.software.blitzpay.payments.push.persistence.PushDeliveryAttemptRepository
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantStripeConnectRepository
+import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusUpdateGateway
 import com.elegant.software.blitzpay.storage.StorageService
@@ -153,7 +153,7 @@ abstract class ContractVerifierBase {
     protected lateinit var paymentAttemptRepository: PaymentAttemptRepository
 
     @MockitoBean
-    protected lateinit var merchantStripeConnectRepository: MerchantStripeConnectRepository
+    protected lateinit var merchantProviderAccountRepository: MerchantProviderAccountRepository
 
     @MockitoBean
     protected lateinit var stripeConnectGateway: StripeConnectGateway
@@ -173,6 +173,8 @@ abstract class ContractVerifierBase {
             )
         )
         whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(any())).thenReturn(emptyList())
+        whenever(merchantProviderAccountRepository.findAllByMerchantApplicationId(any())).thenReturn(emptyList())
+        whenever(merchantProviderAccountRepository.existsByMerchantApplicationIdAndPspCodeAndEnabledTrue(any(), any())).thenReturn(false)
         doNothing().whenever(paymentStatusInitializationGateway).initialize(any(), any(), any(), any(), any())
         doNothing().whenever(paymentStatusUpdateGateway).settle(any(), any(), any())
         doNothing().whenever(paymentStatusUpdateGateway).fail(any(), any(), any())
@@ -202,7 +204,6 @@ abstract class ContractVerifierBase {
                 contactFullName = "John Doe",
                 contactEmail = "john@testmerchant.com",
                 contactPhoneNumber = "+441234567890",
-                activePaymentChannels = emptySet(),
                 status = MerchantOnboardingStatus.ACTIVE,
                 submittedAt = null,
                 lastUpdatedAt = java.time.Instant.EPOCH,

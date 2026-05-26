@@ -2,7 +2,6 @@ package com.elegant.software.blitzpay.merchant.api
 
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
 import com.elegant.software.blitzpay.merchant.domain.PersonRole
 import com.elegant.software.blitzpay.merchant.domain.SupportingMaterialType
 import java.time.Instant
@@ -58,7 +57,6 @@ data class UpdateMerchantRequest(
     val contactFullName: String? = null,
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
-    val activePaymentChannels: Set<MerchantPaymentChannel>? = null,
     val status: MerchantOnboardingStatus? = null,
     val merchantMobility: String? = null,
 )
@@ -126,7 +124,6 @@ data class MerchantDetailsResponse(
     val contactFullName: String,
     val contactEmail: String,
     val contactPhoneNumber: String,
-    val activePaymentChannels: Set<MerchantPaymentChannel>,
     val status: MerchantOnboardingStatus,
     val submittedAt: Instant?,
     val lastUpdatedAt: Instant,

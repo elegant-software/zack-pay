@@ -89,7 +89,6 @@ class MerchantOnboardingController(
                     address = request.address,
                     location = request.location,
                     offerings = request.offerings,
-                    activePaymentChannels = emptySet(),
                 )
             )
         } else {
@@ -108,7 +107,6 @@ class MerchantOnboardingController(
                 contactFullName = application.primaryContact.fullName,
                 contactEmail = application.publicEmail ?: application.primaryContact.email,
                 contactPhoneNumber = application.publicPhoneNumber ?: application.primaryContact.phoneNumber,
-                activePaymentChannels = application.activePaymentChannels.toSet(),
                 status = application.status,
                 submittedAt = application.submittedAt,
                 lastUpdatedAt = application.lastUpdatedAt,

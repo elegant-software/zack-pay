@@ -85,3 +85,5 @@ databaseChangeLog:
       file: db/changelog/20260522-003-merchant-stripe-connect.sql
   - include:
       file: db/changelog/20260525-001-stripe-connect-pay-by-bank.sql
+  - include:
+      file: db/changelog/20260526-001-psp-registry-and-provider-accounts.sql

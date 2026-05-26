@@ -6,7 +6,6 @@ import com.elegant.software.blitzpay.merchant.api.BulkBranchUpsertResult
 import com.elegant.software.blitzpay.merchant.api.BulkFailedItem
 import com.elegant.software.blitzpay.merchant.api.BulkSkippedItem
 import com.elegant.software.blitzpay.merchant.application.MerchantBranchService
-import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
 import org.springframework.ai.mcp.annotation.McpTool
 import org.springframework.stereotype.Component
 import java.util.LinkedHashSet
@@ -70,7 +69,7 @@ class BranchMcpTools(
         name = "branches_bulk_upsert",
         description = "PREFERRED tool when working with 2 or more branches — use this instead of calling branch_id_by_name_or_create in a loop. " +
             "Upserts branches by name: creates when not found, updates all provided attributes when found. " +
-            "Supported attributes: address, contact details, payment channels, geofence/location. " +
+            "Supported attributes: address, contact details, geofence/location. " +
             "For MOBILE merchants the address fields are the depot or registered business address, not the operating location. " +
             "Returns created, updated, skipped (within-batch duplicates), and failed items with their IDs. " +
             "Max 200 branches per call."
@@ -97,14 +96,6 @@ class BranchMcpTools(
                 "latitude and longitude must both be provided or both be omitted for branch: $normalizedName"
             }
 
-            val parsedChannels = if (input.activePaymentChannels.isEmpty()) null
-            else runCatching {
-                input.activePaymentChannels.map { MerchantPaymentChannel.valueOf(it.uppercase()) }.toSet()
-            }.getOrElse { ex ->
-                failed.add(BulkFailedItem(name = normalizedName, reason = "Invalid payment channel: ${ex.message}"))
-                continue
-            }
-
             val existingBranch = merchantBranchService.findByNameIncludingInactive(mId, normalizedName)
             runCatching {
                 merchantBranchService.upsertByName(
@@ -118,7 +109,6 @@ class BranchMcpTools(
                     contactFullName = input.contactFullName,
                     contactEmail = input.contactEmail,
                     contactPhoneNumber = input.contactPhoneNumber,
-                    activePaymentChannels = parsedChannels,
                     latitude = input.latitude,
                     longitude = input.longitude,
                     geofenceRadiusMeters = input.geofenceRadiusMeters,

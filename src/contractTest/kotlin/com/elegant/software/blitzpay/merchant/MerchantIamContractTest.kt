@@ -103,8 +103,7 @@ class MerchantIamContractTest : ContractVerifierBase() {
                   "country": "DE",
                   "latitude": 52.52,
                   "longitude": 13.405,
-                  "geofenceRadiusMeters": 150,
-                  "activePaymentChannels": []
+                  "geofenceRadiusMeters": 150
                 }
                 """.trimIndent()
             )

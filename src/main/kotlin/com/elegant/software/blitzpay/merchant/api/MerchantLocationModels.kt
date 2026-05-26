@@ -1,7 +1,6 @@
 package com.elegant.software.blitzpay.merchant.api
 
 import java.util.UUID
-import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
 
 data class SetMerchantLocationRequest(
     val latitude: Double,
@@ -61,5 +60,4 @@ data class NearbyBranchResponse(
     val contactFullName: String? = null,
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
-    val activePaymentChannels: Set<MerchantPaymentChannel> = emptySet(),
 )

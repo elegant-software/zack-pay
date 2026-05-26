@@ -10,6 +10,7 @@ import com.elegant.software.blitzpay.merchant.domain.ProximityEvent
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
+import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
 import com.elegant.software.blitzpay.merchant.repository.ProximityEventRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import org.slf4j.LoggerFactory
@@ -27,6 +28,7 @@ class ProximityService(
     private val merchantApplicationRepository: MerchantApplicationRepository,
     private val merchantBranchRepository: MerchantBranchRepository,
     private val merchantOfferingAssignmentRepository: MerchantOfferingAssignmentRepository,
+    private val providerAccountRepository: MerchantProviderAccountRepository,
     private val storageService: StorageService,
     private val geofenceProperties: GeofenceProperties,
 ) {
@@ -105,7 +107,6 @@ class ProximityService(
                     contactFullName = branch.contactFullName,
                     contactEmail = branch.contactEmail,
                     contactPhoneNumber = branch.contactPhoneNumber,
-                    activePaymentChannels = branch.activePaymentChannels.toSet(),
                 )
             }
             .sortedWith(compareBy(nullsLast()) { it.distanceMeters })
@@ -120,7 +121,12 @@ class ProximityService(
             .toSet()
         val deferredPaymentAvailable = "DEFERRED_PAYMENT" in enabledOfferingCodes
 
-        val action = if (merchant.activePaymentChannels.isNotEmpty()) "notify" else "none"
+        val activePspCodes = providerAccountRepository
+            .findAllByMerchantApplicationId(merchant.id)
+            .filter { it.enabled }
+            .map { it.pspCode }
+            .toSet()
+        val action = if (activePspCodes.isNotEmpty()) "notify" else "none"
 
         log.info("Proximity event recorded: regionId={} event={} merchant={}", regionId, eventType, merchant.id)
 
@@ -131,7 +137,7 @@ class ProximityService(
                 merchantId = merchant.id,
                 name = merchant.businessProfile.legalBusinessName,
                 logoUrl = logoUrl,
-                activePaymentChannels = merchant.activePaymentChannels.toSet(),
+                activePspCodes = activePspCodes,
                 deferredPaymentAvailable = deferredPaymentAvailable,
                 branches = branches,
             ),

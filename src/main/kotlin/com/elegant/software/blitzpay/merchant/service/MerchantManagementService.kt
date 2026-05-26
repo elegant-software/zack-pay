@@ -75,7 +75,6 @@ class MerchantManagementService(
                 email = resolvedContactInfo.email.orEmpty(),
                 phoneNumber = resolvedContactInfo.phoneNumber.orEmpty()
             ),
-            activePaymentChannels = request.activePaymentChannels ?: application.activePaymentChannels,
             nextStatus = request.status
         )
         application.merchantStatus = request.merchantStatus ?: application.merchantStatus
@@ -130,7 +129,6 @@ class MerchantManagementService(
         contactFullName = primaryContact.fullName,
         contactEmail = primaryContact.email,
         contactPhoneNumber = primaryContact.phoneNumber,
-        activePaymentChannels = activePaymentChannels.toSet(),
         status = status,
         submittedAt = submittedAt,
         lastUpdatedAt = lastUpdatedAt,

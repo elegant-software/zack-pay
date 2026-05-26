@@ -7,7 +7,6 @@ import com.elegant.software.blitzpay.merchant.api.UpdateBranchRequest
 import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
 import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
 import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
-import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
 import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
@@ -65,7 +64,6 @@ class MerchantBranchServiceTest {
                 city = "Bremen",
                 postalCode = "28195",
                 country = "DE",
-                activePaymentChannels = setOf(MerchantPaymentChannel.TRUELAYER, MerchantPaymentChannel.STRIPE),
                 latitude = 53.0758,
                 longitude = 8.8072,
                 geofenceRadiusMeters = 250,
@@ -80,14 +78,6 @@ class MerchantBranchServiceTest {
         assertEquals(250, response.geofenceRadiusMeters)
         assertEquals("ChIJ-test", response.googlePlaceId)
         assertEquals("PENDING", response.placeEnrichmentStatus)
-        assertEquals(setOf(MerchantPaymentChannel.TRUELAYER, MerchantPaymentChannel.STRIPE), response.activePaymentChannels)
-
-        val branchCaptor = argumentCaptor<MerchantBranch>()
-        verify(branchRepository).save(branchCaptor.capture())
-        assertEquals(
-            setOf(MerchantPaymentChannel.TRUELAYER, MerchantPaymentChannel.STRIPE),
-            branchCaptor.firstValue.activePaymentChannels.toSet()
-        )
     }
 
     @Test
@@ -244,7 +234,6 @@ class MerchantBranchServiceTest {
                 website = "https://branch.example.com",
                 contactEmail = "branch@example.com",
                 contactPhoneNumber = "+4930123456",
-                activePaymentChannels = setOf(MerchantPaymentChannel.PAYPAL, MerchantPaymentChannel.TRUELAYER),
                 latitude = 53.0758,
                 longitude = 8.8072,
                 geofenceRadiusMeters = 250
@@ -257,14 +246,6 @@ class MerchantBranchServiceTest {
         assertEquals("https://branch.example.com", response.website)
         assertEquals("branch@example.com", response.contactEmail)
         assertEquals("+4930123456", response.contactPhoneNumber)
-        assertEquals(setOf(MerchantPaymentChannel.PAYPAL, MerchantPaymentChannel.TRUELAYER), response.activePaymentChannels)
-
-        val branchCaptor = argumentCaptor<MerchantBranch>()
-        verify(branchRepository).saveAndFlush(branchCaptor.capture())
-        assertEquals(
-            setOf(MerchantPaymentChannel.PAYPAL, MerchantPaymentChannel.TRUELAYER),
-            branchCaptor.firstValue.activePaymentChannels.toSet()
-        )
 
         val eventCaptor = argumentCaptor<BranchNameUpdated>()
         verify(eventPublisher).publishEvent(eventCaptor.capture())
@@ -300,7 +281,6 @@ class MerchantBranchServiceTest {
             merchantId, branch.id,
             UpdateBranchRequest(name = "Same Name", active = true, contactFullName = "New Contact",
                 contactEmail = "new@example.com", contactPhoneNumber = "+49999",
-                activePaymentChannels = setOf(MerchantPaymentChannel.STRIPE),
                 addressLine1 = "Same Street 1",
                 city = "Hamburg",
                 postalCode = "20095",

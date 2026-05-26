@@ -7,7 +7,7 @@ import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
 import com.elegant.software.blitzpay.merchant.domain.MerchantLocation
 import com.elegant.software.blitzpay.merchant.domain.MerchantOfferingAssignment
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
+import com.elegant.software.blitzpay.merchant.domain.MerchantProviderAccount
 import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
 import com.elegant.software.blitzpay.merchant.domain.ProximityEvent
 import org.junit.jupiter.api.BeforeEach
@@ -38,7 +38,6 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
         status = MerchantOnboardingStatus.ACTIVE,
     ).also {
         it.updateLocation(MerchantLocation(48.8566, 2.3522, 150))
-        it.activePaymentChannels.add(MerchantPaymentChannel.STRIPE)
     }
 
     private val activeBranch = MerchantBranch(
@@ -47,7 +46,6 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
         name = "Geo Branch",
         active = true,
         location = MerchantLocation(48.8600, 2.3400, 100),
-        activePaymentChannels = mutableSetOf(MerchantPaymentChannel.STRIPE),
     )
 
     @BeforeEach
@@ -68,6 +66,8 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
             any(), any(), any(), any()
         )).thenReturn(false)
         whenever(proximityEventRepository.save(any<ProximityEvent>())).thenAnswer { it.arguments[0] }
+        whenever(merchantProviderAccountRepository.findAllByMerchantApplicationId(merchantId))
+            .thenReturn(listOf(MerchantProviderAccount(merchantApplicationId = merchantId, pspCode = "STRIPE", enabled = true)))
     }
 
     // ── GET /v1/geofence/regions ─────────────────────────────────────────────
@@ -137,7 +137,7 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
             .jsonPath("$.action").isEqualTo("notify")
             .jsonPath("$.merchant.merchantId").isEqualTo(merchantId.toString())
             .jsonPath("$.merchant.name").exists()
-            .jsonPath("$.merchant.activePaymentChannels").isArray
+            .jsonPath("$.merchant.activePspCodes").isArray
             .jsonPath("$.merchant.branches").isArray
     }
 
@@ -277,7 +277,6 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
             .expectBody()
             .jsonPath("$.merchants[0].activeBranches").isArray
             .jsonPath("$.merchants[0].activeBranches[0].branchId").isEqualTo(branchId.toString())
-            .jsonPath("$.merchants[0].activeBranches[0].activePaymentChannels").isArray
     }
 
     @Test

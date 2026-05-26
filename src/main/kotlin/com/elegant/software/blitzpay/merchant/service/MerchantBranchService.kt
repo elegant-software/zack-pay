@@ -9,7 +9,6 @@ import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
 import com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus
 import com.elegant.software.blitzpay.merchant.domain.MerchantLocation
 import com.elegant.software.blitzpay.merchant.domain.PostalAddress
-import com.elegant.software.blitzpay.merchant.domain.MerchantPaymentChannel
 import com.elegant.software.blitzpay.merchant.config.GeofenceProperties
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
@@ -61,7 +60,6 @@ class MerchantBranchService(
             websiteOverride = request.website,
             contactEmail = request.contactEmail,
             contactPhoneNumber = request.contactPhoneNumber,
-            activePaymentChannels = request.activePaymentChannels.toMutableSet(),
             location = request.toLocation(),
         )
         val saved = merchantBranchRepository.save(branch)
@@ -109,7 +107,6 @@ class MerchantBranchService(
         contactFullName: String? = null,
         contactEmail: String? = null,
         contactPhoneNumber: String? = null,
-        activePaymentChannels: Set<MerchantPaymentChannel>? = null,
         latitude: Double? = null,
         longitude: Double? = null,
         geofenceRadiusMeters: Int? = null,
@@ -141,7 +138,6 @@ class MerchantBranchService(
                     contactFullName = contactFullName,
                     contactEmail = contactEmail,
                     contactPhoneNumber = contactPhoneNumber,
-                    activePaymentChannels = activePaymentChannels ?: emptySet(),
                     latitude = latitude,
                     longitude = longitude,
                     geofenceRadiusMeters = geofenceRadiusMeters,
@@ -161,7 +157,6 @@ class MerchantBranchService(
                 websiteOverride = null,
                 contactEmail = contactEmail,
                 contactPhoneNumber = contactPhoneNumber,
-                activePaymentChannels = activePaymentChannels,
                 latitude = latitude,
                 longitude = longitude,
                 geofenceRadiusMeters = geofenceRadiusMeters,
@@ -180,7 +175,6 @@ class MerchantBranchService(
             contactFullName = contactFullName,
             contactEmail = contactEmail,
             contactPhoneNumber = contactPhoneNumber,
-            activePaymentChannels = activePaymentChannels,
             latitude = latitude,
             longitude = longitude,
             geofenceRadiusMeters = geofenceRadiusMeters,
@@ -217,7 +211,6 @@ class MerchantBranchService(
             websiteOverride = request.website,
             contactEmail = request.contactEmail,
             contactPhoneNumber = request.contactPhoneNumber,
-            activePaymentChannels = request.activePaymentChannels,
             location = request.toLocation(),
         )
         validateActiveBranch(branch)
@@ -266,7 +259,6 @@ class MerchantBranchService(
         websiteOverride: String?,
         contactEmail: String?,
         contactPhoneNumber: String?,
-        activePaymentChannels: Set<MerchantPaymentChannel>?,
         latitude: Double?,
         longitude: Double?,
         geofenceRadiusMeters: Int?,
@@ -274,7 +266,7 @@ class MerchantBranchService(
     ): Boolean {
         return listOf(
             addressLine1, addressLine2, city, postalCode, country,
-            contactFullName, contactEmail, contactPhoneNumber, activePaymentChannels,
+            contactFullName, contactEmail, contactPhoneNumber,
             latitude, longitude, geofenceRadiusMeters, googlePlaceId
         ).any { it != null }
     }
@@ -294,7 +286,6 @@ class MerchantBranchService(
         website = websiteOverride,
         contactEmail = contactEmail,
         contactPhoneNumber = contactPhoneNumber,
-        activePaymentChannels = activePaymentChannels.toSet(),
         latitude = location?.latitude,
         longitude = location?.longitude,
         geofenceRadiusMeters = location?.geofenceRadiusMeters,
@@ -341,7 +332,6 @@ class MerchantBranchService(
         contactFullName: String?,
         contactEmail: String?,
         contactPhoneNumber: String?,
-        activePaymentChannels: Set<MerchantPaymentChannel>?,
         latitude: Double?,
         longitude: Double?,
         geofenceRadiusMeters: Int?,
@@ -358,7 +348,6 @@ class MerchantBranchService(
         contactFullName?.let { this.contactFullName = it }
         contactEmail?.let { this.contactEmail = it }
         contactPhoneNumber?.let { this.contactPhoneNumber = it }
-        activePaymentChannels?.let { this.activePaymentChannels = it.toMutableSet() }
 
         val hasCoordinateUpdate = latitude != null && longitude != null
         if (!hasCoordinateUpdate && location == null && (geofenceRadiusMeters != null || googlePlaceId != null)) {

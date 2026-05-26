@@ -185,7 +185,6 @@ class MerchantContractTest : ContractVerifierBase() {
                     "geofenceRadiusMeters": 150
                   },
                   "offerings": ["PRE_ORDER", "DEFERRED_PAYMENT"],
-                  "activePaymentChannels": ["STRIPE", "TRUELAYER"],
                   "status": "ACTIVE"
                 }
                 """.trimIndent()
@@ -197,7 +196,6 @@ class MerchantContractTest : ContractVerifierBase() {
             .jsonPath("$.merchantStatus").isEqualTo("INACTIVE")
             .jsonPath("$.contactInfo.email").isEqualTo("after@test.de")
             .jsonPath("$.address.addressLine1").isEqualTo("New Strasse 9")
-            .jsonPath("$.activePaymentChannels.length()").isEqualTo(2)
             .jsonPath("$.status").isEqualTo(MerchantOnboardingStatus.ACTIVE.name)
     }
 
@@ -316,7 +314,6 @@ class MerchantContractTest : ContractVerifierBase() {
                   "website": "https://branch.example.com",
                   "contactEmail": "branch@test.de",
                   "contactPhoneNumber": "+49305555555",
-                  "activePaymentChannels": ["PAYPAL", "TRUELAYER"],
                   "latitude": 52.52,
                   "longitude": 13.405,
                   "geofenceRadiusMeters": 200
@@ -330,7 +327,6 @@ class MerchantContractTest : ContractVerifierBase() {
             .jsonPath("$.contactFullName").isEqualTo("Store Manager")
             .jsonPath("$.website").isEqualTo("https://branch.example.com")
             .jsonPath("$.contactEmail").isEqualTo("branch@test.de")
-            .jsonPath("$.activePaymentChannels.length()").isEqualTo(2)
     }
 
     @Test

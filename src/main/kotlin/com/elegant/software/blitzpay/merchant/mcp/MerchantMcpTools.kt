@@ -154,7 +154,6 @@ class MerchantMcpTools(
                     contactFullName = contactFullName ?: current.contactFullName,
                     contactEmail = contactEmail ?: current.contactEmail,
                     contactPhoneNumber = contactPhoneNumber ?: current.contactPhoneNumber,
-                    activePaymentChannels = current.activePaymentChannels,
                     merchantMobility = mobility,
                 )
             )

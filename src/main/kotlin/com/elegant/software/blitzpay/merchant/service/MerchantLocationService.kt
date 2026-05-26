@@ -124,7 +124,6 @@ class MerchantLocationService(
                                 contactFullName = branch.contactFullName,
                                 contactEmail = branch.contactEmail,
                                 contactPhoneNumber = branch.contactPhoneNumber,
-                                activePaymentChannels = branch.activePaymentChannels.toSet(),
                             )
                         }
                 )

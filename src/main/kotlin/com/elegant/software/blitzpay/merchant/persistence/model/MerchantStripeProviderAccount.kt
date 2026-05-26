@@ -8,13 +8,13 @@ import java.time.Instant
 import java.util.UUID
 
 @Entity
-@Table(name = "merchant_stripe_connect", schema = "blitzpay")
-class MerchantStripeConnect(
+@Table(name = "merchant_stripe_provider_accounts", schema = "blitzpay")
+class MerchantStripeProviderAccount(
     @Id
-    @Column(name = "merchant_id", updatable = false)
-    val merchantId: UUID,
+    @Column(name = "merchant_provider_account_id")
+    val merchantProviderAccountId: UUID,
 
-    @Column(name = "connected_account_id", nullable = false, updatable = false, length = 64)
+    @Column(name = "connected_account_id", nullable = false, unique = true)
     val connectedAccountId: String,
 
     @Column(name = "charges_enabled", nullable = false)
