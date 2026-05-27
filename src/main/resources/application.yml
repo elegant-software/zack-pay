@@ -79,21 +79,28 @@ truelayer:
     environment: sandbox
     maxSkew: PT60M
 
-stripe:
-  secret-key: ${STRIPE_SECRET_KEY:}
-  publishable-key: ${EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY:}
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-  connect-webhook-secret: ${STRIPE_CONNECT_WEBHOOK_SECRET:}
-  connect:
-    return-url: ${STRIPE_CONNECT_RETURN_URL:}
-    api-base-url: ${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}
-    app-deep-link: ${STRIPE_CONNECT_APP_DEEP_LINK:}
-
-braintree:
-  merchant-id: ${BRAINTREE_MERCHANT_ID:}
-  public-key: ${BRAINTREE_PUBLIC_KEY:}
-  private-key: ${BRAINTREE_PRIVATE_KEY:}
-  environment: ${BRAINTREE_ENVIRONMENT:sandbox}
+psp-provider:
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY:}
+    publishable-key: ${EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY:}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    connect-webhook-secret: ${STRIPE_CONNECT_WEBHOOK_SECRET:}
+    connect:
+      return-url: ${STRIPE_CONNECT_RETURN_URL:}
+      api-base-url: ${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}
+      app-deep-link: ${STRIPE_CONNECT_APP_DEEP_LINK:}
+  adyen:
+    api-key: ${ADYEN_API_KEY:}
+    environment: ${ADYEN_ENVIRONMENT:TEST}
+    live-url-prefix: ${ADYEN_LIVE_URL_PREFIX:}
+    hmac-key: ${ADYEN_HMAC_KEY:}
+    platform-balance-account-id: ${ADYEN_PLATFORM_BALANCE_ACCOUNT_ID:}
+    application-fee-amount: ${ADYEN_APPLICATION_FEE_AMOUNT:0}
+  braintree:
+    merchant-id: ${BRAINTREE_MERCHANT_ID:}
+    public-key: ${BRAINTREE_PUBLIC_KEY:}
+    private-key: ${BRAINTREE_PRIVATE_KEY:}
+    environment: ${BRAINTREE_ENVIRONMENT:sandbox}
 
 blitzpay:
   openapi:
@@ -183,3 +190,4 @@ keycloak:
     realm: ${KEYCLOAK_IAM_REALM:blitzpay}
     admin-client-id: ${KEYCLOAK_IAM_ADMIN_CLIENT_ID:}
     admin-client-secret: ${KEYCLOAK_IAM_ADMIN_CLIENT_SECRET:}
+

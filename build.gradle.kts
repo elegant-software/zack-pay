@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.stripe.java)
     implementation(libs.braintree.java)
     implementation(libs.aws.s3)
+    implementation(libs.adyen.java)
 
     // ----------------------------
     // Modulith: `payments` (TrueLayer + QRPay)

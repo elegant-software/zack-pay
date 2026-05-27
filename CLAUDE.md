@@ -38,9 +38,15 @@ KEYCLOAK_IAM_SERVER_URL      # Keycloak server base URL (merchant.iam module)
 KEYCLOAK_IAM_REALM           # Keycloak realm for merchant/branch groups
 KEYCLOAK_IAM_ADMIN_CLIENT_ID # service account client ID with realm-management roles
 KEYCLOAK_IAM_ADMIN_CLIENT_SECRET # service account client secret
+ADYEN_API_KEY                # Adyen Platform API key (payments.adyen module)
+ADYEN_ENVIRONMENT            # Adyen environment: TEST or LIVE (default: TEST)
+ADYEN_LIVE_URL_PREFIX        # Required for LIVE environment: Adyen live URL prefix
+ADYEN_HMAC_KEY               # Adyen webhook HMAC key for signature verification
+ADYEN_PLATFORM_BALANCE_ACCOUNT_ID # BlitzPay's own Adyen Balance Account ID
+ADYEN_APPLICATION_FEE_AMOUNT # Platform fee in minor units (default: 0)
 ```
 
-Contract tests do **not** require these — TrueLayer and Keycloak beans are mocked under the `contract-test` Spring profile.
+Contract tests do **not** require these — TrueLayer, Keycloak, and Adyen beans are mocked under the `contract-test` Spring profile.
 
 ## Architecture
 

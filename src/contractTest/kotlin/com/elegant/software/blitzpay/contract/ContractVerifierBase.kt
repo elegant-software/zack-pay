@@ -25,7 +25,11 @@ import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistratio
 import com.elegant.software.blitzpay.payments.push.persistence.PaymentStatusRepository
 import com.elegant.software.blitzpay.payments.push.persistence.ProcessedWebhookEventRepository
 import com.elegant.software.blitzpay.payments.push.persistence.PushDeliveryAttemptRepository
+import com.elegant.software.blitzpay.merchant.api.AdyenConnectGateway
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantAdyenProviderAccountRepository
+import com.elegant.software.blitzpay.payments.adyen.security.AdyenHmacVerifier
+import com.elegant.software.blitzpay.payments.adyen.service.AdyenConnectService
 import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantStripeProviderAccountRepository
 import com.elegant.software.blitzpay.merchant.repository.PaymentServiceProviderRepository
@@ -165,6 +169,18 @@ abstract class ContractVerifierBase {
 
     @MockitoBean
     protected lateinit var stripeConnectGateway: StripeConnectGateway
+
+    @MockitoBean
+    protected lateinit var adyenConnectGateway: AdyenConnectGateway
+
+    @MockitoBean
+    protected lateinit var adyenConnectService: AdyenConnectService
+
+    @MockitoBean
+    protected lateinit var adyenHmacVerifier: AdyenHmacVerifier
+
+    @MockitoBean
+    protected lateinit var merchantAdyenProviderAccountRepository: MerchantAdyenProviderAccountRepository
 
     @MockitoBean
     protected lateinit var entityManager: EntityManager

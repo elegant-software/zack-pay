@@ -19,11 +19,11 @@ observability:
     service-namespace: blitzpay
     max-events-per-request: 100
 
-stripe:
-  secret-key: sk_test_contract_test_dummy
-  publishable-key: pk_test_contract_test_dummy
-
-# braintree.merchant-id intentionally absent → BraintreeConfig bean skipped (@ConditionalOnProperty)
+psp-provider:
+  stripe:
+    secret-key: sk_test_contract_test_dummy
+    publishable-key: pk_test_contract_test_dummy
+  # adyen and braintree intentionally absent → beans skipped (@ConditionalOnProperty / @Profile)
 
 truelayer:
   apiBase: https://api.truelayer-sandbox.test

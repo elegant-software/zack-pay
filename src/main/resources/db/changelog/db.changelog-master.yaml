@@ -87,3 +87,5 @@ databaseChangeLog:
       file: db/changelog/20260525-001-stripe-connect-pay-by-bank.sql
   - include:
       file: db/changelog/20260526-001-psp-registry-and-provider-accounts.sql
+  - include:
+      file: db/changelog/20260527-001-merchant-adyen-provider-accounts.sql
