@@ -14,88 +14,22 @@ on:
         type: string
         default: main
 
-permissions: {}
+permissions:
+  contents: read
 
 concurrency:
   group: manual-release-${{ inputs.base_branch }}
   cancel-in-progress: false
 
 jobs:
-  plan:
-    runs-on: ubuntu-latest
+  manual-release:
     permissions:
       contents: read
-    outputs:
-      release_required: ${{ steps.evaluate.outputs.release_required }}
-    steps:
-      - name: Checkout repository history
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Test release automation modules
-        run: node --test .github/scripts/release/*.test.*
-
-      - name: Build release plan from commits after boundary
-        id: evaluate
-        env:
-          BASE_BRANCH: ${{ inputs.base_branch }}
-          RELEASE_BOUNDARY: ${{ inputs.release_boundary }}
-          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
-        run: node .github/scripts/release/evaluate-release.mjs
-
-      - name: Add plan to workflow summary
-        env:
-          RELEASE_REQUIRED: ${{ steps.evaluate.outputs.release_required }}
-          VERSION_BUMP: ${{ steps.evaluate.outputs.version_bump }}
-          NEXT_VERSION: ${{ steps.evaluate.outputs.next_version }}
-          CHANGED_COMMIT_COUNT: ${{ steps.evaluate.outputs.changed_commit_count }}
-          DECISION_REASON: ${{ steps.evaluate.outputs.decision_reason }}
-        run: |
-          {
-          echo "## Manual release plan"
-          echo
-          echo '```text'
-          echo "release_required : $RELEASE_REQUIRED"
-          echo "version_bump     : $VERSION_BUMP"
-          echo "next_version     : $NEXT_VERSION"
-          echo "changed commits  : $CHANGED_COMMIT_COUNT"
-          echo "decision_reason  : $DECISION_REASON"
-          echo '```'
-          echo
-          cat release-output/release-notes.md
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload release plan
-        if: steps.evaluate.outputs.release_required == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: manual-release-plan
-          path: release-output/
-          if-no-files-found: error
-          retention-days: 7
-
-  publish:
-    needs: plan
-    if: needs.plan.outputs.release_required == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout release publisher
-        uses: actions/checkout@v6
-
-      - name: Download release plan
-        uses: actions/download-artifact@v4
-        with:
-          name: manual-release-plan
-          path: release-output/
-
-      - name: Create release tag and GitHub Release
-        uses: actions/github-script@v9
-        with:
-          github-token: ${{ secrets.RELEASE_PUBLISH_TOKEN }}
-          script: |
-            const publishRelease = require("./.github/scripts/release/publish-release.cjs");
-            await publishRelease({ github, context, core });
+    uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/manual-release.yml@main
+    with:
+      release_boundary: ${{ inputs.release_boundary }}
+      base_branch: ${{ inputs.base_branch }}
+      automation_ref: main
+    secrets:
+      RELEASE_PUBLISH_TOKEN: ${{ secrets.RELEASE_PUBLISH_TOKEN }}
+      AUTOMATION_READ_TOKEN: ${{ secrets.AUTOMATION_READ_TOKEN }}
