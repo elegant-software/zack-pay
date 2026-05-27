@@ -16,10 +16,10 @@ Both human contributors and AI agents. When in doubt about a convention, this fi
 
 - The project follows **Spring Modulith** module-per-business-capability layout.
 - Each direct sub-package of `com.elegant.software.blitzpay` is an application module.
-- Internal types live in `internal` sub-packages and must never be referenced from other modules.
+- Internal types must never be referenced from other modules.
 - Cross-module communication uses **domain events** (`ApplicationEventPublisher` / `@ApplicationModuleListener`), not direct bean injection.
-- Expose cross-module contracts through `@NamedInterface` on dedicated `api` sub-packages.
-- Module metadata uses `@PackageInfo`-annotated Kotlin types (not `package-info.java`).
+- Expose cross-module contracts through `@NamedInterface`.
+- Sub-package naming, layout, and per-module structure are fully defined in [`reference/module-packaging-convention.md`](reference/module-packaging-convention.md). That document is the single source of truth for packaging; do not duplicate or override it here.
 
 ## API Contracts
 

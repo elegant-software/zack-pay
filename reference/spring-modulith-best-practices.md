@@ -12,10 +12,10 @@ A module owns its API, internal implementation, persistence, and events.
 
 ```
 com.elegant.software.blitzpay
-├── invoice/                   ← invoice module root (public API)
+├── invoice/                   ← invoice module root
 │   ├── api/                   ← named interface (exposed to other modules)
-│   ├── config/
-│   └── internal/              ← never referenced by other modules
+│   ├── service/               ← use-case services (module-private)
+│   └── config/
 ├── payments/
 │   ├── truelayer/             ← truelayer module root
 │   │   ├── api/               ← named interface
@@ -26,8 +26,9 @@ com.elegant.software.blitzpay
 └── config/                    ← application-level config (not a module)
 ```
 
-**Rule:** Never import a type from another module's `internal` sub-package.
-Cross-module access must go through the module root package or a `@NamedInterface`.
+**Rule:** Never import a type from another module's non-`api` sub-package.
+Cross-module access must go through a `@NamedInterface`-annotated `api/` package.
+Sub-package naming conventions are defined in [`reference/module-packaging-convention.md`](module-packaging-convention.md).
 
 ---
 
@@ -35,26 +36,29 @@ Cross-module access must go through the module root package or a `@NamedInterfac
 
 Kotlin has no `package-info.java`. Declare module metadata with a dedicated annotated class.
 
-**Pattern:**
+**Pattern — module root (`@ApplicationModule`):**
+
+```kotlin
+// invoice/package-info.kt
+@ApplicationModule(displayName = "Invoice")
+@PackageInfo
+package com.elegant.software.blitzpay.invoice
+```
+
+**Pattern — `api/` sub-package (`@NamedInterface`):**
 
 ```kotlin
 // invoice/api/package-info.kt
-package com.elegant.software.blitzpay.invoice.api
-
-import org.springframework.modulith.NamedInterface
-import org.springframework.modulith.PackageInfo
-
-@PackageInfo
 @NamedInterface("InvoiceGateway")
-class ModuleMetadata
+@PackageInfo
+package com.elegant.software.blitzpay.invoice.api
 ```
 
 **Rules:**
-- One `ModuleMetadata` class per sub-package that needs metadata
-- Use `@NamedInterface` to expose a sub-package as a named contract
-  (other modules can then depend on `"invoice::InvoiceGateway"`)
-- Use `@ApplicationModule(allowedDependencies = […])` at the module root
-  when the dependency set is stable enough to enforce
+- `@ApplicationModule` goes at the module root only; `@NamedInterface` goes in `api/` only — never mix them.
+- Use `@ApplicationModule(allowedDependencies = […])` when the dependency set is stable enough to enforce.
+- Other modules reference a named interface as `"invoice::InvoiceGateway"`.
+- Full sub-package vocabulary and placement rules are in [`reference/module-packaging-convention.md`](module-packaging-convention.md).
 
 **Where this is used:**
 - `invoice/api/package-info.kt` → `@NamedInterface("InvoiceGateway")`
@@ -219,7 +223,7 @@ Other modules reference it as:
 
 Before adding a cross-module dependency, check:
 
-- [ ] Am I importing from an `internal` sub-package? → move to a named interface instead
+- [ ] Am I importing from another module's non-`api` sub-package? → move to a named interface instead
 - [ ] Am I injecting a bean from another module directly? → use an event instead
 - [ ] Does a module now depend on many beans from another? → reconsider the boundary
 - [ ] Is a new listener doing database work? → use `@ApplicationModuleListener`, not `@EventListener`

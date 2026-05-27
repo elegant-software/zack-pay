@@ -309,12 +309,36 @@ The Stripe-issued identifier (`acct_XXXX`) for a Merchant's Connected Account. S
 _Avoid_: Stripe user ID, stripe_id, integration ID
 
 **Connect Onboarding**:
-The Stripe-hosted process a Merchant completes to create and verify their Connected Account. Triggered when the Merchant enables Stripe as a payment channel in the merchant app. Considered complete only when Stripe confirms `charges_enabled: true` via webhook.
+The Stripe-hosted process a Merchant completes to create and verify their Connected Account. Triggered by the admin dashboard when Stripe is enabled for a Merchant. Considered complete only when Stripe confirms `charges_enabled: true` via webhook.
 _Avoid_: Stripe onboarding, account setup, payment onboarding
 
 **Connect Onboarding URL**:
 The one-time Stripe-generated URL returned to the merchant app, directing the Merchant to Stripe's hosted identity and banking verification form. Expires if unused; a dedicated refresh endpoint generates a replacement.
 _Avoid_: Stripe link, onboarding link, redirect URL
+
+**Account Holder**:
+The Adyen Balance Platform entity representing a Merchant's legal and financial identity on the BlitzPay platform. Created when a Merchant enables Adyen as a payment provider. Owns one or more Balance Accounts. The Adyen equivalent of a Connected Account.
+_Avoid_: Adyen account, sub-merchant, marketplace account
+
+**Account Holder ID**:
+The Adyen-assigned identifier (`legalEntityId`) for a Merchant's Account Holder. Stored at the Merchant level alongside the Balance Account ID. Together they are the Adyen equivalent of a single Connected Account ID.
+_Avoid_: Adyen legal entity, legalEntity, adyen_id
+
+**Balance Account ID**:
+The Adyen-assigned identifier (`balanceAccountId`) for the account where a Merchant's funds land after a split-routed payment. A child of the Account Holder. Must be stored alongside the Account Holder ID — neither is sufficient alone for payment routing.
+_Avoid_: Adyen wallet, sub-account ID, funds account
+
+**Adyen Onboarding**:
+The Adyen-hosted process a Merchant completes to verify their Account Holder. Triggered when the Merchant enables Adyen as a payment provider in the admin dashboard. Considered complete only when Adyen confirms the Receive Payments Capability is `allowed` via webhook. The Adyen equivalent of Connect Onboarding.
+_Avoid_: Adyen KYC, account setup, payment onboarding
+
+**Adyen Onboarding URL**:
+The one-time Adyen-generated URL returned to the admin dashboard, directing the Merchant to Adyen's hosted identity and banking verification form. Generated via `POST /legalEntities/{id}/onboardingLinks`. Expires if unused; a dedicated refresh endpoint generates a replacement. The Adyen equivalent of Connect Onboarding URL.
+_Avoid_: Adyen link, onboarding link, redirect URL
+
+**Receive Payments Capability**:
+The Adyen Balance Platform signal that a Merchant's Account Holder is verified and permitted to accept live payments. Confirmed via the `balanceAccount.updated` webhook when the `receivePayments` capability status becomes `allowed`. The Adyen equivalent of Stripe's `charges_enabled: true`.
+_Avoid_: Adyen verified, charges enabled, KYC complete
 
 ## Flagged ambiguities
 
@@ -368,3 +392,5 @@ _Avoid_: Stripe link, onboarding link, redirect URL
 - Estimated service duration could have been accepted for any merchant regardless of their offerings. Resolved: **Estimated Service Duration** may only be written when **Appointment Booking** is enabled; the write is rejected otherwise.
 - Disabling **Appointment Booking** could have triggered a cascade-clear of all stored durations. Resolved: existing durations are left in place and treated as inert; clearing on toggle is destructive and non-reversible.
 - Duration update could have had its own dedicated endpoint (`PATCH /product-categories/{id}/duration`). Resolved: duration is maintained through the standard category update endpoint (`PUT /product-categories/{id}`) alongside name; a dedicated endpoint was a smell that duplicated the create path's optionality.
+- Stripe Connect and Adyen for Platforms could have been enabled simultaneously per Merchant. Resolved: a Merchant operates on exactly one platform PSP at a time; the active PSP is selected in the admin dashboard. Enabling one while the other is inactive is the only supported state.
+- A single PSP-agnostic term (e.g. "Platform Sub-Account") could have covered both Stripe Connected Accounts and Adyen Account Holders. Resolved: PSP-specific terms are used side by side (**Connected Account** for Stripe, **Account Holder** for Adyen) because the two models differ structurally — Stripe uses one identifier (`acct_XXXX`) while Adyen uses two (**Account Holder ID** + **Balance Account ID**).

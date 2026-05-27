@@ -2,6 +2,7 @@
 
 **Date:** 2026-05-22
 **Status:** Accepted
+**Amended:** 2026-05-27 — onboarding trigger changed from merchant app to admin dashboard (see amendment note in Consequences)
 
 ## Context
 
@@ -35,7 +36,7 @@ BlitzPay is replacing its platform-level Stripe integration (one shared secret k
 **Express over Standard:**
 - Stripe handles KYC, identity verification, and banking details on BlitzPay's behalf. BlitzPay never touches the Merchant's sensitive financial data.
 - The Connect Onboarding URL flow (account shell + account link) requires only two Stripe API calls to initiate. Standard requires an OAuth redirect flow and code exchange.
-- Express accounts can be created and onboarding triggered server-side when the Merchant enables Stripe in the merchant app — no separate OAuth consent screen needed on our side.
+- Express accounts can be created and onboarding triggered server-side from the admin dashboard — no separate OAuth consent screen needed on our side.
 - Custom accounts are ruled out: the compliance and fraud surface is disproportionate for our current scale.
 
 **`charges_enabled: true` as the authoritative completion signal:**
@@ -47,7 +48,8 @@ BlitzPay is replacing its platform-level Stripe integration (one shared secret k
 - `StripePaymentService.createIntent()` must pass `Stripe-Account: acct_XXXX` on every PaymentIntent call and include a configurable `application_fee_amount`.
 - `CreateIntentResponse` gains a `connectedAccountId` field. The mobile Stripe SDK must pass this as the `stripeAccount` parameter when confirming the payment. Backend and mobile changes ship together.
 - A new `merchant_stripe_connect` table stores `connected_account_id`, `charges_enabled`, `details_submitted`, `created_at`, `updated_at` at the Merchant level.
-- Enabling Stripe as a payment channel in the merchant app triggers Connect Onboarding immediately — there is no "STRIPE enabled but not Connect-onboarded" state.
+- Enabling Stripe as a payment channel in the admin dashboard triggers Connect Onboarding immediately — there is no "STRIPE enabled but not Connect-onboarded" state.
+- **Amendment (2026-05-27):** Connect Onboarding is admin-initiated only. `StripeConnectController` is admin-facing, not merchant-facing. The merchant app does not trigger or surface the Connect Onboarding flow. This aligns Stripe with the Adyen onboarding model (ADR-0006) and applies to all platform PSP onboarding flows.
 - The existing `POST /webhooks/stripe` endpoint is extended to handle `account.updated` events in addition to `payment_intent.*` events.
 - A `GET /merchants/{merchantId}/stripe-connect/refresh` endpoint must exist to regenerate an expired Connect Onboarding URL.
 - Platform-level `StripeProperties.secretKey` and `publishableKey` become the platform account credentials used for all Connect API calls. A new `applicationFeeAmount` property (configurable, may be zero) is added.

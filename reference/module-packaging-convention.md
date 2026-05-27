@@ -134,18 +134,77 @@ Enums follow the same scope rules as DTOs and exceptions.
 
 ---
 
-## Module metadata
+## Module metadata declarations
 
-Spring Modulith requires `@ApplicationModule` and `@NamedInterface` to be declared on a package. Because Kotlin has no `package-info.java`, use a dedicated type annotated with `@PackageInfo`:
+Kotlin has no `package-info.java`. Use a dedicated `@PackageInfo`-annotated class instead. Two placement rules apply:
+
+### Module root — `@ApplicationModule`
+
+Place `@ApplicationModule` at the module root (`<module>/package-info.kt`). This is where you declare the module's display name and, when the dependency set is stable enough to lock down, its `allowedDependencies`.
 
 ```kotlin
-// <module>/package-info.kt  (at the module root, not in a sub-package)
-@ApplicationModule(displayName = "Order")
+// merchant/package-info.kt
+@ApplicationModule(
+    displayName = "Merchant",
+    allowedDependencies = ["order::OrderApi", "payments.push::PushApi"]
+)
 @PackageInfo
-package com.elegant.software.blitzpay.order
+package com.elegant.software.blitzpay.merchant
 ```
 
-Place the file at the **module root** (`<module>/package-info.kt`), not inside any sub-package. Sub-package `@NamedInterface` declarations go in their own `package-info.kt` files inside the `api/` package.
+### `api/` sub-package — `@NamedInterface`
+
+Place `@NamedInterface` inside the `api/` package (`<module>/api/package-info.kt`). This exposes the sub-package as a named contract that other modules can reference without gaining access to the rest of the module.
+
+```kotlin
+// merchant/api/package-info.kt
+@NamedInterface("MerchantApi")
+@PackageInfo
+package com.elegant.software.blitzpay.merchant.api
+```
+
+Other modules then reference it as:
+
+```kotlin
+@ApplicationModule(allowedDependencies = ["merchant::MerchantApi"])
+```
+
+**Rules:**
+- Never annotate `@NamedInterface` at the module root — it belongs on the `api/` sub-package.
+- Do not annotate `@ApplicationModule` inside a sub-package — it belongs at the module root.
+- Add `allowedDependencies` only when the dependency set is stable; an empty list locks the module to zero cross-module dependencies, which is often too strict early on.
+
+---
+
+## Domain events
+
+Domain events are cross-module signals. They live in the **publishing** module's `api/` package so consuming modules can import them without breaching module boundaries.
+
+```kotlin
+// payments/truelayer/api/PaymentEvents.kt
+data class PaymentCompleted(val paymentRequestId: UUID, val orderId: String)
+```
+
+**Rules:**
+- Events are plain data classes. No Spring annotations on the event class itself.
+- Publish via `ApplicationEventPublisher`; consume via `@ApplicationModuleListener` (preferred when the listener touches the database) or `@EventListener` (in-memory / non-transactional side effects only).
+- See [`reference/spring-modulith-best-practices.md`](spring-modulith-best-practices.md) for the full event pattern and listener guidance.
+
+---
+
+## Module verification
+
+Every module boundary change must be followed by running the architecture verification test:
+
+```bash
+./gradlew test --tests "*.ModularityTests"
+```
+
+The test calls `ApplicationModules.of(...).verify()` and fails on any illegal cross-module dependency. Do not merge a module boundary change without a green verification run.
+
+`@ApplicationModuleTest` isolates a single module for integration testing — its declared dependencies are bootstrapped, the rest of the application is excluded. Prefer it over `@SpringBootTest` for module-level tests.
+
+See [`reference/spring-modulith-best-practices.md`](spring-modulith-best-practices.md) for the full verification and testing patterns.
 
 ---
 
