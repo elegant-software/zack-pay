@@ -89,8 +89,8 @@ class StripeWebhookController(
                             log.info("stripe webhook settling payment")
                             paymentStatusUpdateGateway.settle(paymentRequestId, "stripe:${event.id}", occurredAt)
                         }
-                        "payment_intent.payment_failed" -> {
-                            log.info("stripe webhook failing payment")
+                        "payment_intent.payment_failed", "payment_intent.canceled" -> {
+                            log.info("stripe webhook failing payment type={}", event.type)
                             paymentStatusUpdateGateway.fail(paymentRequestId, "stripe:${event.id}", occurredAt)
                         }
                         else -> log.debug("stripe webhook event={} type={} not handled", event.id, event.type)
@@ -148,7 +148,7 @@ class StripeWebhookController(
                     log.warn("stripe connect account.updated could not deserialize Account object eventId={}", event.id)
                 }
             }
-            "payment_intent.succeeded", "payment_intent.payment_failed" -> {
+            "payment_intent.succeeded", "payment_intent.payment_failed", "payment_intent.canceled" -> {
                 val paymentIntent = extractPaymentIntent(event)
                 if (paymentIntent == null) {
                     log.warn(
@@ -170,7 +170,7 @@ class StripeWebhookController(
                 )
                 when (event.type) {
                     "payment_intent.succeeded" -> paymentStatusUpdateGateway.settle(paymentRequestId, "stripe:${event.id}", occurredAt)
-                    "payment_intent.payment_failed" -> paymentStatusUpdateGateway.fail(paymentRequestId, "stripe:${event.id}", occurredAt)
+                    "payment_intent.payment_failed", "payment_intent.canceled" -> paymentStatusUpdateGateway.fail(paymentRequestId, "stripe:${event.id}", occurredAt)
                 }
             }
             else -> log.debug("stripe connect webhook event={} type={} not handled", event.id, event.type)

@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.order
 
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
 import com.elegant.software.blitzpay.contract.ContractVerifierBase.Companion.fakeJwt
+import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.MerchantOrderResponse
 import com.elegant.software.blitzpay.order.api.OrderItemResponse
 import com.elegant.software.blitzpay.order.api.OrderResponse
@@ -42,6 +43,7 @@ class OrderContractTest : ContractVerifierBase() {
                 currency = "EUR",
                 totalAmountMinor = 2900,
                 paymentRetryAllowed = true,
+                checkoutPaymentMethod = CheckoutPaymentMethod.BANK_ACCOUNT,
                 items = listOf(
                     OrderItemResponse(
                         productId = UUID.fromString("22222222-2222-2222-2222-222222222221"),
@@ -82,6 +84,7 @@ class OrderContractTest : ContractVerifierBase() {
             .jsonPath("$.orderType").isEqualTo("PRE_ORDER")
             .jsonPath("$.status").isEqualTo("CREATED")
             .jsonPath("$.paymentRetryAllowed").isEqualTo(true)
+            .jsonPath("$.checkoutPaymentMethod").isEqualTo("BANK_ACCOUNT")
             .jsonPath("$.paymentReference").doesNotExist()
             .jsonPath("$.totalAmountMinor").isEqualTo(2900)
     }
@@ -187,6 +190,7 @@ class OrderContractTest : ContractVerifierBase() {
                 totalAmountMinor = 1250,
                 paymentRetryAllowed = false,
                 paymentSource = com.elegant.software.blitzpay.order.api.PaymentSource.APP_PAYMENT,
+                checkoutPaymentMethod = CheckoutPaymentMethod.CARD,
                 items = emptyList(),
                 createdAt = Instant.parse("2026-05-15T10:00:00Z"),
                 paidAt = Instant.parse("2026-05-15T10:05:00Z"),
@@ -200,6 +204,7 @@ class OrderContractTest : ContractVerifierBase() {
             .expectBody()
             .jsonPath("$.status").isEqualTo("PAID")
             .jsonPath("$.paymentSource").isEqualTo("APP_PAYMENT")
+            .jsonPath("$.checkoutPaymentMethod").isEqualTo("CARD")
             .jsonPath("$.paymentRetryAllowed").isEqualTo(false)
     }
 
@@ -271,9 +276,10 @@ class OrderContractTest : ContractVerifierBase() {
                     orderType = OrderType.PRE_ORDER,
                     status = OrderStatus.PAID,
                     currency = "EUR",
-                    totalAmountMinor = 2900,
-                    paymentRetryAllowed = false,
-                    createdAt = Instant.parse("2026-04-30T10:00:00Z"),
+                totalAmountMinor = 2900,
+                paymentRetryAllowed = false,
+                checkoutPaymentMethod = CheckoutPaymentMethod.TERMINAL,
+                createdAt = Instant.parse("2026-04-30T10:00:00Z"),
                 )
             )
         )
@@ -286,6 +292,7 @@ class OrderContractTest : ContractVerifierBase() {
             .expectBody()
             .jsonPath("$[0].orderId").isEqualTo("ORD-ABC123456789")
             .jsonPath("$[0].status").isEqualTo("PAID")
+            .jsonPath("$[0].checkoutPaymentMethod").isEqualTo("TERMINAL")
             .jsonPath("$[0].paymentRetryAllowed").isEqualTo(false)
     }
 

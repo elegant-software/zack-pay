@@ -62,6 +62,9 @@ class MerchantBranch(
     @Embedded
     var location: MerchantLocation? = null,
 
+    @Column(name = "stripe_terminal_location_id")
+    var stripeTerminalLocationId: String? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 

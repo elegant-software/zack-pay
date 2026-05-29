@@ -309,12 +309,48 @@ The Stripe-issued identifier (`acct_XXXX`) for a Merchant's Connected Account. S
 _Avoid_: Stripe user ID, stripe_id, integration ID
 
 **Connect Onboarding**:
-The Stripe-hosted process a Merchant completes to create and verify their Connected Account. Triggered when the Merchant enables Stripe as a payment channel in the merchant app. Considered complete only when Stripe confirms `charges_enabled: true` via webhook.
+The Stripe-hosted process a Merchant completes to create and verify their Connected Account. Triggered by the admin dashboard when Stripe is enabled for a Merchant. Considered complete only when Stripe confirms `charges_enabled: true` via webhook.
 _Avoid_: Stripe onboarding, account setup, payment onboarding
 
 **Connect Onboarding URL**:
 The one-time Stripe-generated URL returned to the merchant app, directing the Merchant to Stripe's hosted identity and banking verification form. Expires if unused; a dedicated refresh endpoint generates a replacement.
 _Avoid_: Stripe link, onboarding link, redirect URL
+
+**Account Holder**:
+The Adyen Balance Platform entity representing a Merchant's legal and financial identity on the BlitzPay platform. Created when a Merchant enables Adyen as a payment provider. Owns one or more Balance Accounts. The Adyen equivalent of a Connected Account.
+_Avoid_: Adyen account, sub-merchant, marketplace account
+
+**Account Holder ID**:
+The Adyen-assigned identifier (`legalEntityId`) for a Merchant's Account Holder. Stored at the Merchant level alongside the Balance Account ID. Together they are the Adyen equivalent of a single Connected Account ID.
+_Avoid_: Adyen legal entity, legalEntity, adyen_id
+
+**Balance Account ID**:
+The Adyen-assigned identifier (`balanceAccountId`) for the account where a Merchant's funds land after a split-routed payment. A child of the Account Holder. Must be stored alongside the Account Holder ID — neither is sufficient alone for payment routing.
+_Avoid_: Adyen wallet, sub-account ID, funds account
+
+**Adyen Onboarding**:
+The Adyen-hosted process a Merchant completes to verify their Account Holder. Triggered when the Merchant enables Adyen as a payment provider in the admin dashboard. Considered complete only when Adyen confirms the Receive Payments Capability is `allowed` via webhook. The Adyen equivalent of Connect Onboarding.
+_Avoid_: Adyen KYC, account setup, payment onboarding
+
+**Adyen Onboarding URL**:
+The one-time Adyen-generated URL returned to the admin dashboard, directing the Merchant to Adyen's hosted identity and banking verification form. Generated via `POST /legalEntities/{id}/onboardingLinks`. Expires if unused; a dedicated refresh endpoint generates a replacement. The Adyen equivalent of Connect Onboarding URL.
+_Avoid_: Adyen link, onboarding link, redirect URL
+
+**Receive Payments Capability**:
+The Adyen Balance Platform signal that a Merchant's Account Holder is verified and permitted to accept live payments. Confirmed via the `balanceAccount.updated` webhook when the `receivePayments` capability status becomes `allowed`. The Adyen equivalent of Stripe's `charges_enabled: true`.
+_Avoid_: Adyen verified, charges enabled, KYC complete
+
+**Tap to Pay**:
+The in-person payment mode where the merchant's phone acts as an NFC contactless reader using the Stripe Terminal SDK. Accepts contactless physical cards and digital wallets (Apple Pay, Google Pay). No external hardware required. Enabled per Merchant via `tap_to_pay_enabled` on the Stripe provider account. Either the shopper or merchant app may initiate a Tap to Pay payment; the Order is the coordination point between them.
+_Avoid_: POS terminal, hardware reader, card machine, Stripe POS
+
+**Terminal Location**:
+The Stripe-assigned identifier (`loc_XXXX`) for a Branch's physical location in the Stripe Terminal system. Created lazily by the backend on the first Connection Token request for a Branch, using the Branch's existing address and name. Stored per Branch. Required by the Terminal SDK when connecting the NFC reader.
+_Avoid_: Stripe location ID, reader location, terminal address
+
+**Connection Token**:
+A short-lived Stripe Terminal authentication secret issued by the BlitzPay backend, scoped to a Merchant's Connected Account and a specific Terminal Location. The merchant app's Terminal SDK fetches a fresh Connection Token at the start of each session. The backend creates it by calling Stripe `POST /v1/terminal/connection_tokens` with `Stripe-Account: acct_XXXX`.
+_Avoid_: Terminal secret, SDK token, auth token
 
 ## Flagged ambiguities
 
@@ -368,3 +404,9 @@ _Avoid_: Stripe link, onboarding link, redirect URL
 - Estimated service duration could have been accepted for any merchant regardless of their offerings. Resolved: **Estimated Service Duration** may only be written when **Appointment Booking** is enabled; the write is rejected otherwise.
 - Disabling **Appointment Booking** could have triggered a cascade-clear of all stored durations. Resolved: existing durations are left in place and treated as inert; clearing on toggle is destructive and non-reversible.
 - Duration update could have had its own dedicated endpoint (`PATCH /product-categories/{id}/duration`). Resolved: duration is maintained through the standard category update endpoint (`PUT /product-categories/{id}`) alongside name; a dedicated endpoint was a smell that duplicated the create path's optionality.
+- Stripe Connect and Adyen for Platforms could have been enabled simultaneously per Merchant. Resolved: a Merchant operates on exactly one platform PSP at a time; the active PSP is selected in the admin dashboard. Enabling one while the other is inactive is the only supported state.
+- A single PSP-agnostic term (e.g. "Platform Sub-Account") could have covered both Stripe Connected Accounts and Adyen Account Holders. Resolved: PSP-specific terms are used side by side (**Connected Account** for Stripe, **Account Holder** for Adyen) because the two models differ structurally — Stripe uses one identifier (`acct_XXXX`) while Adyen uses two (**Account Holder ID** + **Balance Account ID**).
+- **Tap to Pay** could have used a hardware smart reader with server-driven integration (`process_payment_intent`). Resolved: Tap to Pay (NFC soft reader, Terminal SDK in the merchant app) is the only supported no-hardware path; server-driven integration applies to WisePOS E and S700 only.
+- **Terminal Location** could have been stored at the Merchant level (one location per Merchant). Resolved: a Location maps to a Branch, not a Merchant; it is stored per Branch as a nullable column so multi-branch merchants each have a distinct Stripe Location.
+- **Terminal Location** creation could have been eager (at enable time) or explicit (admin endpoint). Resolved: created lazily on first **Connection Token** request for the Branch; eager creation is incomplete and a lazy fallback is unavoidable regardless.
+- **Tap to Pay** payment initiation could have been restricted to the merchant app only. Resolved: either the shopper or the merchant app may call `create-intent` with `card_present`; the Order links the payment attempt and serves as the coordination point between the two apps without real-time signaling.

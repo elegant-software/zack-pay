@@ -69,6 +69,9 @@ class Order(
     @Column(name = "payment_source", length = 32)
     var paymentSource: String? = null,
 
+    @Column(name = "checkout_payment_method", length = 32)
+    var checkoutPaymentMethod: String? = null,
+
     @Column(name = "settlement_note", length = 2000)
     var settlementNote: String? = null,
 ) {

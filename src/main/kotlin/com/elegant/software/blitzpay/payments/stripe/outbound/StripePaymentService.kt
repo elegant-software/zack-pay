@@ -40,15 +40,23 @@ class StripePaymentService(
         orderId: String,
         paymentRequestId: UUID,
         productId: UUID?,
+        paymentMethodType: String = "card",
     ): Mono<StripeIntentResult> = Mono.fromCallable {
         require(amount > 0 && amount.isFinite()) { "amount must be a positive number" }
         val amountInSmallestUnit = Math.round(amount * 100)
         val paramsBuilder = PaymentIntentCreateParams.builder()
             .setAmount(amountInSmallestUnit)
             .setCurrency(currency.lowercase())
-            .setAutomaticPaymentMethods(
-                PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build()
-            )
+            .apply {
+                if (paymentMethodType == "card_present") {
+                    addPaymentMethodType("card_present")
+                    setCaptureMethod(PaymentIntentCreateParams.CaptureMethod.AUTOMATIC)
+                } else {
+                    setAutomaticPaymentMethods(
+                        PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build()
+                    )
+                }
+            }
             .putMetadata("merchantId", merchantId.toString())
             .putMetadata("orderId", orderId)
             .putMetadata("paymentRequestId", paymentRequestId.toString())

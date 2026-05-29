@@ -13,6 +13,8 @@ enum class PaymentMethod { TRUELAYER, QRPAY, BRAINTREE, STRIPE }
 
 enum class PaymentSource { APP_PAYMENT, MANUAL_SETTLEMENT }
 
+enum class CheckoutPaymentMethod { BANK_ACCOUNT, CARD, PAY_BY_BANK, TERMINAL, PAYPAL }
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AddOrderItemRequest(
     val productId: UUID,
@@ -50,6 +52,7 @@ data class CreateOrderRequest(
     val customerLocation: OrderCustomerLocationRequest? = null,
     val items: List<CreateOrderItemRequest> = emptyList(),
     val paymentMethod: PaymentMethod? = null,
+    val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -98,6 +101,7 @@ data class OrderResponse(
     val totalAmountMinor: Long,
     val paymentRetryAllowed: Boolean,
     val paymentSource: PaymentSource? = null,
+    val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
     val items: List<OrderItemResponse>,
     val createdAt: Instant,
     val lastPaymentRequestId: UUID? = null,
@@ -117,6 +121,7 @@ data class MerchantOrderResponse(
     val currency: String,
     val totalAmountMinor: Long,
     val paymentRetryAllowed: Boolean,
+    val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
     val qrCode: QrCodeResponse,
     val items: List<OrderItemResponse>,
     val createdAt: Instant,
@@ -133,6 +138,7 @@ data class OrderSummaryResponse(
     val totalAmountMinor: Long,
     val paymentRetryAllowed: Boolean,
     val paymentSource: PaymentSource? = null,
+    val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
     val createdAt: Instant,
 )
 
@@ -160,6 +166,7 @@ internal fun Order.toResponse(items: List<OrderItem>, paymentReference: PaymentR
     totalAmountMinor = totalAmountMinor,
     paymentRetryAllowed = status.paymentRetryAllowed,
     paymentSource = paymentSource?.let { runCatching { PaymentSource.valueOf(it) }.getOrNull() },
+    checkoutPaymentMethod = checkoutPaymentMethod?.let { runCatching { CheckoutPaymentMethod.valueOf(it) }.getOrNull() },
     items = items.sortedBy { it.createdAt }.map {
         OrderItemResponse(
             productId = it.merchantProductId,
@@ -187,6 +194,7 @@ internal fun Order.toSummaryResponse() = OrderSummaryResponse(
     totalAmountMinor = totalAmountMinor,
     paymentRetryAllowed = status.paymentRetryAllowed,
     paymentSource = paymentSource?.let { runCatching { PaymentSource.valueOf(it) }.getOrNull() },
+    checkoutPaymentMethod = checkoutPaymentMethod?.let { runCatching { CheckoutPaymentMethod.valueOf(it) }.getOrNull() },
     createdAt = createdAt,
 )
 
@@ -201,6 +209,7 @@ internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: Stri
     currency = currency,
     totalAmountMinor = totalAmountMinor,
     paymentRetryAllowed = status.paymentRetryAllowed,
+    checkoutPaymentMethod = checkoutPaymentMethod?.let { runCatching { CheckoutPaymentMethod.valueOf(it) }.getOrNull() },
     qrCode = QrCodeResponse(paymentUrl = qrPaymentUrl),
     items = items.sortedBy { it.createdAt }.map {
         OrderItemResponse(

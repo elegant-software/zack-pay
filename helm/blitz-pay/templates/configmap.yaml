@@ -16,3 +16,6 @@ data:
   TRUELAYER_PRIVATE_KEY_PATH: {{ printf "%s/%s" .Values.privateKey.mountPath .Values.privateKey.secretKey | quote }}
   WHISPER_BASE_URL: {{ .Values.config.whisperBaseUrl | quote }}
   FRONTEND_ORIGIN: {{ .Values.config.frontendOrigin | quote }}
+  STRIPE_CONNECT_RETURN_URL: {{ .Values.config.stripeConnectReturnUrl | quote }}
+  STRIPE_CONNECT_API_BASE_URL: {{ .Values.config.stripeConnectApiBaseUrl | quote }}
+  STRIPE_CONNECT_APP_DEEP_LINK: {{ .Values.config.stripeConnectAppDeepLink | quote }}
