@@ -105,3 +105,12 @@ Security and repo hygiene notes
 ```
 
 - Prefer storing secrets in a secure vault or CI secret manager for production deployments.
+
+## Related Repositories
+
+| Repository | Description |
+|---|---|
+| blitz-pay (backend) | Spring Boot / Kotlin backend — payments, merchants, orders |
+| blitzpay-admin-dashboard | Angular admin dashboard |
+| blitz-pay-merchant | React Native merchant app |
+| blitz-pay (shopper app) | React Native shopper app |

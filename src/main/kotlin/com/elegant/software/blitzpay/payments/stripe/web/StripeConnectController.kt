@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -18,7 +19,7 @@ import java.util.UUID
 
 data class StartOnboardingRequest(val returnUrl: String? = null, val refreshUrl: String? = null)
 data class ConnectOnboardingResponse(val onboardingUrl: String)
-enum class ConnectPaymentFlow { CARD, PAY_BY_BANK }
+enum class ConnectPaymentFlow { CARD, PAY_BY_BANK, TAP_TO_PAY }
 data class ConnectStatusResponse(
     val connected: Boolean,
     val chargesEnabled: Boolean,
@@ -55,9 +56,11 @@ class StripeConnectController(
         val accountId = stripeConnectService.findConnectedAccountId(merchantId)
         val chargesEnabled = accountId != null && stripeConnectService.isChargesEnabled(merchantId)
         val payByBankEnabled = accountId != null && stripeConnectService.isPayByBankEnabled(merchantId)
+        val tapToPayEnabled = accountId != null && stripeConnectService.isTapToPayEnabled(merchantId)
         val enabledPaymentFlows = buildSet {
             if (chargesEnabled) add(ConnectPaymentFlow.CARD)
             if (payByBankEnabled) add(ConnectPaymentFlow.PAY_BY_BANK)
+            if (tapToPayEnabled) add(ConnectPaymentFlow.TAP_TO_PAY)
         }
         return ResponseEntity.ok(
             ConnectStatusResponse(
@@ -88,6 +91,34 @@ class StripeConnectController(
                 Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ErrorResponse(ex.message ?: "Stripe error") as Any))
             }
+    }
+
+    @Operation(summary = "Enable Tap to Pay for this merchant — requires charges_enabled")
+    @PostMapping("/tap-to-pay/enable")
+    fun enableTapToPay(@PathVariable merchantId: UUID): ResponseEntity<Any> {
+        if (!stripeConnectService.isChargesEnabled(merchantId)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse("Stripe Connect account is not verified for this merchant") as Any)
+        }
+        return try {
+            stripeConnectService.enableTapToPay(merchantId)
+            ResponseEntity.ok(mapOf("tapToPayEnabled" to true) as Any)
+        } catch (ex: NoSuchElementException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse(ex.message ?: "Merchant not Connect-onboarded") as Any)
+        }
+    }
+
+    @Operation(summary = "Disable Tap to Pay for this merchant")
+    @DeleteMapping("/tap-to-pay")
+    fun disableTapToPay(@PathVariable merchantId: UUID): ResponseEntity<Any> {
+        return try {
+            stripeConnectService.disableTapToPay(merchantId)
+            ResponseEntity.ok(mapOf("tapToPayEnabled" to false) as Any)
+        } catch (ex: NoSuchElementException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse(ex.message ?: "Merchant not Connect-onboarded") as Any)
+        }
     }
 
     private fun refreshUrl(merchantId: UUID) =

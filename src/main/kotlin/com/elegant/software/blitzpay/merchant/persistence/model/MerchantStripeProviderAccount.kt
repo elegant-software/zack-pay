@@ -26,6 +26,9 @@ class MerchantStripeProviderAccount(
     @Column(name = "pay_by_bank_enabled", nullable = false)
     var payByBankEnabled: Boolean = false,
 
+    @Column(name = "tap_to_pay_enabled", nullable = false)
+    var tapToPayEnabled: Boolean = false,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 

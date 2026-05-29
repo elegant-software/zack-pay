@@ -1,9 +1,11 @@
 package com.elegant.software.blitzpay.merchant.application
 
+import com.elegant.software.blitzpay.merchant.api.BranchTerminalInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
 import com.elegant.software.blitzpay.merchant.domain.MerchantProviderAccount
 import com.elegant.software.blitzpay.merchant.domain.MerchantStripeProviderAccount
+import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantStripeProviderAccountRepository
 import org.slf4j.LoggerFactory
@@ -17,6 +19,7 @@ import java.util.UUID
 class StripeConnectGatewayImpl(
     private val providerAccountRepository: MerchantProviderAccountRepository,
     private val stripeProviderAccountRepository: MerchantStripeProviderAccountRepository,
+    private val branchRepository: MerchantBranchRepository,
     private val managementService: MerchantManagementService,
 ) : StripeConnectGateway {
 
@@ -82,6 +85,50 @@ class StripeConnectGatewayImpl(
 
     override fun isPayByBankEnabled(merchantId: UUID): Boolean =
         findStripeProviderAccount(merchantId)?.payByBankEnabled ?: false
+
+    override fun isTapToPayEnabled(merchantId: UUID): Boolean =
+        findStripeProviderAccount(merchantId)?.tapToPayEnabled ?: false
+
+    override fun enableTapToPay(merchantId: UUID) {
+        val record = findStripeProviderAccount(merchantId)
+            ?: throw NoSuchElementException("No Stripe Connect account found for merchant $merchantId")
+        record.tapToPayEnabled = true
+        record.updatedAt = Instant.now()
+        stripeProviderAccountRepository.save(record)
+        log.info("stripe tap_to_pay enabled merchantId={}", merchantId)
+    }
+
+    override fun disableTapToPay(merchantId: UUID) {
+        val record = findStripeProviderAccount(merchantId)
+            ?: throw NoSuchElementException("No Stripe Connect account found for merchant $merchantId")
+        record.tapToPayEnabled = false
+        record.updatedAt = Instant.now()
+        stripeProviderAccountRepository.save(record)
+        log.info("stripe tap_to_pay disabled merchantId={}", merchantId)
+    }
+
+    override fun findTerminalLocationId(branchId: UUID): String? =
+        branchRepository.findById(branchId).orElse(null)?.stripeTerminalLocationId
+
+    override fun getBranchTerminalInfo(branchId: UUID): BranchTerminalInfo? {
+        val branch = branchRepository.findById(branchId).orElse(null) ?: return null
+        return BranchTerminalInfo(
+            branchName = branch.name,
+            addressLine1 = branch.address?.addressLine1,
+            city = branch.address?.city,
+            postalCode = branch.address?.postalCode,
+            country = branch.address?.country,
+        )
+    }
+
+    override fun saveTerminalLocationId(branchId: UUID, locationId: String) {
+        val branch = branchRepository.findById(branchId).orElseThrow {
+            NoSuchElementException("Branch $branchId not found")
+        }
+        branch.stripeTerminalLocationId = locationId
+        branchRepository.save(branch)
+        log.info("stripe terminal_location_id saved branchId={} locationId={}", branchId, locationId)
+    }
 
     override fun getDetails(merchantId: UUID): MerchantDetailsResponse =
         managementService.get(merchantId)

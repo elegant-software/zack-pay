@@ -34,7 +34,7 @@ class StripePaymentControllerContractTest : ContractVerifierBase() {
 
     @Test
     fun `returns 200 with clientSecret alias and publishableKey for valid amount`() {
-        whenever(stripePaymentService.createIntent(any(), any(), any(), any(), anyOrNull(), any(), any(), anyOrNull())).thenReturn(
+        whenever(stripePaymentService.createIntent(any(), any(), any(), any(), anyOrNull(), any(), any(), anyOrNull(), any())).thenReturn(
             Mono.just(StripeIntentResult("pi_test_secret_abc", "pi_abc123", "acct_test_contract"))
         )
 
@@ -55,7 +55,7 @@ class StripePaymentControllerContractTest : ContractVerifierBase() {
 
     @Test
     fun `returns 200 with default currency when currency omitted`() {
-        whenever(stripePaymentService.createIntent(any(), any(), any(), any(), anyOrNull(), any(), any(), anyOrNull())).thenReturn(
+        whenever(stripePaymentService.createIntent(any(), any(), any(), any(), anyOrNull(), any(), any(), anyOrNull(), any())).thenReturn(
             Mono.just(StripeIntentResult("pi_test_secret_xyz", "pi_xyz789", "acct_test_contract"))
         )
 

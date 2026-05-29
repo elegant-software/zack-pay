@@ -27,6 +27,7 @@ data class CreateIntentRequest(
     val merchantId: UUID? = null,
     val branchId: UUID? = null,
     val productId: UUID? = null,
+    val paymentMethodType: String? = null,
 )
 
 data class CreateIntentResponse(
@@ -101,6 +102,14 @@ class StripePaymentController(
                     .body(ErrorResponse("Stripe Connect account not configured or not yet verified for this merchant") as Any)
             )
 
+        val paymentMethodType = request.paymentMethodType ?: "card"
+        if (paymentMethodType == "card_present" && !stripeConnectGateway.isTapToPayEnabled(merchantId)) {
+            return Mono.just(
+                ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ErrorResponse("Tap to Pay is not enabled for this merchant") as Any)
+            )
+        }
+
         val currency = request.currency ?: "eur"
         val paymentRequestId = UUID.randomUUID()
         return LogContext.with(
@@ -120,7 +129,8 @@ class StripePaymentController(
                 currency = currency.uppercase(),
             )
             log.info("stripe payment status initialized")
-            orderGateway.linkPaymentAttempt(orderId, paymentRequestId, "STRIPE", null)
+            val paymentAttemptProvider = if (paymentMethodType == "card_present") "STRIPE_TERMINAL" else "STRIPE"
+            orderGateway.linkPaymentAttempt(orderId, paymentRequestId, paymentAttemptProvider, null)
             log.info("stripe payment attempt linked to order")
             stripePaymentService.createIntent(
                 resolvedAmount,
@@ -130,7 +140,8 @@ class StripePaymentController(
                 resolvedBranchId,
                 orderId,
                 paymentRequestId,
-                request.productId
+                request.productId,
+                paymentMethodType,
             )
                 .map { result ->
                     LogContext.with(LogContext.PAYMENT_INTENT_ID to result.paymentIntentId) {
@@ -245,7 +256,7 @@ class StripePaymentController(
                 currency = currency.uppercase(),
             )
             log.info("stripe pay_by_bank payment status initialized")
-            orderGateway.linkPaymentAttempt(orderId, paymentRequestId, "STRIPE", null)
+            orderGateway.linkPaymentAttempt(orderId, paymentRequestId, "STRIPE_PAY_BY_BANK", null)
             log.info("stripe pay_by_bank payment attempt linked to order")
             stripePaymentService.createPayByBankCheckoutSession(
                 amount = resolvedAmount,
@@ -261,7 +272,7 @@ class StripePaymentController(
                 statementDescriptor = statementDescriptor,
             )
                 .map { result ->
-                    orderGateway.linkPaymentAttempt(orderId, paymentRequestId, "STRIPE", result.checkoutSessionId)
+                    orderGateway.linkPaymentAttempt(orderId, paymentRequestId, "STRIPE_PAY_BY_BANK", result.checkoutSessionId)
                     log.info("stripe pay_by_bank checkout session created sessionId={}", result.checkoutSessionId)
                     ResponseEntity.ok(
                         CreatePayByBankCheckoutSessionResponse(

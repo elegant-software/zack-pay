@@ -12,6 +12,7 @@ import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepo
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.order.OrderFixtureLoader
+import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.CreateOrderItemRequest
 import com.elegant.software.blitzpay.order.api.OrderCustomerLocationRequest
@@ -114,10 +115,29 @@ class OrderServiceTest {
         assertEquals(OrderStatus.CREATED, response.status)
         assertEquals(OrderType.PRE_ORDER, response.orderType)
         assertEquals(PaymentMethod.TRUELAYER, request.paymentMethod)
+        assertEquals(CheckoutPaymentMethod.BANK_ACCOUNT, response.checkoutPaymentMethod)
         assertNull(response.paymentReference)
         assertNull(response.lastPaymentRequestId)
         assertNull(response.lastPaymentProvider)
         verify(paymentAttemptRepository, never()).save(any())
+    }
+
+    @Test
+    fun `createShopperOrder does not guess card for generic Stripe payment method`() {
+        val request = OrderFixtureLoader.createOrderRequest().copy(paymentMethod = PaymentMethod.STRIPE)
+        stubActiveMerchantContext("PRE_ORDER")
+        whenever(merchantGateway.findOrderableProducts(any())).thenReturn(
+            listOf(
+                OrderableMerchantProduct(request.items[0].productId, merchantId, branchId, "Coffee", "Medium roast", BigDecimal("12.50"), true),
+                OrderableMerchantProduct(request.items[1].productId, merchantId, branchId, "Bagel", "Sesame", BigDecimal("4.00"), true),
+            )
+        )
+        whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
+        whenever(orderItemRepository.saveAll(any<List<OrderItem>>())).thenAnswer { it.arguments[0] }
+
+        val response = service.createShopperOrder(request, "shopper-abc")
+
+        assertNull(response.checkoutPaymentMethod)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.elegant.software.blitzpay.order.application
 
 import com.elegant.software.blitzpay.config.LogContext
+import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
 import com.elegant.software.blitzpay.order.domain.OrderStatus
@@ -73,6 +74,7 @@ class PaymentAttemptService(
             paymentAttemptRepository.save(attempt)
 
             order.markPaymentInProgress(paymentRequestId, provider)
+            checkoutPaymentMethodForProvider(provider)?.let { order.checkoutPaymentMethod = it.name }
             orderRepository.save(order)
             log.info(
                 "payment attempt linked orderStatus={} attemptStatus={} providerReference={}",
@@ -81,4 +83,14 @@ class PaymentAttemptService(
             assertPayable(orderId)
         }
     }
+
+    private fun checkoutPaymentMethodForProvider(provider: String): CheckoutPaymentMethod? =
+        when (provider) {
+            "TRUELAYER" -> CheckoutPaymentMethod.BANK_ACCOUNT
+            "STRIPE" -> CheckoutPaymentMethod.CARD
+            "STRIPE_PAY_BY_BANK" -> CheckoutPaymentMethod.PAY_BY_BANK
+            "STRIPE_TERMINAL" -> CheckoutPaymentMethod.TERMINAL
+            "BRAINTREE" -> CheckoutPaymentMethod.PAYPAL
+            else -> null
+        }
 }

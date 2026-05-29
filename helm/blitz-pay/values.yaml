@@ -28,6 +28,7 @@ fullnameOverride: ""
 #   TRUELAYER_MERCHANT_ACCOUNT_ID - TrueLayer merchant account UUID
 #   TRUELAYER_ACCESS_TOKEN        - TrueLayer bearer access token
 #   STRIPE_SECRET_KEY             - Stripe API secret key
+#   STRIPE_CONNECT_WEBHOOK_SECRET - Stripe Connect webhook signing secret
 #   BRAINTREE_MERCHANT_ID         - Braintree merchant ID
 #   BRAINTREE_PUBLIC_KEY          - Braintree public key
 #   BRAINTREE_PRIVATE_KEY         - Braintree private key
@@ -48,6 +49,7 @@ fullnameOverride: ""
 #     --from-literal=TRUELAYER_MERCHANT_ACCOUNT_ID="<merchant-id>" \
 #     --from-literal=TRUELAYER_ACCESS_TOKEN="<access-token>" \
 #     --from-literal=STRIPE_SECRET_KEY="<stripe-secret-key>" \
+#     --from-literal=STRIPE_CONNECT_WEBHOOK_SECRET="<stripe-connect-webhook-secret>" \
 #     --from-literal=BRAINTREE_MERCHANT_ID="<braintree-merchant-id>" \
 #     --from-literal=BRAINTREE_PUBLIC_KEY="<braintree-public-key>" \
 #     --from-literal=BRAINTREE_PRIVATE_KEY="<braintree-private-key>"
@@ -90,6 +92,9 @@ config:
   truelayerWebhookJku: http://localhost:8080/.well-known/jwks.json
   whisperBaseUrl: http://whisper:8000/v1
   frontendOrigin: http://localhost:4200
+  stripeConnectReturnUrl: http://localhost:8080/stripe-connect/return
+  stripeConnectApiBaseUrl: http://localhost:8080
+  stripeConnectAppDeepLink: ""
 
 # ---------------------------------------------------------------------------
 # Resource requests and limits

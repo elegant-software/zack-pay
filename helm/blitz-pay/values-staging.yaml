@@ -24,3 +24,6 @@ config:
   truelayerHttpLogs: "true"
   truelayerWebhookJku: https://api.staging.blitz-pay.com/.well-known/jwks.json
   whisperBaseUrl: http://whisper:8000/v1
+  stripeConnectReturnUrl: https://api-blitzpay-staging.elegantsoftware.de/stripe-connect/return
+  stripeConnectApiBaseUrl: https://api-blitzpay-staging.elegantsoftware.de
+  stripeConnectAppDeepLink: ""

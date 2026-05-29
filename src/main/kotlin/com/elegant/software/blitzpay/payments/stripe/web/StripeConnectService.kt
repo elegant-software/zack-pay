@@ -88,6 +88,15 @@ class StripeConnectService(
     fun isPayByBankEnabled(merchantId: UUID): Boolean =
         stripeConnectGateway.isPayByBankEnabled(merchantId)
 
+    fun isTapToPayEnabled(merchantId: UUID): Boolean =
+        stripeConnectGateway.isTapToPayEnabled(merchantId)
+
+    fun enableTapToPay(merchantId: UUID) =
+        stripeConnectGateway.enableTapToPay(merchantId)
+
+    fun disableTapToPay(merchantId: UUID) =
+        stripeConnectGateway.disableTapToPay(merchantId)
+
     fun createRefreshUrl(merchantId: UUID, returnUrl: String, refreshUrl: String): Mono<String> =
         Mono.fromCallable {
             val connectedAccountId = stripeConnectGateway.findConnectedAccountId(merchantId)

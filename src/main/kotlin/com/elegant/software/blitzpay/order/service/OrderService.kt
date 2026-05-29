@@ -9,6 +9,7 @@ import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepo
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.order.api.AddOrderItemRequest
+import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.CreateOrderRequest
 import com.elegant.software.blitzpay.order.api.MerchantItemPriceOverrideRequest
@@ -78,6 +79,7 @@ class OrderService(
             currency = DEFAULT_CURRENCY,
             totalAmountMinor = request.items.sumOf { productsById.getValue(it.productId).unitPriceMinor() * it.quantity },
             itemCount = request.items.sumOf { it.quantity },
+            checkoutPaymentMethod = resolveCheckoutPaymentMethod(request)?.name,
         )
         val savedOrder = orderRepository.save(order)
         val savedItems = orderItemRepository.saveAll(
@@ -387,6 +389,15 @@ class OrderService(
 
     private fun buildQrPaymentUrl(orderId: String, amountMinorUnits: Long, currency: String): String =
         "blitzpay://payment/qr?orderId=$orderId&amount=$amountMinorUnits&currency=$currency"
+
+    private fun resolveCheckoutPaymentMethod(request: CreateOrderRequest): CheckoutPaymentMethod? =
+        request.checkoutPaymentMethod ?: when (request.paymentMethod) {
+            com.elegant.software.blitzpay.order.api.PaymentMethod.TRUELAYER,
+            com.elegant.software.blitzpay.order.api.PaymentMethod.QRPAY -> CheckoutPaymentMethod.BANK_ACCOUNT
+            com.elegant.software.blitzpay.order.api.PaymentMethod.BRAINTREE -> CheckoutPaymentMethod.PAYPAL
+            com.elegant.software.blitzpay.order.api.PaymentMethod.STRIPE,
+            null -> null
+        }
 
     companion object {
         private const val DEFAULT_CURRENCY = "EUR"
