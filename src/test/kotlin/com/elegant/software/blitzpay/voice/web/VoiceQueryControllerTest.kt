@@ -11,11 +11,8 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import org.springframework.core.io.buffer.DefaultDataBufferFactory
-import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.http.codec.multipart.FilePart
-import reactor.core.publisher.Flux
+import org.springframework.mock.web.MockMultipartFile
 import kotlin.test.assertEquals
 
 class VoiceQueryControllerTest {
@@ -35,9 +32,9 @@ class VoiceQueryControllerTest {
         )
 
         val response = controller.query(
-            audio = filePart("audio.mp4", "audio/mp4", byteArrayOf(1, 2, 3, 4)),
+            audio = multipartFile("audio.mp4", "audio/mp4", byteArrayOf(1, 2, 3, 4)),
             authorization = bearerToken("user-123"),
-        ).block()!!
+        )
 
         assertEquals(200, response.statusCode.value())
         assertEquals(MediaType.APPLICATION_JSON, response.headers.contentType)
@@ -49,9 +46,9 @@ class VoiceQueryControllerTest {
     fun `throws unauthorized when authorization header missing`() {
         val exception = assertThrows<MissingAuthorizationException> {
             controller.query(
-                audio = filePart("audio.mp4", "audio/mp4", byteArrayOf(1, 2)),
+                audio = multipartFile("audio.mp4", "audio/mp4", byteArrayOf(1, 2)),
                 authorization = null,
-            ).block()
+            )
         }
 
         assertEquals("MISSING_AUTHORIZATION", exception.reason)
@@ -61,9 +58,9 @@ class VoiceQueryControllerTest {
     fun `throws unsupported media type for invalid audio content type`() {
         val exception = assertThrows<UnsupportedAudioFormatException> {
             controller.query(
-                audio = filePart("audio.txt", "text/plain", "bad".toByteArray()),
+                audio = multipartFile("audio.txt", "text/plain", "bad".toByteArray()),
                 authorization = bearerToken("user-123"),
-            ).block()
+            )
         }
 
         assertEquals("UNSUPPORTED_AUDIO_FORMAT", exception.reason)
@@ -73,27 +70,22 @@ class VoiceQueryControllerTest {
     fun `throws payload too large when upload exceeds configured limit`() {
         val exception = assertThrows<PayloadTooLargeException> {
             controller.query(
-                audio = filePart("audio.mp4", "audio/mp4", byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9)),
+                audio = multipartFile("audio.mp4", "audio/mp4", byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9)),
                 authorization = bearerToken("user-123"),
-            ).block()
+            )
         }
 
         assertEquals("PAYLOAD_TOO_LARGE", exception.reason)
     }
 
-    private fun filePart(filename: String, contentType: String, bytes: ByteArray): FilePart {
-        val headers = HttpHeaders().apply { this.contentType = MediaType.parseMediaType(contentType) }
-        val buffer = DefaultDataBufferFactory().wrap(bytes)
-        return mock<FilePart>().also { part ->
-            whenever(part.filename()).thenReturn(filename)
-            whenever(part.headers()).thenReturn(headers)
-            whenever(part.content()).thenReturn(Flux.just(buffer))
-        }
-    }
+    private fun multipartFile(filename: String, contentType: String, bytes: ByteArray): MockMultipartFile =
+        MockMultipartFile("audio", filename, contentType, bytes)
 
     private fun bearerToken(subject: String): String {
-        val header = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString("""{"alg":"none"}""".toByteArray())
-        val payload = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString("""{"sub":"$subject"}""".toByteArray())
+        val header = java.util.Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("""{"alg":"none"}""".toByteArray())
+        val payload = java.util.Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("""{"sub":"$subject"}""".toByteArray())
         return "Bearer $header.$payload.signature"
     }
 }

@@ -1,17 +1,17 @@
 package com.elegant.software.blitzpay.config
 
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.server.PathContainer
-import org.springframework.web.reactive.accept.ApiVersionResolver
-import org.springframework.web.reactive.config.ApiVersionConfigurer
-import org.springframework.web.reactive.config.CorsRegistry
-import org.springframework.web.reactive.config.WebFluxConfigurer
+import org.springframework.web.accept.ApiVersionResolver
+import org.springframework.web.servlet.config.annotation.ApiVersionConfigurer
+import org.springframework.web.servlet.config.annotation.CorsRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
-class WebFluxVersioningConfig(
+class WebMvcVersioningConfig(
     private val apiVersionProperties: ApiVersionProperties,
     private val corsProperties: CorsProperties
-) : WebFluxConfigurer {
+) : WebMvcConfigurer {
 
     override fun configureApiVersioning(configurer: ApiVersionConfigurer) {
         configurer
@@ -32,20 +32,12 @@ class WebFluxVersioningConfig(
 class PathOnlyApiVersionResolver : ApiVersionResolver {
     private val versionPattern = Regex("^v(\\d+(?:\\.\\d+)*)$")
 
-    override fun resolveVersion(exchange: org.springframework.web.server.ServerWebExchange): String? {
-        val path = exchange.request.path.value()
+    override fun resolveVersion(request: HttpServletRequest): String? {
+        val path = request.requestURI
 
-        // ✅ EXCLUDE MCP endpoint completely
-        if (path.startsWith("/mcp")) {
-            return null
-        }
+        if (path.startsWith("/mcp")) return null
 
-        val firstSegment = exchange.request.path.pathWithinApplication().elements()
-            .filterIsInstance<PathContainer.PathSegment>()
-            .firstOrNull()
-            ?.valueToMatch()
-            ?: return null
-
+        val firstSegment = path.trimStart('/').substringBefore('/')
         val match = versionPattern.matchEntire(firstSegment) ?: return null
         return match.groupValues[1]
     }

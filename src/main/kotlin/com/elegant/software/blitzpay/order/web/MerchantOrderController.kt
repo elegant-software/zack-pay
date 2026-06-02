@@ -7,25 +7,14 @@ import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.SettleOrderRequest
 import com.elegant.software.blitzpay.order.application.OrderCreationConflictException
 import com.elegant.software.blitzpay.order.application.OrderMutationConflictException
-import com.elegant.software.blitzpay.order.application.UnauthenticatedException
 import com.elegant.software.blitzpay.order.application.OrderService
+import com.elegant.software.blitzpay.order.application.UnauthenticatedException
 import com.elegant.software.blitzpay.order.domain.OrderStatus
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
+import org.springframework.web.bind.annotation.*
 import java.time.ZoneId
 import java.util.Base64
 import java.util.UUID
@@ -33,19 +22,16 @@ import java.util.UUID
 @Tag(name = "Merchant Orders", description = "Create and list orders for authenticated merchant branches")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchant/orders", version = "1")
-class MerchantOrderController(
-    private val orderService: OrderService,
-) {
+class MerchantOrderController(private val orderService: OrderService) {
+
     @Operation(summary = "Create an order from branch products and return a QR code for customer payment")
     @PostMapping
     fun create(
         @RequestBody request: CreateMerchantOrderRequest,
         @RequestHeader(name = "Authorization", required = false) authorization: String?,
-    ): Mono<ResponseEntity<MerchantOrderResponse>> {
+    ): ResponseEntity<MerchantOrderResponse> {
         val merchantUserId = requireSubject(authorization)
-        return Mono.fromCallable { orderService.createMerchantOrder(request, merchantUserId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.status(HttpStatus.CREATED).body(it) }
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createMerchantOrder(request, merchantUserId))
     }
 
     @Operation(summary = "List today's orders for the given branch, with optional status filter")
@@ -54,11 +40,9 @@ class MerchantOrderController(
         @RequestParam branchId: UUID,
         @RequestParam(required = false) status: OrderStatus?,
         @RequestParam(required = false, defaultValue = "UTC") timezone: String,
-    ): Mono<ResponseEntity<List<OrderResponse>>> {
+    ): ResponseEntity<List<OrderResponse>> {
         val zoneId = runCatching { ZoneId.of(timezone) }.getOrDefault(ZoneId.of("UTC"))
-        return Mono.fromCallable { orderService.listMerchantOrders(branchId, status, zoneId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        return ResponseEntity.ok(orderService.listMerchantOrders(branchId, status, zoneId))
     }
 
     @Operation(summary = "Apply a merchant price override to a specific order item")
@@ -68,11 +52,9 @@ class MerchantOrderController(
         @PathVariable itemId: UUID,
         @RequestBody request: MerchantItemPriceOverrideRequest,
         @RequestHeader(name = "Authorization", required = false) authorization: String?,
-    ): Mono<ResponseEntity<OrderResponse>> {
+    ): ResponseEntity<OrderResponse> {
         val merchantUserId = requireSubject(authorization)
-        return Mono.fromCallable { orderService.applyMerchantPriceOverride(orderId, itemId, request, merchantUserId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        return ResponseEntity.ok(orderService.applyMerchantPriceOverride(orderId, itemId, request, merchantUserId))
     }
 
     @Operation(summary = "Manually settle an unpaid or failed order")
@@ -81,19 +63,15 @@ class MerchantOrderController(
         @PathVariable orderId: String,
         @RequestBody request: SettleOrderRequest,
         @RequestHeader(name = "Authorization", required = false) authorization: String?,
-    ): Mono<ResponseEntity<OrderResponse>> {
+    ): ResponseEntity<OrderResponse> {
         val merchantUserId = requireSubject(authorization)
-        return Mono.fromCallable { orderService.manualSettle(orderId, request, merchantUserId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        return ResponseEntity.ok(orderService.manualSettle(orderId, request, merchantUserId))
     }
 
     @Operation(summary = "Get a specific order by orderId for the merchant")
     @GetMapping("/{orderId}")
-    fun getOrder(@PathVariable orderId: String): Mono<ResponseEntity<OrderResponse>> =
-        Mono.fromCallable { orderService.getMerchantOrder(orderId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+    fun getOrder(@PathVariable orderId: String): ResponseEntity<OrderResponse> =
+        ResponseEntity.ok(orderService.getMerchantOrder(orderId))
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun badRequest(ex: IllegalArgumentException): ResponseEntity<OrderErrorResponse> =
@@ -125,10 +103,8 @@ class MerchantOrderController(
             ?.trim()
             ?.takeIf { it.isNotBlank() }
             ?: return null
-
         val parts = token.split('.')
         if (parts.size < 2) return null
-
         return runCatching {
             String(Base64.getUrlDecoder().decode(parts[1]))
         }.mapCatching { payload ->

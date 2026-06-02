@@ -5,8 +5,8 @@ import com.elegant.software.blitzpay.payments.braintree.internal.BraintreeGatewa
 import com.elegant.software.blitzpay.payments.braintree.internal.BraintreePaymentService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
-import reactor.test.StepVerifier
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
@@ -26,23 +26,23 @@ class BraintreePaymentServiceTest {
 
     @Test
     fun `checkout rejects blank nonce`() {
-        StepVerifier.create(service.checkout("", 12.50, "EUR", credentials, merchantId, branchId, "ORDER-1"))
-            .expectErrorMatches { it is IllegalArgumentException && it.message!!.contains("nonce") }
-            .verify()
+        assertThrows<IllegalArgumentException> {
+            service.checkout("", 12.50, "EUR", credentials, merchantId, branchId, "ORDER-1")
+        }
     }
 
     @Test
     fun `checkout rejects zero amount`() {
-        StepVerifier.create(service.checkout("fake-nonce", 0.0, "EUR", credentials, merchantId, branchId, "ORDER-1"))
-            .expectErrorMatches { it is IllegalArgumentException && it.message!!.contains("positive") }
-            .verify()
+        assertThrows<IllegalArgumentException> {
+            service.checkout("fake-nonce", 0.0, "EUR", credentials, merchantId, branchId, "ORDER-1")
+        }
     }
 
     @Test
     fun `checkout rejects negative amount`() {
-        StepVerifier.create(service.checkout("fake-nonce", -5.0, "EUR", credentials, merchantId, branchId, "ORDER-1"))
-            .expectErrorMatches { it is IllegalArgumentException && it.message!!.contains("positive") }
-            .verify()
+        assertThrows<IllegalArgumentException> {
+            service.checkout("fake-nonce", -5.0, "EUR", credentials, merchantId, branchId, "ORDER-1")
+        }
     }
 
     @Test

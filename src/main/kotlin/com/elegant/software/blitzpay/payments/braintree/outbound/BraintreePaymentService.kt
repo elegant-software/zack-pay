@@ -5,8 +5,6 @@ import com.braintreegateway.TransactionRequest
 import com.elegant.software.blitzpay.merchant.api.BraintreeCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
@@ -30,12 +28,11 @@ class BraintreePaymentService(private val gatewayFactory: BraintreeGatewayFactor
 
     private val log = LoggerFactory.getLogger(BraintreePaymentService::class.java)
 
-    fun generateClientToken(credentials: BraintreeCredentials): Mono<String> =
-        Mono.fromCallable {
-            val token = gatewayFactory.get(credentials).clientToken().generate(ClientTokenRequest())
-            log.info("braintree client_token issued merchantId={}", credentials.merchantId)
-            token
-        }.subscribeOn(Schedulers.boundedElastic())
+    fun generateClientToken(credentials: BraintreeCredentials): String {
+        val token = gatewayFactory.get(credentials).clientToken().generate(ClientTokenRequest())
+        log.info("braintree client_token issued merchantId={}", credentials.merchantId)
+        return token
+    }
 
     fun checkout(
         nonce: String,
@@ -47,7 +44,7 @@ class BraintreePaymentService(private val gatewayFactory: BraintreeGatewayFactor
         orderId: String,
         productId: UUID? = null,
         invoiceId: String? = null,
-    ): Mono<BraintreeCheckoutResult> = Mono.fromCallable {
+    ): BraintreeCheckoutResult {
         require(nonce.isNotBlank()) { "nonce is required" }
         require(amount > 0 && amount.isFinite()) { "amount must be a positive number" }
         val formattedAmount = "%.2f".format(Locale.US, amount)
@@ -57,7 +54,7 @@ class BraintreePaymentService(private val gatewayFactory: BraintreeGatewayFactor
             .orderId(orderId)
             .options().submitForSettlement(true).done()
         val result = gatewayFactory.get(credentials).transaction().sale(request)
-        if (result.isSuccess && result.target != null) {
+        return if (result.isSuccess && result.target != null) {
             val tx = result.target
             log.info(
                 "braintree checkout OK tx={} amount={} currency={} merchantId={} branchId={} orderId={} productId={} invoice={}",
@@ -74,5 +71,5 @@ class BraintreePaymentService(private val gatewayFactory: BraintreeGatewayFactor
             )
             BraintreeCheckoutResult.Failure(msg, code)
         }
-    }.subscribeOn(Schedulers.boundedElastic())
+    }
 }

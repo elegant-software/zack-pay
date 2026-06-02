@@ -3,11 +3,10 @@ package com.elegant.software.blitzpay.merchant.iam.outbound
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.BodyInserters
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToMono
-import reactor.core.publisher.Mono
+import org.springframework.util.LinkedMultiValueMap
+import org.springframework.web.client.RestClient
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
 
@@ -17,16 +16,11 @@ class KeycloakTokenProvider(private val properties: KeycloakProperties) {
 
     private val log = LoggerFactory.getLogger(KeycloakTokenProvider::class.java)
     private val cached = AtomicReference<CachedToken?>()
+    private val tokenClient = RestClient.builder().baseUrl(properties.serverUrl).build()
 
-    private val tokenClient: WebClient = WebClient.builder()
-        .baseUrl(properties.serverUrl)
-        .build()
-
-    fun getToken(): Mono<String> {
+    fun getToken(): String {
         val current = cached.get()
-        if (current != null && current.expiresAt.isAfter(Instant.now())) {
-            return Mono.just(current.token)
-        }
+        if (current != null && current.expiresAt.isAfter(Instant.now())) return current.token
         return fetchToken()
     }
 
@@ -35,23 +29,24 @@ class KeycloakTokenProvider(private val properties: KeycloakProperties) {
         log.debug("keycloak token cache invalidated")
     }
 
-    private fun fetchToken(): Mono<String> {
-        return tokenClient.post()
+    private fun fetchToken(): String {
+        val form = LinkedMultiValueMap<String, String>().apply {
+            add("grant_type", "client_credentials")
+            add("client_id", properties.adminClientId)
+            add("client_secret", properties.adminClientSecret)
+        }
+        val response = tokenClient.post()
             .uri("/realms/${properties.realm}/protocol/openid-connect/token")
-            .body(
-                BodyInserters.fromFormData("grant_type", "client_credentials")
-                    .with("client_id", properties.adminClientId)
-                    .with("client_secret", properties.adminClientSecret)
-            )
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(form)
             .retrieve()
-            .bodyToMono<KeycloakTokenResponse>()
-            .map { response ->
-                val expiresAt = Instant.now().plusSeconds(response.expires_in - 30)
-                cached.set(CachedToken(response.access_token, expiresAt))
-                log.debug("keycloak token fetched expiresIn={}s", response.expires_in)
-                response.access_token
-            }
-            .doOnError { e -> log.error("keycloak token fetch failed", e) }
+            .body(KeycloakTokenResponse::class.java)
+            ?: throw IllegalStateException("Empty response from Keycloak token endpoint")
+
+        val expiresAt = Instant.now().plusSeconds(response.expires_in - 30)
+        cached.set(CachedToken(response.access_token, expiresAt))
+        log.debug("keycloak token fetched expiresIn={}s", response.expires_in)
+        return response.access_token
     }
 
     private data class CachedToken(val token: String, val expiresAt: Instant)

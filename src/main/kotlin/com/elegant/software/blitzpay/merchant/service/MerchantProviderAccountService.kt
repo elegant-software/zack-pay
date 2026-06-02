@@ -58,7 +58,7 @@ class MerchantProviderAccountService(
 
     private fun requireValidPsp(pspCode: String) {
         if (!pspRepository.existsById(pspCode)) {
-            throw IllegalArgumentException("Unknown PSP code: $pspCode. Valid codes: STRIPE, TRUELAYER, ADYEN, PAYPAL")
+            throw IllegalArgumentException("Unknown PSP code: $pspCode. Valid codes: STRIPE, TRUELAYER, PAYPAL")
         }
     }
 

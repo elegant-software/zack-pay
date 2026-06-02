@@ -1,14 +1,11 @@
 package com.elegant.software.blitzpay.merchant.web
 
-import reactor.core.publisher.Mono
 import java.util.UUID
 
 object MerchantTenantContext {
-    const val KEY = "merchant.tenantId"
+    private val holder = ThreadLocal<UUID?>()
 
-    fun currentMerchantId(): Mono<UUID> =
-        Mono.deferContextual { ctx ->
-            val id = ctx.getOrDefault<UUID>(KEY, null)
-            if (id != null) Mono.just(id) else Mono.empty()
-        }
+    fun set(merchantId: UUID) { holder.set(merchantId) }
+    fun clear() { holder.remove() }
+    fun currentMerchantId(): UUID? = holder.get()
 }

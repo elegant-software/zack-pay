@@ -8,19 +8,14 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 
 @Tag(name = "Merchant Verticals", description = "Platform-managed industry verticals available for merchant registration")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchants/verticals", version = "1")
-class MerchantVerticalController(
-    private val merchantVerticalService: MerchantVerticalService,
-) {
+class MerchantVerticalController(private val merchantVerticalService: MerchantVerticalService) {
+
     @Operation(summary = "List all active merchant verticals")
     @GetMapping
-    fun list(): Mono<ResponseEntity<List<MerchantVerticalResponse>>> =
-        Mono.fromCallable { merchantVerticalService.listActive() }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+    fun list(): ResponseEntity<List<MerchantVerticalResponse>> =
+        ResponseEntity.ok(merchantVerticalService.listActive())
 }

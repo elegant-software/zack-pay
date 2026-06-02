@@ -8,34 +8,21 @@ import com.elegant.software.blitzpay.order.api.OrderSummaryResponse
 import com.elegant.software.blitzpay.order.api.UpdateOrderItemRequest
 import com.elegant.software.blitzpay.order.application.OrderCreationConflictException
 import com.elegant.software.blitzpay.order.application.OrderMutationConflictException
-import com.elegant.software.blitzpay.order.application.UnauthenticatedException
 import com.elegant.software.blitzpay.order.application.OrderService
+import com.elegant.software.blitzpay.order.application.UnauthenticatedException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
+import org.springframework.web.bind.annotation.*
 import java.util.Base64
 import java.util.UUID
 
 @Tag(name = "Orders", description = "Create and inspect orders for shoppers")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/orders", version = "1")
-class ShopperOrderController(
-    private val orderService: OrderService,
-) {
+class ShopperOrderController(private val orderService: OrderService) {
     private val log = LoggerFactory.getLogger(ShopperOrderController::class.java)
 
     @Operation(summary = "Create an order and initiate payment via the chosen provider")
@@ -43,44 +30,27 @@ class ShopperOrderController(
     fun create(
         @RequestBody request: CreateOrderRequest,
         @RequestHeader(name = "Authorization", required = false) authorization: String?,
-    ): Mono<ResponseEntity<OrderResponse>> {
+    ): ResponseEntity<OrderResponse> {
         val shopperId = requireSubject(authorization)
-        return Mono.fromCallable {
-            log.info(
-                "order create request shopperId={} itemCount={} productIds={}",
-                shopperId, request.items.size, request.items.map { it.productId },
-            )
-            orderService.createShopperOrder(request, shopperId)
+        log.info("order create request shopperId={} itemCount={} productIds={}", shopperId, request.items.size, request.items.map { it.productId })
+        val response = orderService.createShopperOrder(request, shopperId)
+        LogContext.with(LogContext.ORDER_ID to response.orderId) {
+            log.info("order created orderId={} totalAmountMinor={} currency={} itemCount={}", response.orderId, response.totalAmountMinor, response.currency, response.items.size)
         }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { response ->
-                LogContext.with(LogContext.ORDER_ID to response.orderId) {
-                    log.info(
-                        "order created orderId={} totalAmountMinor={} currency={} itemCount={}",
-                        response.orderId, response.totalAmountMinor, response.currency, response.items.size,
-                    )
-                }
-                ResponseEntity.status(HttpStatus.CREATED).body(response)
-            }
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     @Operation(summary = "List recent orders for the authenticated shopper (last 7 days)")
     @GetMapping
-    fun list(
-        @RequestHeader(name = "Authorization", required = false) authorization: String?,
-    ): Mono<ResponseEntity<List<OrderSummaryResponse>>> {
+    fun list(@RequestHeader(name = "Authorization", required = false) authorization: String?): ResponseEntity<List<OrderSummaryResponse>> {
         val shopperId = requireSubject(authorization)
-        return Mono.fromCallable { orderService.listShopperOrders(shopperId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        return ResponseEntity.ok(orderService.listShopperOrders(shopperId))
     }
 
     @Operation(summary = "Get the latest business status for an order")
     @GetMapping("/{orderId}")
-    fun get(@PathVariable orderId: String): Mono<ResponseEntity<OrderResponse>> =
-        Mono.fromCallable { orderService.get(orderId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+    fun get(@PathVariable orderId: String): ResponseEntity<OrderResponse> =
+        ResponseEntity.ok(orderService.get(orderId))
 
     @Operation(summary = "Add an item to an unpaid order")
     @PostMapping("/{orderId}/items")
@@ -88,11 +58,9 @@ class ShopperOrderController(
         @PathVariable orderId: String,
         @RequestBody request: AddOrderItemRequest,
         @RequestHeader(name = "Authorization", required = false) authorization: String?,
-    ): Mono<ResponseEntity<OrderResponse>> {
+    ): ResponseEntity<OrderResponse> {
         val shopperId = requireSubject(authorization)
-        return Mono.fromCallable { orderService.addItem(orderId, request, shopperId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        return ResponseEntity.ok(orderService.addItem(orderId, request, shopperId))
     }
 
     @Operation(summary = "Update quantity of an item in an unpaid order")
@@ -102,11 +70,9 @@ class ShopperOrderController(
         @PathVariable itemId: UUID,
         @RequestBody request: UpdateOrderItemRequest,
         @RequestHeader(name = "Authorization", required = false) authorization: String?,
-    ): Mono<ResponseEntity<OrderResponse>> {
+    ): ResponseEntity<OrderResponse> {
         val shopperId = requireSubject(authorization)
-        return Mono.fromCallable { orderService.updateItemQuantity(orderId, itemId, request, shopperId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        return ResponseEntity.ok(orderService.updateItemQuantity(orderId, itemId, request, shopperId))
     }
 
     @Operation(summary = "Remove an item from an unpaid order (auto-cancels if last item)")
@@ -115,11 +81,9 @@ class ShopperOrderController(
         @PathVariable orderId: String,
         @PathVariable itemId: UUID,
         @RequestHeader(name = "Authorization", required = false) authorization: String?,
-    ): Mono<ResponseEntity<OrderResponse>> {
+    ): ResponseEntity<OrderResponse> {
         val shopperId = requireSubject(authorization)
-        return Mono.fromCallable { orderService.removeItem(orderId, itemId, shopperId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        return ResponseEntity.ok(orderService.removeItem(orderId, itemId, shopperId))
     }
 
     @Operation(summary = "Cancel an unpaid order")
@@ -127,11 +91,9 @@ class ShopperOrderController(
     fun cancel(
         @PathVariable orderId: String,
         @RequestHeader(name = "Authorization", required = false) authorization: String?,
-    ): Mono<ResponseEntity<OrderResponse>> {
+    ): ResponseEntity<OrderResponse> {
         val shopperId = requireSubject(authorization)
-        return Mono.fromCallable { orderService.cancelOrder(orderId, shopperId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        return ResponseEntity.ok(orderService.cancelOrder(orderId, shopperId))
     }
 
     @ExceptionHandler(IllegalArgumentException::class)
@@ -164,10 +126,8 @@ class ShopperOrderController(
             ?.trim()
             ?.takeIf { it.isNotBlank() }
             ?: return null
-
         val parts = token.split('.')
         if (parts.size < 2) return null
-
         return runCatching {
             String(Base64.getUrlDecoder().decode(parts[1]))
         }.mapCatching { payload ->

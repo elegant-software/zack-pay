@@ -264,7 +264,6 @@ paths:
       tags:
       - Merchant Location
       summary: Get a merchant's current location
-      description: Returns 404 if the merchant has no location set.
       operationId: getLocation
       parameters:
       - name: merchantId
@@ -284,8 +283,6 @@ paths:
       tags:
       - Merchant Location
       summary: Set or update a merchant's location and geofence radius
-      description: Idempotent — replaces any existing location. geofenceRadiusMeters
-        must be > 0. googlePlaceId is optional and used to correlate with Google Maps.
       operationId: setLocation
       parameters:
       - name: merchantId
@@ -311,8 +308,6 @@ paths:
       tags:
       - Merchant Location
       summary: Remove a merchant's location
-      description: "Clears latitude, longitude, geofence radius, and googlePlaceId.\
-        \ Returns 204 on success."
       operationId: deleteLocation
       parameters:
       - name: merchantId
@@ -324,6 +319,63 @@ paths:
       responses:
         "200":
           description: OK
+  /{version}/merchants/{merchantId}/branches/{branchId}:
+    get:
+      tags:
+      - Merchant Branches
+      summary: Get a branch by ID
+      operationId: get_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BranchResponse"
+    put:
+      tags:
+      - Merchant Branches
+      summary: Update a branch under a merchant
+      operationId: update_2
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBranchRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BranchResponse"
   /{version}/merchants/{merchantId}/branches/{branchId}/image:
     put:
       tags:
@@ -394,91 +446,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AppearanceResponse"
-  /{version}/merchants/{merchantId}/branches/{branchId}:
-    get:
-      tags:
-      - Merchant Branches
-      summary: Get a branch by ID
-      operationId: get_1
-      parameters:
-      - name: merchantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: branchId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/BranchResponse"
-    put:
-      tags:
-      - Merchant Branches
-      summary: Update a branch under a merchant
-      operationId: update_2
-      parameters:
-      - name: merchantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: branchId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateBranchRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/BranchResponse"
-  /{version}/merchants/{id}/logo:
-    put:
-      tags:
-      - Merchant Onboarding
-      summary: Set merchant logo
-      description: "Records the S3 storage key of a logo already uploaded by the client.\
-        \ Expected key format: merchants/{applicationId}/logo.{ext}"
-      operationId: setLogo
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SetLogoRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/MerchantSummary"
   /{version}/merchants/{id}:
     get:
       tags:
@@ -524,6 +491,34 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MerchantDetailsResponse"
+  /{version}/merchants/{id}/logo:
+    put:
+      tags:
+      - Merchant Onboarding
+      summary: Set merchant logo
+      description: "Records the S3 storage key of a logo already uploaded by the client.\
+        \ Expected key format: merchants/{applicationId}/logo.{ext}"
+      operationId: setLogo
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetLogoRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MerchantSummary"
   /{version}/webhooks/truelayer:
     post:
       tags:
@@ -542,11 +537,11 @@ paths:
             '*/*':
               schema:
                 type: object
-  /{version}/webhooks/stripe/connect:
+  /{version}/webhooks/stripe:
     post:
       tags:
       - stripe-webhook-controller
-      operationId: receiveConnect
+      operationId: receive_1
       parameters:
       - name: Stripe-Signature
         in: header
@@ -566,11 +561,11 @@ paths:
             '*/*':
               schema:
                 type: object
-  /{version}/webhooks/stripe:
+  /{version}/webhooks/stripe/connect:
     post:
       tags:
       - stripe-webhook-controller
-      operationId: receive_1
+      operationId: receiveConnect
       parameters:
       - name: Stripe-Signature
         in: header
@@ -644,6 +639,25 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProximityResponse"
+  /{version}/payments/stripe/terminal/connection-token:
+    post:
+      tags:
+      - stripe-terminal-controller
+      summary: Issue a Stripe Terminal ConnectionToken for the merchant app SDK
+      operationId: connectionToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectionTokenRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
   /{version}/payments/stripe/pay-by-bank/create-checkout-session:
     post:
       tags:
@@ -748,6 +762,51 @@ paths:
                 oneOf:
                 - $ref: "#/components/schemas/CheckoutSuccessResponse"
                 - $ref: "#/components/schemas/CheckoutFailureResponse"
+  /{version}/orders:
+    get:
+      tags:
+      - Orders
+      summary: List recent orders for the authenticated shopper (last 7 days)
+      operationId: list
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderSummaryResponse"
+    post:
+      tags:
+      - Orders
+      summary: Create an order and initiate payment via the chosen provider
+      operationId: create
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
   /{version}/orders/{orderId}/items:
     post:
       tags:
@@ -802,51 +861,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
-  /{version}/orders:
-    get:
-      tags:
-      - Orders
-      summary: List recent orders for the authenticated shopper (last 7 days)
-      operationId: list
-      parameters:
-      - name: Authorization
-        in: header
-        required: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/OrderSummaryResponse"
+  /{version}/merchants:
     post:
       tags:
-      - Orders
-      summary: Create an order and initiate payment via the chosen provider
-      operationId: create
-      parameters:
-      - name: Authorization
-        in: header
-        required: false
-        schema:
-          type: string
+      - Merchant Onboarding
+      summary: "Register a new merchant (directly ACTIVE, duplicate registration number\
+        \ rejected with 409)"
+      operationId: create_1
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateOrderRequest"
+              $ref: "#/components/schemas/CreateMerchantRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/OrderResponse"
+                $ref: "#/components/schemas/MerchantSummary"
   /{version}/merchants/{merchantId}/stripe-connect:
     post:
       tags:
@@ -866,6 +900,26 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/StartOnboardingRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /{version}/merchants/{merchantId}/stripe-connect/tap-to-pay/enable:
+    post:
+      tags:
+      - Stripe Connect
+      summary: Enable Tap to Pay for this merchant — requires charges_enabled
+      operationId: enableTapToPay
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: OK
@@ -911,7 +965,7 @@ paths:
       tags:
       - Merchant Products
       summary: Create a product for the merchant
-      operationId: create_1
+      operationId: create_2
       parameters:
       - name: merchantId
         in: path
@@ -977,7 +1031,7 @@ paths:
       tags:
       - Merchant Product Categories
       summary: Create a product category
-      operationId: create_2
+      operationId: create_3
       parameters:
       - name: merchantId
         in: path
@@ -998,71 +1052,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProductCategoryResponse"
-  /{version}/merchants/{merchantId}/branches/{branchId}/appearances:
-    get:
-      tags:
-      - Appearances
-      summary: List all appearances for a branch
-      operationId: list_3
-      parameters:
-      - name: merchantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: branchId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AppearanceResponse"
-    post:
-      tags:
-      - Appearances
-      summary: Create a new appearance for a MOBILE branch
-      operationId: create_3
-      parameters:
-      - name: merchantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: branchId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateAppearanceRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/AppearanceResponse"
   /{version}/merchants/{merchantId}/branches:
     get:
       tags:
       - Merchant Branches
       summary: List branches for a merchant
-      operationId: list_4
+      operationId: list_3
       parameters:
       - name: merchantId
         in: path
@@ -1104,6 +1099,65 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BranchResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/appearances:
+    get:
+      tags:
+      - Appearances
+      summary: List all appearances for a branch
+      operationId: list_4
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppearanceResponse"
+    post:
+      tags:
+      - Appearances
+      summary: Create a new appearance for a MOBILE branch
+      operationId: create_5
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAppearanceRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppearanceResponse"
   /{version}/merchants/{id}/logo/upload-url:
     post:
       tags:
@@ -1173,56 +1227,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MerchantSearchResponse"
-  /{version}/merchants:
-    post:
-      tags:
-      - Merchant Onboarding
-      summary: "Register a new merchant (directly ACTIVE, duplicate registration number\
-        \ rejected with 409)"
-      operationId: create_5
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateMerchantRequest"
-        required: true
-      responses:
-        "201":
-          description: Created
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/MerchantSummary"
-  /{version}/merchant/orders/{orderId}/settle:
-    post:
-      tags:
-      - Merchant Orders
-      summary: Manually settle an unpaid or failed order
-      operationId: settle
-      parameters:
-      - name: orderId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: Authorization
-        in: header
-        required: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SettleOrderRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/OrderResponse"
   /{version}/merchant/orders:
     get:
       tags:
@@ -1287,27 +1291,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MerchantOrderResponse"
-  /{version}/invoices/pdf:
+  /{version}/merchant/orders/{orderId}/settle:
     post:
       tags:
-      - Invoices
-      summary: Generate ZUGFeRD PDF invoice
-      description: Returns a human-readable PDF/A-3 with embedded ZUGFeRD XML.
-      operationId: generatePdf
+      - Merchant Orders
+      summary: Manually settle an unpaid or failed order
+      operationId: settle
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/InvoiceData"
+              $ref: "#/components/schemas/SettleOrderRequest"
         required: true
       responses:
         "200":
           description: OK
           content:
-            application/pdf:
+            '*/*':
               schema:
-                type: string
-                format: byte
+                $ref: "#/components/schemas/OrderResponse"
   /{version}/invoices:
     post:
       tags:
@@ -1327,6 +1340,27 @@ paths:
           description: OK
           content:
             application/xml:
+              schema:
+                type: string
+                format: byte
+  /{version}/invoices/pdf:
+    post:
+      tags:
+      - Invoices
+      summary: Generate ZUGFeRD PDF invoice
+      description: Returns a human-readable PDF/A-3 with embedded ZUGFeRD XML.
+      operationId: generatePdf
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvoiceData"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/pdf:
               schema:
                 type: string
                 format: byte
@@ -1468,9 +1502,7 @@ paths:
           content:
             text/event-stream:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ServerSentEventPaymentResult"
+                $ref: "#/components/schemas/SseEmitter"
   /{version}/payments/{paymentRequestId}:
     get:
       tags:
@@ -1533,8 +1565,7 @@ paths:
     get:
       tags:
       - Stripe Connect
-      summary: Refresh an expired Connect onboarding URL — Stripe redirects here when
-        the onboarding link expires
+      summary: Refresh an expired Connect onboarding URL
       operationId: refreshOnboardingUrl
       parameters:
       - name: merchantId
@@ -1661,10 +1692,6 @@ paths:
       tags:
       - Merchant Location
       summary: Find merchants near a position
-      description: "Returns merchants that have at least one active branch location\
-        \ within radiusMeters of (lat, lng). Intended for mobile geofence-enter events.\
-        \ Default search radius is 500 m. Results are ordered by ascending nearest\
-        \ branch distance. Merchant-level location is ignored."
       operationId: findNearby
       parameters:
       - name: lat
@@ -1785,104 +1812,6 @@ paths:
             text/html:
               schema:
                 type: string
-  /actuator/metrics/{requiredMetricName}:
-    get:
-      tags:
-      - Actuator
-      summary: Actuator web endpoint 'metrics-requiredMetricName'
-      operationId: metric
-      parameters:
-      - name: requiredMetricName
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: tag
-        in: query
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/vnd.spring-boot.actuator.v3+json:
-              schema:
-                type: object
-            application/vnd.spring-boot.actuator.v2+json:
-              schema:
-                type: object
-            application/json:
-              schema:
-                type: object
-        "404":
-          description: Not Found
-  /actuator/metrics:
-    get:
-      tags:
-      - Actuator
-      summary: Actuator web endpoint 'metrics'
-      operationId: listNames
-      responses:
-        "200":
-          description: OK
-          content:
-            application/vnd.spring-boot.actuator.v3+json:
-              schema:
-                type: object
-            application/vnd.spring-boot.actuator.v2+json:
-              schema:
-                type: object
-            application/json:
-              schema:
-                type: object
-  /actuator/health/{path}:
-    get:
-      tags:
-      - Actuator
-      summary: Actuator web endpoint 'health-path'
-      operationId: health
-      parameters:
-      - name: path
-        in: path
-        required: true
-        schema:
-          type: array
-          items:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/vnd.spring-boot.actuator.v3+json:
-              schema:
-                type: object
-            application/vnd.spring-boot.actuator.v2+json:
-              schema:
-                type: object
-            application/json:
-              schema:
-                type: object
-        "404":
-          description: Not Found
-  /actuator/health:
-    get:
-      tags:
-      - Actuator
-      summary: Actuator web endpoint 'health'
-      operationId: health_1
-      responses:
-        "200":
-          description: OK
-          content:
-            application/vnd.spring-boot.actuator.v3+json:
-              schema:
-                type: object
-            application/vnd.spring-boot.actuator.v2+json:
-              schema:
-                type: object
-            application/json:
-              schema:
-                type: object
   /actuator:
     get:
       tags:
@@ -1914,6 +1843,95 @@ paths:
                   type: object
                   additionalProperties:
                     $ref: "#/components/schemas/Link"
+  /actuator/metrics:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'metrics'
+      operationId: listNames
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
+  /actuator/metrics/{requiredMetricName}:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'metrics-requiredMetricName'
+      operationId: metric
+      parameters:
+      - name: requiredMetricName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: tag
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: Not Found
+  /actuator/health:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'health'
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
+  /{version}/merchants/{merchantId}/stripe-connect/tap-to-pay:
+    delete:
+      tags:
+      - Stripe Connect
+      summary: Disable Tap to Pay for this merchant
+      operationId: disableTapToPay
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
   /{version}/devices/{expoPushToken}:
     delete:
       tags:
@@ -2102,13 +2120,45 @@ components:
       - latitude
       - longitude
       - merchantId
-    SetBranchImageRequest:
+    UpdateBranchRequest:
       type: object
       properties:
-        storageKey:
+        name:
+          type: string
+        active:
+          type: boolean
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        contactFullName:
+          type: string
+        website:
+          type: string
+        contactEmail:
+          type: string
+        contactPhoneNumber:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        geofenceRadiusMeters:
+          type: integer
+          format: int32
+        googlePlaceId:
           type: string
       required:
-      - storageKey
+      - active
+      - name
     BranchResponse:
       type: object
       properties:
@@ -2185,6 +2235,13 @@ components:
       - name
       - status
       - updatedAt
+    SetBranchImageRequest:
+      type: object
+      properties:
+        storageKey:
+          type: string
+      required:
+      - storageKey
     PushLivePositionRequest:
       type: object
       properties:
@@ -2253,108 +2310,6 @@ components:
       - merchantId
       - startTime
       - updatedAt
-    UpdateBranchRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        active:
-          type: boolean
-        addressLine1:
-          type: string
-        addressLine2:
-          type: string
-        city:
-          type: string
-        postalCode:
-          type: string
-        country:
-          type: string
-        contactFullName:
-          type: string
-        website:
-          type: string
-        contactEmail:
-          type: string
-        contactPhoneNumber:
-          type: string
-        latitude:
-          type: number
-          format: double
-        longitude:
-          type: number
-          format: double
-        geofenceRadiusMeters:
-          type: integer
-          format: int32
-        googlePlaceId:
-          type: string
-      required:
-      - active
-      - name
-    SetLogoRequest:
-      type: object
-      properties:
-        storageKey:
-          type: string
-      required:
-      - storageKey
-    MerchantSummary:
-      type: object
-      properties:
-        applicationId:
-          type: string
-          format: uuid
-        applicationReference:
-          type: string
-        merchantCode:
-          type: string
-        merchantName:
-          type: string
-        merchantStatus:
-          type: string
-          enum:
-          - ACTIVE
-          - INACTIVE
-        registrationNumber:
-          type: string
-        status:
-          type: string
-          enum:
-          - DRAFT
-          - SUBMITTED
-          - VERIFICATION
-          - SCREENING
-          - RISK_REVIEW
-          - DECISION_PENDING
-          - SETUP
-          - ACTIVE
-          - MONITORING
-          - ACTION_REQUIRED
-          - REJECTED
-        submittedAt:
-          type: string
-          format: date-time
-        lastUpdatedAt:
-          type: string
-          format: date-time
-        logoStorageKey:
-          type: string
-        offerings:
-          type: array
-          items:
-            type: string
-          uniqueItems: true
-      required:
-      - applicationId
-      - applicationReference
-      - lastUpdatedAt
-      - merchantCode
-      - merchantName
-      - merchantStatus
-      - offerings
-      - registrationNumber
-      - status
     MerchantAddress:
       type: object
       properties:
@@ -2547,6 +2502,69 @@ components:
       - primaryBusinessAddress
       - registrationNumber
       - status
+    SetLogoRequest:
+      type: object
+      properties:
+        storageKey:
+          type: string
+      required:
+      - storageKey
+    MerchantSummary:
+      type: object
+      properties:
+        applicationId:
+          type: string
+          format: uuid
+        applicationReference:
+          type: string
+        merchantCode:
+          type: string
+        merchantName:
+          type: string
+        merchantStatus:
+          type: string
+          enum:
+          - ACTIVE
+          - INACTIVE
+        registrationNumber:
+          type: string
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - SUBMITTED
+          - VERIFICATION
+          - SCREENING
+          - RISK_REVIEW
+          - DECISION_PENDING
+          - SETUP
+          - ACTIVE
+          - MONITORING
+          - ACTION_REQUIRED
+          - REJECTED
+        submittedAt:
+          type: string
+          format: date-time
+        lastUpdatedAt:
+          type: string
+          format: date-time
+        logoStorageKey:
+          type: string
+        offerings:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+      required:
+      - applicationId
+      - applicationReference
+      - lastUpdatedAt
+      - merchantCode
+      - merchantName
+      - merchantStatus
+      - offerings
+      - registrationNumber
+      - status
     VoiceTranscriptionResponse:
       type: object
       properties:
@@ -2660,6 +2678,18 @@ components:
       required:
       - action
       - recorded
+    ConnectionTokenRequest:
+      type: object
+      properties:
+        merchantId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+      required:
+      - branchId
+      - merchantId
     CreatePayByBankCheckoutSessionRequest:
       type: object
       properties:
@@ -2721,6 +2751,8 @@ components:
         productId:
           type: string
           format: uuid
+        paymentMethodType:
+          type: string
       required:
       - orderId
     CreateIntentResponse:
@@ -2848,7 +2880,7 @@ components:
       required:
       - message
       - status
-    AddOrderItemRequest:
+    CreateOrderItemRequest:
       type: object
       properties:
         productId:
@@ -2860,6 +2892,64 @@ components:
       required:
       - productId
       - quantity
+    CreateOrderRequest:
+      type: object
+      properties:
+        branchId:
+          type: string
+          format: uuid
+        orderType:
+          type: string
+          enum:
+          - PRE_ORDER
+          - WALK_IN_ORDERING
+        usesDeferredPayment:
+          type: boolean
+        customerLocation:
+          $ref: "#/components/schemas/OrderCustomerLocationRequest"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateOrderItemRequest"
+        paymentMethod:
+          type: string
+          enum:
+          - TRUELAYER
+          - QRPAY
+          - BRAINTREE
+          - STRIPE
+        checkoutPaymentMethod:
+          type: string
+          enum:
+          - BANK_ACCOUNT
+          - CARD
+          - PAY_BY_BANK
+          - TERMINAL
+          - PAYPAL
+      required:
+      - items
+      - orderType
+      - usesDeferredPayment
+    OrderCustomerLocationRequest:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        accuracyMeters:
+          type: number
+          format: double
+        capturedAt:
+          type: string
+          format: date-time
+      required:
+      - accuracyMeters
+      - capturedAt
+      - latitude
+      - longitude
     OrderItemResponse:
       type: object
       properties:
@@ -2928,6 +3018,14 @@ components:
           enum:
           - APP_PAYMENT
           - MANUAL_SETTLEMENT
+        checkoutPaymentMethod:
+          type: string
+          enum:
+          - BANK_ACCOUNT
+          - CARD
+          - PAY_BY_BANK
+          - TERMINAL
+          - PAYPAL
         items:
           type: array
           items:
@@ -2969,7 +3067,7 @@ components:
       required:
       - paymentRequestId
       - provider
-    CreateOrderItemRequest:
+    AddOrderItemRequest:
       type: object
       properties:
         productId:
@@ -2981,56 +3079,42 @@ components:
       required:
       - productId
       - quantity
-    CreateOrderRequest:
+    CreateMerchantRequest:
       type: object
       properties:
-        branchId:
+        merchantName:
           type: string
-          format: uuid
-        orderType:
-          type: string
-          enum:
-          - PRE_ORDER
-          - WALK_IN_ORDERING
-        usesDeferredPayment:
-          type: boolean
-        customerLocation:
-          $ref: "#/components/schemas/OrderCustomerLocationRequest"
-        items:
+        contactInfo:
+          $ref: "#/components/schemas/MerchantContactInfo"
+        address:
+          $ref: "#/components/schemas/MerchantAddress"
+        location:
+          $ref: "#/components/schemas/MerchantLocationInfo"
+        offerings:
           type: array
           items:
-            $ref: "#/components/schemas/CreateOrderItemRequest"
-        paymentMethod:
+            type: string
+          uniqueItems: true
+        legalBusinessName:
           type: string
-          enum:
-          - TRUELAYER
-          - QRPAY
-          - BRAINTREE
-          - STRIPE
-      required:
-      - items
-      - orderType
-      - usesDeferredPayment
-    OrderCustomerLocationRequest:
-      type: object
-      properties:
-        latitude:
-          type: number
-          format: double
-        longitude:
-          type: number
-          format: double
-        accuracyMeters:
-          type: number
-          format: double
-        capturedAt:
+        businessType:
           type: string
-          format: date-time
+        registrationNumber:
+          type: string
+        operatingCountry:
+          type: string
+        primaryBusinessAddress:
+          type: string
+        contactFullName:
+          type: string
+        contactEmail:
+          type: string
+        contactPhoneNumber:
+          type: string
       required:
-      - accuracyMeters
-      - capturedAt
-      - latitude
-      - longitude
+      - businessType
+      - operatingCountry
+      - registrationNumber
     StartOnboardingRequest:
       type: object
       properties:
@@ -3048,28 +3132,6 @@ components:
           format: int32
       required:
       - name
-    CreateAppearanceRequest:
-      type: object
-      properties:
-        declaredLatitude:
-          type: number
-          format: double
-        declaredLongitude:
-          type: number
-          format: double
-        startTime:
-          type: string
-          format: date-time
-        endTime:
-          type: string
-          format: date-time
-        name:
-          type: string
-      required:
-      - declaredLatitude
-      - declaredLongitude
-      - endTime
-      - startTime
     CreateBranchRequest:
       type: object
       properties:
@@ -3106,6 +3168,28 @@ components:
           type: string
       required:
       - name
+    CreateAppearanceRequest:
+      type: object
+      properties:
+        declaredLatitude:
+          type: number
+          format: double
+        declaredLongitude:
+          type: number
+          format: double
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        name:
+          type: string
+      required:
+      - declaredLatitude
+      - declaredLongitude
+      - endTime
+      - startTime
     MerchantLogoUploadRequest:
       type: object
       properties:
@@ -3212,47 +3296,6 @@ components:
       - merchantMobility
       - merchantName
       - status
-    CreateMerchantRequest:
-      type: object
-      properties:
-        merchantName:
-          type: string
-        contactInfo:
-          $ref: "#/components/schemas/MerchantContactInfo"
-        address:
-          $ref: "#/components/schemas/MerchantAddress"
-        location:
-          $ref: "#/components/schemas/MerchantLocationInfo"
-        offerings:
-          type: array
-          items:
-            type: string
-          uniqueItems: true
-        legalBusinessName:
-          type: string
-        businessType:
-          type: string
-        registrationNumber:
-          type: string
-        operatingCountry:
-          type: string
-        primaryBusinessAddress:
-          type: string
-        contactFullName:
-          type: string
-        contactEmail:
-          type: string
-        contactPhoneNumber:
-          type: string
-      required:
-      - businessType
-      - operatingCountry
-      - registrationNumber
-    SettleOrderRequest:
-      type: object
-      properties:
-        note:
-          type: string
     CreateMerchantOrderRequest:
       type: object
       properties:
@@ -3318,6 +3361,14 @@ components:
           format: int64
         paymentRetryAllowed:
           type: boolean
+        checkoutPaymentMethod:
+          type: string
+          enum:
+          - BANK_ACCOUNT
+          - CARD
+          - PAY_BY_BANK
+          - TERMINAL
+          - PAYPAL
         qrCode:
           $ref: "#/components/schemas/QrCodeResponse"
         items:
@@ -3347,6 +3398,11 @@ components:
           type: string
       required:
       - paymentUrl
+    SettleOrderRequest:
+      type: object
+      properties:
+        note:
+          type: string
     BankAccountData:
       type: object
       properties:
@@ -3483,7 +3539,12 @@ components:
           format: int64
       required:
       - unitPriceMinor
-    ServerSentEventPaymentResult: {}
+    SseEmitter:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          format: int64
     PaymentStatusResponse:
       type: object
       properties:
@@ -3545,6 +3606,14 @@ components:
           enum:
           - APP_PAYMENT
           - MANUAL_SETTLEMENT
+        checkoutPaymentMethod:
+          type: string
+          enum:
+          - BANK_ACCOUNT
+          - CARD
+          - PAY_BY_BANK
+          - TERMINAL
+          - PAYPAL
         createdAt:
           type: string
           format: date-time
@@ -3574,6 +3643,7 @@ components:
             enum:
             - CARD
             - PAY_BY_BANK
+            - TAP_TO_PAY
           uniqueItems: true
       required:
       - chargesEnabled

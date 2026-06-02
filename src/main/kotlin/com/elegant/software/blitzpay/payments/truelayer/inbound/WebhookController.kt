@@ -84,7 +84,7 @@ class TlWebhookController(
         }
 
         val jwksJson = try {
-            jwksService.fetchJwks().block()
+            jwksService.fetchJwks()
         } catch (ex: Exception) {
             LOG.error("truelayer webhook rejected reason=jwks_fetch_failed webhookId={} jku={}", webhookId, jkuFromSig, ex)
             null

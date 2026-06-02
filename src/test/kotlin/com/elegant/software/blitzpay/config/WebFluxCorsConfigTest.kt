@@ -4,12 +4,12 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.springframework.web.reactive.config.CorsRegistry
+import org.springframework.web.servlet.config.annotation.CorsRegistry
 
 class WebFluxCorsConfigTest {
 
     private val corsProperties = CorsProperties()
-    private val config = WebFluxVersioningConfig(ApiVersionProperties(), corsProperties)
+    private val config = WebMvcVersioningConfig(ApiVersionProperties(), corsProperties)
 
     @Test
     fun `registers angular dev cors mapping globally`() {

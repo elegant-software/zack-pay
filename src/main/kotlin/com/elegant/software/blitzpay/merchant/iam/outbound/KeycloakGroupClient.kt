@@ -8,7 +8,6 @@ import org.springframework.web.service.annotation.GetExchange
 import org.springframework.web.service.annotation.HttpExchange
 import org.springframework.web.service.annotation.PostExchange
 import org.springframework.web.service.annotation.PutExchange
-import reactor.core.publisher.Mono
 
 @HttpExchange("/groups")
 interface KeycloakGroupClient {
@@ -17,29 +16,29 @@ interface KeycloakGroupClient {
     fun searchGroups(
         @RequestParam search: String,
         @RequestParam exact: Boolean,
-    ): Mono<List<KeycloakGroupRepresentation>>
+    ): List<KeycloakGroupRepresentation>
 
     @PostExchange
     fun createGroup(
         @RequestBody body: KeycloakGroupBody,
-    ): Mono<ResponseEntity<Void>>
+    ): ResponseEntity<Void>
 
     @GetExchange("/{parentId}/children")
     fun getChildren(
         @PathVariable parentId: String,
         @RequestParam search: String,
         @RequestParam exact: Boolean,
-    ): Mono<List<KeycloakGroupRepresentation>>
+    ): List<KeycloakGroupRepresentation>
 
     @PostExchange("/{parentId}/children")
     fun createChildGroup(
         @PathVariable parentId: String,
         @RequestBody body: KeycloakGroupBody,
-    ): Mono<ResponseEntity<Void>>
+    ): ResponseEntity<Void>
 
     @PutExchange("/{groupId}")
     fun updateGroup(
         @PathVariable groupId: String,
         @RequestBody body: KeycloakGroupBody,
-    ): Mono<Void>
+    )
 }

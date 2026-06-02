@@ -7,16 +7,12 @@ import com.elegant.software.blitzpay.merchant.application.MerchantProductService
 import com.elegant.software.blitzpay.merchant.application.ProductImageUpload
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.http.codec.multipart.FilePart
 import org.springframework.web.bind.annotation.*
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
+import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
-import java.util.Optional
 import java.util.UUID
 
 data class ProductErrorResponse(val error: String)
@@ -24,9 +20,7 @@ data class ProductErrorResponse(val error: String)
 @Tag(name = "Merchant Products", description = "Product catalog management for merchants")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchants/{merchantId}/products", version = "1")
-class MerchantProductController(
-    private val merchantProductService: MerchantProductService
-) {
+class MerchantProductController(private val merchantProductService: MerchantProductService) {
 
     @Operation(summary = "Create a product for the merchant")
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -38,48 +32,40 @@ class MerchantProductController(
         @RequestPart("description", required = false) description: String?,
         @RequestPart("categoryId", required = false) categoryId: String?,
         @RequestPart("productCode", required = false) productCode: String?,
-        @RequestPart("image", required = false) image: FilePart?
-    ): Mono<ResponseEntity<ProductResponse>> =
-        image.toProductImageUpload()
-            .flatMap { upload ->
-                Mono.fromCallable {
-                    merchantProductService.create(
-                        merchantId,
-                        CreateProductRequest(
-                            name = name,
-                            branchId = UUID.fromString(branchId),
-                            unitPrice = BigDecimal(unitPrice),
-                            description = description,
-                            categoryId = categoryId.toUuidOrNull(),
-                            productCode = productCode.toLongOrNull()
-                        ),
-                        upload.orElse(null)
-                    )
-                }.subscribeOn(Schedulers.boundedElastic())
-            }
-            .map { ResponseEntity.status(HttpStatus.CREATED).body(it) }
+        @RequestPart("image", required = false) image: MultipartFile?,
+    ): ResponseEntity<ProductResponse> {
+        val response = merchantProductService.create(
+            merchantId,
+            CreateProductRequest(
+                name = name,
+                branchId = UUID.fromString(branchId),
+                unitPrice = BigDecimal(unitPrice),
+                description = description,
+                categoryId = categoryId.toUuidOrNull(),
+                productCode = productCode.toLongOrNull(),
+            ),
+            image?.toProductImageUpload()
+        )
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
+    }
 
     @Operation(summary = "List products for the merchant")
     @GetMapping
     fun list(
         @PathVariable merchantId: UUID,
         @RequestParam("branchId") branchId: UUID,
-        @RequestParam("categoryId", required = false) categoryId: UUID?
-    ): Mono<ResponseEntity<List<ProductResponse>>> =
-        Mono.fromCallable { merchantProductService.list(merchantId, branchId, categoryId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        @RequestParam("categoryId", required = false) categoryId: UUID?,
+    ): ResponseEntity<List<ProductResponse>> =
+        ResponseEntity.ok(merchantProductService.list(merchantId, branchId, categoryId))
 
     @Operation(summary = "Get a single product")
     @GetMapping("/{productId}")
     fun get(
         @PathVariable merchantId: UUID,
         @PathVariable productId: UUID,
-        @RequestParam("branchId") branchId: UUID
-    ): Mono<ResponseEntity<ProductResponse>> =
-        Mono.fromCallable { merchantProductService.get(merchantId, productId, branchId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        @RequestParam("branchId") branchId: UUID,
+    ): ResponseEntity<ProductResponse> =
+        ResponseEntity.ok(merchantProductService.get(merchantId, productId, branchId))
 
     @Operation(summary = "Update a product's name, price, and image")
     @PutMapping("/{productId}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -92,53 +78,32 @@ class MerchantProductController(
         @RequestPart("description", required = false) description: String?,
         @RequestPart("categoryId", required = false) categoryId: String?,
         @RequestPart("productCode", required = false) productCode: String?,
-        @RequestPart("image", required = false) image: FilePart?
-    ): Mono<ResponseEntity<ProductResponse>> =
-        image.toProductImageUpload()
-            .flatMap { upload ->
-                Mono.fromCallable {
-                    merchantProductService.update(
-                        merchantId,
-                        productId,
-                        UpdateProductRequest(
-                            name = name,
-                            branchId = UUID.fromString(branchId),
-                            unitPrice = BigDecimal(unitPrice),
-                            description = description,
-                            categoryId = categoryId.toUuidOrNull(),
-                            productCode = productCode.toLongOrNull()
-                        ),
-                        upload.orElse(null)
-                    )
-                }.subscribeOn(Schedulers.boundedElastic())
-            }
-            .map { ResponseEntity.ok(it) }
+        @RequestPart("image", required = false) image: MultipartFile?,
+    ): ResponseEntity<ProductResponse> =
+        ResponseEntity.ok(
+            merchantProductService.update(
+                merchantId, productId,
+                UpdateProductRequest(
+                    name = name,
+                    branchId = UUID.fromString(branchId),
+                    unitPrice = BigDecimal(unitPrice),
+                    description = description,
+                    categoryId = categoryId.toUuidOrNull(),
+                    productCode = productCode.toLongOrNull(),
+                ),
+                image?.toProductImageUpload()
+            )
+        )
 
     @Operation(summary = "Soft-delete a product (sets active = false)")
     @DeleteMapping("/{productId}")
     fun deactivate(
         @PathVariable merchantId: UUID,
         @PathVariable productId: UUID,
-        @RequestParam("branchId") branchId: UUID
-    ): Mono<ResponseEntity<Void>> =
-        Mono.fromCallable { merchantProductService.deactivate(merchantId, productId, branchId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.noContent().build<Void>() }
-
-    private fun FilePart?.toProductImageUpload(): Mono<Optional<ProductImageUpload>> {
-        if (this == null) return Mono.just(Optional.empty())
-        val contentType = headers().contentType?.toString()
-            ?: throw IllegalArgumentException("Product image content type is required")
-        return DataBufferUtils.join(content())
-            .map { buffer ->
-                try {
-                    val bytes = ByteArray(buffer.readableByteCount())
-                    buffer.read(bytes)
-                    Optional.of(ProductImageUpload(contentType = contentType, bytes = bytes))
-                } finally {
-                    DataBufferUtils.release(buffer)
-                }
-            }
+        @RequestParam("branchId") branchId: UUID,
+    ): ResponseEntity<Void> {
+        merchantProductService.deactivate(merchantId, productId, branchId)
+        return ResponseEntity.noContent().build()
     }
 
     @ExceptionHandler(IllegalArgumentException::class)
@@ -153,9 +118,11 @@ class MerchantProductController(
     fun storageUnavailable(ex: IllegalStateException): ResponseEntity<ProductErrorResponse> =
         ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ProductErrorResponse(ex.message ?: "Product storage unavailable"))
 
-    private fun String?.toUuidOrNull(): UUID? =
-        this?.trim()?.takeIf { it.isNotEmpty() }?.let(UUID::fromString)
+    private fun MultipartFile.toProductImageUpload(): ProductImageUpload {
+        val ct = contentType ?: throw IllegalArgumentException("Product image content type is required")
+        return ProductImageUpload(contentType = ct, bytes = bytes)
+    }
 
-    private fun String?.toLongOrNull(): Long? =
-        this?.trim()?.takeIf { it.isNotEmpty() }?.toLong()
+    private fun String?.toUuidOrNull(): UUID? = this?.trim()?.takeIf { it.isNotEmpty() }?.let(UUID::fromString)
+    private fun String?.toLongOrNull(): Long? = this?.trim()?.takeIf { it.isNotEmpty() }?.toLong()
 }

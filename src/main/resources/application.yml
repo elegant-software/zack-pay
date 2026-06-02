@@ -1,6 +1,8 @@
 spring:
   application:
     name: quickpay
+  main:
+    web-application-type: servlet
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/quickpay_db}
     driver-class-name: org.postgresql.Driver
@@ -39,9 +41,6 @@ spring:
         version: 1.0.0
         protocol: STREAMABLE
 
-server:
-  tomcat:
-    max-threads: 50
 management:
   endpoints:
     web:

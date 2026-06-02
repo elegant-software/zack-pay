@@ -12,7 +12,6 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
-import reactor.core.publisher.Mono
 import java.util.UUID
 
 class StripePaymentControllerContractTest : ContractVerifierBase() {
@@ -35,7 +34,7 @@ class StripePaymentControllerContractTest : ContractVerifierBase() {
     @Test
     fun `returns 200 with clientSecret alias and publishableKey for valid amount`() {
         whenever(stripePaymentService.createIntent(any(), any(), any(), any(), anyOrNull(), any(), any(), anyOrNull(), any())).thenReturn(
-            Mono.just(StripeIntentResult("pi_test_secret_abc", "pi_abc123", "acct_test_contract"))
+            StripeIntentResult("pi_test_secret_abc", "pi_abc123", "acct_test_contract")
         )
 
         webTestClient.post().uri("/v1/payments/stripe/create-intent")
@@ -56,7 +55,7 @@ class StripePaymentControllerContractTest : ContractVerifierBase() {
     @Test
     fun `returns 200 with default currency when currency omitted`() {
         whenever(stripePaymentService.createIntent(any(), any(), any(), any(), anyOrNull(), any(), any(), anyOrNull(), any())).thenReturn(
-            Mono.just(StripeIntentResult("pi_test_secret_xyz", "pi_xyz789", "acct_test_contract"))
+            StripeIntentResult("pi_test_secret_xyz", "pi_xyz789", "acct_test_contract")
         )
 
         webTestClient.post().uri("/v1/payments/stripe/create-intent")
@@ -125,12 +124,10 @@ class StripePaymentControllerContractTest : ContractVerifierBase() {
                 any(), any(), any(), any(), anyOrNull(), any(), any(), anyOrNull(), any(), any(), any()
             )
         ).thenReturn(
-            Mono.just(
-                StripeCheckoutSessionResult(
-                    checkoutUrl = "https://checkout.stripe.com/pay/cs_test_123",
-                    checkoutSessionId = "cs_test_123",
-                    connectedAccountId = "acct_test_contract"
-                )
+            StripeCheckoutSessionResult(
+                checkoutUrl = "https://checkout.stripe.com/pay/cs_test_123",
+                checkoutSessionId = "cs_test_123",
+                connectedAccountId = "acct_test_contract"
             )
         )
 

@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Mono
 
 @Tag(name = "Geofence", description = "Geofence region discovery for mobile clients")
 @RestController
@@ -23,13 +22,10 @@ class GeofenceController(private val geofenceService: GeofenceService) {
     fun regions(
         @RequestParam lat: Double?,
         @RequestParam lng: Double?,
-    ): Mono<ResponseEntity<GeofenceRegionsResponse>> =
-        Mono.fromCallable {
-            log.info("Geofence regions requested: lat={} lng={}", lat, lng)
-            geofenceService.buildRegions(lat, lng)
-        }
-            .map {
-                log.info("Geofence regions response: count={}", it.regions.size)
-                ResponseEntity.ok(it)
-            }
+    ): ResponseEntity<GeofenceRegionsResponse> {
+        log.info("Geofence regions requested: lat={} lng={}", lat, lng)
+        val result = geofenceService.buildRegions(lat, lng)
+        log.info("Geofence regions response: count={}", result.regions.size)
+        return ResponseEntity.ok(result)
+    }
 }

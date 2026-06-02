@@ -9,75 +9,44 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import java.util.UUID
 
 @Tag(name = "Merchant Location", description = "Geolocation and geofencing for merchants")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchants", version = "1")
-class MerchantLocationController(
-    private val merchantLocationService: MerchantLocationService
-) {
+class MerchantLocationController(private val merchantLocationService: MerchantLocationService) {
     private val log = LoggerFactory.getLogger(MerchantLocationController::class.java)
 
-    @Operation(
-        summary = "Set or update a merchant's location and geofence radius",
-        description = "Idempotent — replaces any existing location. " +
-            "geofenceRadiusMeters must be > 0. googlePlaceId is optional and used to correlate with Google Maps."
-    )
+    @Operation(summary = "Set or update a merchant's location and geofence radius")
     @PutMapping("/{merchantId}/location")
     fun setLocation(
         @PathVariable merchantId: UUID,
-        @RequestBody request: SetMerchantLocationRequest
-    ): Mono<ResponseEntity<MerchantLocationResponse>> =
-        Mono.fromCallable { merchantLocationService.setLocation(merchantId, request) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+        @RequestBody request: SetMerchantLocationRequest,
+    ): ResponseEntity<MerchantLocationResponse> =
+        ResponseEntity.ok(merchantLocationService.setLocation(merchantId, request))
 
-    @Operation(
-        summary = "Get a merchant's current location",
-        description = "Returns 404 if the merchant has no location set."
-    )
+    @Operation(summary = "Get a merchant's current location")
     @GetMapping("/{merchantId}/location")
-    fun getLocation(
-        @PathVariable merchantId: UUID
-    ): Mono<ResponseEntity<MerchantLocationResponse>> =
-        Mono.fromCallable { merchantLocationService.getLocation(merchantId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.ok(it) }
+    fun getLocation(@PathVariable merchantId: UUID): ResponseEntity<MerchantLocationResponse> =
+        ResponseEntity.ok(merchantLocationService.getLocation(merchantId))
 
-    @Operation(
-        summary = "Remove a merchant's location",
-        description = "Clears latitude, longitude, geofence radius, and googlePlaceId. Returns 204 on success."
-    )
+    @Operation(summary = "Remove a merchant's location")
     @DeleteMapping("/{merchantId}/location")
-    fun deleteLocation(
-        @PathVariable merchantId: UUID
-    ): Mono<ResponseEntity<Void>> =
-        Mono.fromCallable { merchantLocationService.deleteLocation(merchantId) }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map { ResponseEntity.noContent().build<Void>() }
+    fun deleteLocation(@PathVariable merchantId: UUID): ResponseEntity<Void> {
+        merchantLocationService.deleteLocation(merchantId)
+        return ResponseEntity.noContent().build()
+    }
 
-    @Operation(
-        summary = "Find merchants near a position",
-        description = "Returns merchants that have at least one active branch location within radiusMeters of (lat, lng). " +
-            "Intended for mobile geofence-enter events. Default search radius is 500 m. " +
-            "Results are ordered by ascending nearest branch distance. Merchant-level location is ignored."
-    )
+    @Operation(summary = "Find merchants near a position")
     @GetMapping("/nearby")
     fun findNearby(
         @RequestParam lat: Double,
         @RequestParam lng: Double,
-        @RequestParam(defaultValue = "500") radiusMeters: Double
-    ): Mono<ResponseEntity<NearbyMerchantsResponse>> =
-        Mono.fromCallable {
-            log.info("Nearby merchants requested: lat={} lng={} radiusMeters={}", lat, lng, radiusMeters)
-            merchantLocationService.findNearby(lat, lng, radiusMeters)
-        }
-            .subscribeOn(Schedulers.boundedElastic())
-            .map {
-                log.info("Nearby merchants response: merchantCount={}", it.merchants.size)
-                ResponseEntity.ok(it)
-            }
+        @RequestParam(defaultValue = "500") radiusMeters: Double,
+    ): ResponseEntity<NearbyMerchantsResponse> {
+        log.info("Nearby merchants requested: lat={} lng={} radiusMeters={}", lat, lng, radiusMeters)
+        val result = merchantLocationService.findNearby(lat, lng, radiusMeters)
+        log.info("Nearby merchants response: merchantCount={}", result.merchants.size)
+        return ResponseEntity.ok(result)
+    }
 }

@@ -44,6 +44,7 @@ nimbus-jose-jwt      = "10.8"
 # Shared platform - logging, documentation, testing
 logstash-logback     = "8.0"
 springdoc            = "3.0.2"
+bootui               = "0.3.0"
 mockito-kotlin       = "6.3.0"
 
 # Modulith: `payments.stripe` + `payments.braintree` — mobile payment gateways
@@ -53,7 +54,6 @@ aws-sdk              = "2.31.78"
 
 # Optional runtime integrations
 dr-jskill            = "2026_02_19-a951a5e"
-
 # Contract stubs publishing
 spring-cloud-contract = "4.2.1"
 
@@ -70,7 +70,7 @@ dependency-track     = "1.4.4"
 # Purpose: External skills/runtime features (conditional inclusion)
 # -----------------------------------------------------------------------------
 dr-jskill            = { module = "com.skillsjars:jdubois__dr-jskill", version.ref = "dr-jskill" }
-
+bootui-spring-boot-starter = { module = "com.julien-dubois.bootui:bootui-spring-boot-starter", version.ref = "bootui" }
 # -----------------------------------------------------------------------------
 # Modulith: `invoice`
 # Purpose: ZUGFeRD/Factur-X invoice XML + Thymeleaf->PDF rendering
@@ -93,6 +93,7 @@ logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-enc
 # NOTE: Spring Boot BOM manages versions for spring-boot-starter-* dependencies
 # -----------------------------------------------------------------------------
 # Spring Boot starters (version managed by Spring Boot BOM)
+spring-boot-starter-web     = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
@@ -105,7 +106,7 @@ spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-te
 
 
 # Third-party libraries (explicit versions required)
-springdoc-openapi-starter-webflux-ui = { module = "org.springdoc:springdoc-openapi-starter-webflux-ui", version.ref = "springdoc" }
+springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 
 # -----------------------------------------------------------------------------
 # Modulith: `payments.stripe` + `payments.braintree`

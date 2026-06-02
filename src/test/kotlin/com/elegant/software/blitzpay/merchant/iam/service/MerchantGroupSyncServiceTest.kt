@@ -17,7 +17,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.http.ResponseEntity
-import reactor.core.publisher.Mono
 import java.util.UUID
 import kotlin.test.assertEquals
 
@@ -52,25 +51,25 @@ class MerchantGroupSyncServiceTest {
     )
 
     private fun stubRootExists() {
-        whenever(client.searchGroups(KeycloakGroupNames.ROOT, true)).thenReturn(Mono.just(listOf(rootGroup())))
+        whenever(client.searchGroups(KeycloakGroupNames.ROOT, true)).thenReturn(listOf(rootGroup()))
     }
 
     private fun stubMerchantGroupExists() {
         whenever(client.getChildren(eq(rootGroupId), eq(KeycloakGroupNames.merchantGroup(merchantId)), eq(true)))
-            .thenReturn(Mono.just(listOf(merchantGroup())))
+            .thenReturn(listOf(merchantGroup()))
     }
 
-    private fun stubCreatedResponse(groupId: String): Mono<ResponseEntity<Void>> =
-        Mono.just(ResponseEntity.created(java.net.URI.create("/groups/$groupId")).build())
+    private fun createdResponse(groupId: String): ResponseEntity<Void> =
+        ResponseEntity.created(java.net.URI.create("/groups/$groupId")).build()
 
     @Test
     fun `syncMerchant creates root group and merchant group when neither exists`() {
-        whenever(client.searchGroups(KeycloakGroupNames.ROOT, true)).thenReturn(Mono.just(emptyList()))
-        whenever(client.createGroup(KeycloakGroupBody(KeycloakGroupNames.ROOT))).thenReturn(stubCreatedResponse(rootGroupId))
-        whenever(client.getChildren(eq(rootGroupId), eq(KeycloakGroupNames.merchantGroup(merchantId)), eq(true))).thenReturn(Mono.just(emptyList()))
-        whenever(client.createChildGroup(eq(rootGroupId), any())).thenReturn(stubCreatedResponse(merchantGroupId))
+        whenever(client.searchGroups(KeycloakGroupNames.ROOT, true)).thenReturn(emptyList())
+        whenever(client.createGroup(KeycloakGroupBody(KeycloakGroupNames.ROOT))).thenReturn(createdResponse(rootGroupId))
+        whenever(client.getChildren(eq(rootGroupId), eq(KeycloakGroupNames.merchantGroup(merchantId)), eq(true))).thenReturn(emptyList())
+        whenever(client.createChildGroup(eq(rootGroupId), any())).thenReturn(createdResponse(merchantGroupId))
 
-        service.syncMerchant(MerchantActivated(merchantId, "Acme GmbH")).block()
+        service.syncMerchant(MerchantActivated(merchantId, "Acme GmbH"))
 
         verify(client).createGroup(KeycloakGroupBody(KeycloakGroupNames.ROOT))
         val bodyCaptor = argumentCaptor<KeycloakGroupBody>()
@@ -83,10 +82,10 @@ class MerchantGroupSyncServiceTest {
     @Test
     fun `syncMerchant reuses existing root group`() {
         stubRootExists()
-        whenever(client.getChildren(eq(rootGroupId), eq(KeycloakGroupNames.merchantGroup(merchantId)), eq(true))).thenReturn(Mono.just(emptyList()))
-        whenever(client.createChildGroup(eq(rootGroupId), any())).thenReturn(stubCreatedResponse(merchantGroupId))
+        whenever(client.getChildren(eq(rootGroupId), eq(KeycloakGroupNames.merchantGroup(merchantId)), eq(true))).thenReturn(emptyList())
+        whenever(client.createChildGroup(eq(rootGroupId), any())).thenReturn(createdResponse(merchantGroupId))
 
-        service.syncMerchant(MerchantActivated(merchantId, "Acme GmbH")).block()
+        service.syncMerchant(MerchantActivated(merchantId, "Acme GmbH"))
 
         verify(client, never()).createGroup(any())
     }
@@ -95,9 +94,8 @@ class MerchantGroupSyncServiceTest {
     fun `syncMerchant updates attributes when merchant group already exists`() {
         stubRootExists()
         stubMerchantGroupExists()
-        whenever(client.updateGroup(eq(merchantGroupId), any())).thenReturn(Mono.empty())
 
-        service.syncMerchant(MerchantActivated(merchantId, "Acme GmbH Updated")).block()
+        service.syncMerchant(MerchantActivated(merchantId, "Acme GmbH Updated"))
 
         val bodyCaptor = argumentCaptor<KeycloakGroupBody>()
         verify(client).updateGroup(eq(merchantGroupId), bodyCaptor.capture())
@@ -108,11 +106,10 @@ class MerchantGroupSyncServiceTest {
     fun `syncBranch creates branch group under existing merchant group`() {
         stubRootExists()
         stubMerchantGroupExists()
-        whenever(client.updateGroup(eq(merchantGroupId), any())).thenReturn(Mono.empty())
-        whenever(client.getChildren(eq(merchantGroupId), eq(KeycloakGroupNames.branchGroup(branchId)), eq(true))).thenReturn(Mono.just(emptyList()))
-        whenever(client.createChildGroup(eq(merchantGroupId), any())).thenReturn(stubCreatedResponse(branchGroupId))
+        whenever(client.getChildren(eq(merchantGroupId), eq(KeycloakGroupNames.branchGroup(branchId)), eq(true))).thenReturn(emptyList())
+        whenever(client.createChildGroup(eq(merchantGroupId), any())).thenReturn(createdResponse(branchGroupId))
 
-        service.syncBranch(BranchCreated(branchId, merchantId, "Main Branch", "Acme GmbH")).block()
+        service.syncBranch(BranchCreated(branchId, merchantId, "Main Branch", "Acme GmbH"))
 
         val bodyCaptor = argumentCaptor<KeycloakGroupBody>()
         verify(client).createChildGroup(eq(merchantGroupId), bodyCaptor.capture())
@@ -127,10 +124,9 @@ class MerchantGroupSyncServiceTest {
         stubRootExists()
         stubMerchantGroupExists()
         whenever(client.getChildren(eq(merchantGroupId), eq(KeycloakGroupNames.branchGroup(branchId)), eq(true)))
-            .thenReturn(Mono.just(listOf(branchGroup())))
-        whenever(client.updateGroup(any(), any())).thenReturn(Mono.empty())
+            .thenReturn(listOf(branchGroup()))
 
-        service.syncBranch(BranchCreated(branchId, merchantId, "Main Branch", "Acme GmbH")).block()
+        service.syncBranch(BranchCreated(branchId, merchantId, "Main Branch", "Acme GmbH"))
 
         verify(client).updateGroup(eq(branchGroupId), any())
     }
@@ -138,10 +134,9 @@ class MerchantGroupSyncServiceTest {
     @Test
     fun `updateMerchantName updates merchant_name attribute`() {
         whenever(client.searchGroups(KeycloakGroupNames.merchantGroup(merchantId), true))
-            .thenReturn(Mono.just(listOf(merchantGroup())))
-        whenever(client.updateGroup(eq(merchantGroupId), any())).thenReturn(Mono.empty())
+            .thenReturn(listOf(merchantGroup()))
 
-        service.updateMerchantName(MerchantNameUpdated(merchantId, "New Name GmbH")).block()
+        service.updateMerchantName(MerchantNameUpdated(merchantId, "New Name GmbH"))
 
         val bodyCaptor = argumentCaptor<KeycloakGroupBody>()
         verify(client).updateGroup(eq(merchantGroupId), bodyCaptor.capture())
@@ -150,9 +145,9 @@ class MerchantGroupSyncServiceTest {
 
     @Test
     fun `updateMerchantName is a no-op when merchant group not found`() {
-        whenever(client.searchGroups(KeycloakGroupNames.merchantGroup(merchantId), true)).thenReturn(Mono.just(emptyList()))
+        whenever(client.searchGroups(KeycloakGroupNames.merchantGroup(merchantId), true)).thenReturn(emptyList())
 
-        service.updateMerchantName(MerchantNameUpdated(merchantId, "New Name GmbH")).block()
+        service.updateMerchantName(MerchantNameUpdated(merchantId, "New Name GmbH"))
 
         verify(client, never()).updateGroup(any(), any())
     }
@@ -162,10 +157,9 @@ class MerchantGroupSyncServiceTest {
         stubRootExists()
         stubMerchantGroupExists()
         whenever(client.getChildren(eq(merchantGroupId), eq(KeycloakGroupNames.branchGroup(branchId)), eq(true)))
-            .thenReturn(Mono.just(listOf(branchGroup())))
-        whenever(client.updateGroup(eq(branchGroupId), any())).thenReturn(Mono.empty())
+            .thenReturn(listOf(branchGroup()))
 
-        service.updateBranchName(BranchNameUpdated(branchId, merchantId, "New Branch Name")).block()
+        service.updateBranchName(BranchNameUpdated(branchId, merchantId, "New Branch Name"))
 
         val bodyCaptor = argumentCaptor<KeycloakGroupBody>()
         verify(client).updateGroup(eq(branchGroupId), bodyCaptor.capture())
@@ -177,9 +171,9 @@ class MerchantGroupSyncServiceTest {
         stubRootExists()
         stubMerchantGroupExists()
         whenever(client.getChildren(eq(merchantGroupId), eq(KeycloakGroupNames.branchGroup(branchId)), eq(true)))
-            .thenReturn(Mono.just(emptyList()))
+            .thenReturn(emptyList())
 
-        service.updateBranchName(BranchNameUpdated(branchId, merchantId, "New Branch Name")).block()
+        service.updateBranchName(BranchNameUpdated(branchId, merchantId, "New Branch Name"))
 
         verify(client, never()).updateGroup(any(), any())
     }

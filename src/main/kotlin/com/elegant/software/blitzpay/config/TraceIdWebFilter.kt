@@ -1,20 +1,20 @@
 package com.elegant.software.blitzpay.config
 
+import jakarta.servlet.Filter
+import jakarta.servlet.FilterChain
+import jakarta.servlet.ServletRequest
+import jakarta.servlet.ServletResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.MDC
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import org.springframework.web.server.ServerWebExchange
-import org.springframework.web.server.WebFilter
-import org.springframework.web.server.WebFilterChain
-import reactor.core.publisher.Mono
 import java.util.UUID
 
 /**
  * Assigns a per-request correlation id (`traceId`) and exposes it via:
- *  - Reactor Context under key [TRACE_ID_KEY]
- *  - SLF4J MDC (best-effort — relies on Spring Boot virtual-thread executor or
- *    synchronous handlers; fully reactive chains should use [Mono.deferContextual])
+ *  - SLF4J MDC for structured logging
  *  - Response header `X-Request-Id`
  *
  * Honours an incoming `X-Request-Id` header so upstream ids (TrueLayer webhook
@@ -22,18 +22,22 @@ import java.util.UUID
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class TraceIdWebFilter : WebFilter {
+class TraceIdWebFilter : Filter {
 
-    override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
-        val incoming = exchange.request.headers.getFirst(REQUEST_ID_HEADER)
-            ?: exchange.request.headers.getFirst("x-tl-webhook-id")
+    override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
+        val req = request as HttpServletRequest
+        val res = response as HttpServletResponse
+
+        val incoming = req.getHeader(REQUEST_ID_HEADER) ?: req.getHeader("x-tl-webhook-id")
         val traceId = incoming?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
-        exchange.response.headers.set(REQUEST_ID_HEADER, traceId)
+        res.setHeader(REQUEST_ID_HEADER, traceId)
 
         MDC.put(TRACE_ID_KEY, traceId)
-        return chain.filter(exchange)
-            .contextWrite { ctx -> ctx.put(TRACE_ID_KEY, traceId) }
-            .doFinally { MDC.remove(TRACE_ID_KEY) }
+        try {
+            chain.doFilter(request, response)
+        } finally {
+            MDC.remove(TRACE_ID_KEY)
+        }
     }
 
     companion object {

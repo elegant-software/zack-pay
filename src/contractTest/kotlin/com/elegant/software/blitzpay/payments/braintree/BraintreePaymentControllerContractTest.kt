@@ -12,7 +12,6 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
-import reactor.core.publisher.Mono
 import java.util.UUID
 
 class BraintreePaymentControllerContractTest : ContractVerifierBase() {
@@ -42,7 +41,7 @@ class BraintreePaymentControllerContractTest : ContractVerifierBase() {
     @Test
     fun `client-token returns 200 with token`() {
         whenever(braintreePaymentService.generateClientToken(any())).thenReturn(
-            Mono.just("eyJ2ZXJzaW9uIjoy_contract_test_token")
+            "eyJ2ZXJzaW9uIjoy_contract_test_token"
         )
 
         webTestClient.post().uri("/v1/payments/braintree/client-token")
@@ -81,7 +80,7 @@ class BraintreePaymentControllerContractTest : ContractVerifierBase() {
     @Test
     fun `checkout returns success response for valid nonce and amount`() {
         whenever(braintreePaymentService.checkout(any(), any(), any(), any(), any(), anyOrNull(), any(), anyOrNull(), anyOrNull())).thenReturn(
-            Mono.just(BraintreeCheckoutResult.Success("tx_abc123", "12.50", "EUR", "ORDER-123", null, testMerchantId, testBranchId))
+            BraintreeCheckoutResult.Success("tx_abc123", "12.50", "EUR", "ORDER-123", null, testMerchantId, testBranchId)
         )
 
         webTestClient.post().uri("/v1/payments/braintree/checkout")
@@ -103,7 +102,7 @@ class BraintreePaymentControllerContractTest : ContractVerifierBase() {
     @Test
     fun `checkout echoes invoiceId in success response`() {
         whenever(braintreePaymentService.checkout(any(), any(), any(), any(), any(), anyOrNull(), any(), anyOrNull(), anyOrNull())).thenReturn(
-            Mono.just(BraintreeCheckoutResult.Success("tx_inv42", "99.00", "EUR", "ORDER-123", "INV-2026-00042", testMerchantId, testBranchId))
+            BraintreeCheckoutResult.Success("tx_inv42", "99.00", "EUR", "ORDER-123", "INV-2026-00042", testMerchantId, testBranchId)
         )
 
         webTestClient.post().uri("/v1/payments/braintree/checkout")

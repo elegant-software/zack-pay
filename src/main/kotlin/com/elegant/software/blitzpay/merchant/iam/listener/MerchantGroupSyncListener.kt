@@ -14,14 +14,14 @@ import org.springframework.stereotype.Component
 class MerchantGroupSyncListener(private val syncService: MerchantGroupSyncService) {
 
     @ApplicationModuleListener
-    fun on(event: MerchantActivated) { syncService.syncMerchant(event).block() }
+    fun on(event: MerchantActivated) { syncService.syncMerchant(event) }
 
     @ApplicationModuleListener
-    fun on(event: BranchCreated) { syncService.syncBranch(event).block() }
+    fun on(event: BranchCreated) { syncService.syncBranch(event) }
 
     @ApplicationModuleListener
-    fun on(event: MerchantNameUpdated) { syncService.updateMerchantName(event).block() }
+    fun on(event: MerchantNameUpdated) { syncService.updateMerchantName(event) }
 
     @ApplicationModuleListener
-    fun on(event: BranchNameUpdated) { syncService.updateBranchName(event).block() }
+    fun on(event: BranchNameUpdated) { syncService.updateBranchName(event) }
 }

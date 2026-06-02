@@ -9,8 +9,6 @@ import com.stripe.param.checkout.SessionCreateParams
 import com.stripe.param.PaymentIntentCreateParams
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import java.util.UUID
 
 data class StripeIntentResult(
@@ -26,9 +24,7 @@ data class StripeCheckoutSessionResult(
 )
 
 @Service
-class StripePaymentService(
-    private val stripeProperties: StripeProperties,
-) {
+class StripePaymentService(private val stripeProperties: StripeProperties) {
     private val log = LoggerFactory.getLogger(StripePaymentService::class.java)
 
     fun createIntent(
@@ -41,7 +37,7 @@ class StripePaymentService(
         paymentRequestId: UUID,
         productId: UUID?,
         paymentMethodType: String = "card",
-    ): Mono<StripeIntentResult> = Mono.fromCallable {
+    ): StripeIntentResult {
         require(amount > 0 && amount.isFinite()) { "amount must be a positive number" }
         val amountInSmallestUnit = Math.round(amount * 100)
         val paramsBuilder = PaymentIntentCreateParams.builder()
@@ -75,7 +71,7 @@ class StripePaymentService(
                 "stripe create_intent id={} amount={} currency={} merchantId={} connectedAccountId={} branchId={} orderId={} paymentRequestId={} productId={}",
                 intent.id, amount, currency.lowercase(), merchantId, connectedAccountId, branchId, orderId, paymentRequestId, productId,
             )
-            StripeIntentResult(
+            return StripeIntentResult(
                 clientSecret = requireNotNull(intent.clientSecret) { "Stripe returned null clientSecret" },
                 paymentIntentId = intent.id,
                 connectedAccountId = connectedAccountId,
@@ -87,7 +83,7 @@ class StripePaymentService(
             )
             throw ex
         }
-    }.subscribeOn(Schedulers.boundedElastic())
+    }
 
     fun createPayByBankCheckoutSession(
         amount: Double,
@@ -101,7 +97,7 @@ class StripePaymentService(
         successUrl: String,
         cancelUrl: String,
         statementDescriptor: String,
-    ): Mono<StripeCheckoutSessionResult> = Mono.fromCallable {
+    ): StripeCheckoutSessionResult {
         require(amount > 0 && amount.isFinite()) { "amount must be a positive number" }
         require(successUrl.isNotBlank()) { "successUrl must not be blank" }
         require(cancelUrl.isNotBlank()) { "cancelUrl must not be blank" }
@@ -156,7 +152,7 @@ class StripePaymentService(
                 "stripe pay_by_bank checkout_session id={} amount={} currency={} merchantId={} connectedAccountId={} branchId={} orderId={} paymentRequestId={} productId={}",
                 session.id, amount, currency.lowercase(), merchantId, connectedAccountId, branchId, orderId, paymentRequestId, productId,
             )
-            StripeCheckoutSessionResult(
+            return StripeCheckoutSessionResult(
                 checkoutUrl = requireNotNull(session.url) { "Stripe returned null checkout session url" },
                 checkoutSessionId = session.id,
                 connectedAccountId = connectedAccountId,
@@ -168,5 +164,5 @@ class StripePaymentService(
             )
             throw ex
         }
-    }.subscribeOn(Schedulers.boundedElastic())
+    }
 }

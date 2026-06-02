@@ -59,6 +59,7 @@ dependencies {
         // Optional: `com.skillsjars:jdubois__dr-jskill` runtime integration
         runtimeOnly(libs.dr.jskill)
     }
+    implementation(libs.bootui.spring.boot.starter)
     // ----------------------------
     // Modulith: `invoice`
     // Purpose: ZUGFeRD/Factur-X invoice XML + Thymeleaf->PDF rendering
@@ -84,8 +85,6 @@ dependencies {
     implementation(libs.nimbus.jose.jwt) // webhook signature verification
     implementation(libs.logstash.logback.encoder) // Structured JSON logging (production)
 
-    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 
     // ----------------------------
     // Shared platform (all Modulith modules)
@@ -93,20 +92,20 @@ dependencies {
     // ----------------------------
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.data.jpa)
+    implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.webflux)
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     implementation("org.springframework.modulith:spring-modulith-starter-jpa")
-    implementation(libs.springdoc.openapi.starter.webflux.ui)
+    implementation(libs.springdoc.openapi.starter.webmvc.ui)
 
     // ----------------------------
     // Modulith: `merchant`
     // Purpose: Expose merchant product update as MCP
     // ----------------------------
-    implementation("org.springframework.ai:spring-ai-starter-mcp-server")
-    implementation ("org.springframework.ai:spring-ai-starter-mcp-server-webflux")
+    implementation("org.springframework.ai:spring-ai-starter-mcp-server-webmvc")
     implementation("org.springframework.ai:spring-ai-openai")
     // ----------------------------
     // Runtime support (used across modules)
