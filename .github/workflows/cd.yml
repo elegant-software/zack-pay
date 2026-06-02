@@ -1,6 +1,9 @@
 name: CD pipeline
 
 on:
+  push:
+    tags:
+      - 'v*-alpha'
   release:
     types:
       - published
@@ -24,7 +27,7 @@ jobs:
       attestations: write
       checks: write
     #needs: ci
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || github.event_name == 'push'
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/backend-docker-build.yml@main
     with:
       java-version: ${{ vars.JAVA_VERSION }}

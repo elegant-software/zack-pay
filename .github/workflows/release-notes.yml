@@ -15,3 +15,5 @@ jobs:
   release-notes:
     if: ${{ github.event.pull_request.merged == true }}
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/release-notes.yml@main
+    secrets:
+      RELEASE_PUBLISH_TOKEN: ${{ secrets.RELEASE_PUBLISH_TOKEN }}
