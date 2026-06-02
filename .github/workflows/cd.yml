@@ -1,6 +1,12 @@
 name: CD pipeline
 
 on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Alpha release tag to deploy
+        required: true
+        type: string
   push:
     tags:
       - 'v*-alpha'
@@ -27,10 +33,10 @@ jobs:
       attestations: write
       checks: write
     #needs: ci
-    if: github.event_name == 'release' || github.event_name == 'push'
+    if: github.event_name == 'release' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/backend-docker-build.yml@main
     with:
       java-version: ${{ vars.JAVA_VERSION }}
       image-name: ${{ vars.APP_NAME }}
-      image-tag: ${{ github.ref_name }}
+      image-tag: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
       registry: ${{ vars.CONTAINER_REGISTRY }}
