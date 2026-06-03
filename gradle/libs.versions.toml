@@ -50,7 +50,11 @@ mockito-kotlin       = "6.3.0"
 # Modulith: `payments.stripe` + `payments.braintree` — mobile payment gateways
 stripe-java          = "32.1.0"
 braintree-java       = "3.48.0"
-aws-sdk              = "2.31.78"
+
+# AWS: Spring Cloud AWS + Floci local emulator
+spring-cloud-aws     = "4.0.2"
+floci                = "2.8.0"
+arconia              = "0.27.1"
 
 # Optional runtime integrations
 dr-jskill            = "2026_02_19-a951a5e"
@@ -114,7 +118,16 @@ springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openap
 # -----------------------------------------------------------------------------
 stripe-java          = { module = "com.stripe:stripe-java", version.ref = "stripe-java" }
 braintree-java       = { module = "com.braintreepayments.gateway:braintree-java", version.ref = "braintree-java" }
-aws-s3               = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk" }
+
+# -----------------------------------------------------------------------------
+# AWS: Spring Cloud AWS (S3 + Secrets Manager) + Floci local emulator
+# -----------------------------------------------------------------------------
+spring-cloud-aws-starter-s3                 = { module = "io.awspring.cloud:spring-cloud-aws-starter-s3" }
+spring-cloud-aws-starter-secrets-manager    = { module = "io.awspring.cloud:spring-cloud-aws-starter-secrets-manager" }
+testcontainers-floci                        = { module = "io.floci:testcontainers-floci", version.ref = "floci" }
+spring-boot-testcontainers-floci            = { module = "io.floci:spring-boot-testcontainers-floci", version.ref = "floci" }
+arconia-dev-services-postgresql             = { module = "io.arconia:arconia-dev-services-postgresql", version.ref = "arconia" }
+arconia-dev-services-floci                  = { module = "io.arconia:arconia-dev-services-floci", version.ref = "arconia" }
 
 # -----------------------------------------------------------------------------
 # Tests (shared across all modules)

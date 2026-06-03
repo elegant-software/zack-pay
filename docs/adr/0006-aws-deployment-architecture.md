@@ -23,6 +23,41 @@ BlitzPay and Keycloak share one RDS `db.t3.micro` instance with separate Postgre
 
 Infrastructure is defined in AWS CDK using TypeScript, not Java or Terraform. CDK was chosen over Terraform because the deployment is AWS-only and CDK's L2 constructs for ECS, RDS, and VPC reduce boilerplate significantly. TypeScript was chosen over Java CDK because CDK was written in TypeScript — all documentation, examples, and community support are TypeScript-first; the Java bindings are auto-generated and noticeably more verbose.
 
+## Spring Cloud AWS over raw AWS SDK
+
+The application integrates with AWS services via **Spring Cloud AWS 4.0.2** rather than the raw `software.amazon.awssdk` client directly. Spring Cloud AWS provides auto-configuration for S3 (`spring-cloud-aws-starter-s3`) and Secrets Manager (`spring-cloud-aws-starter-secrets-manager`), and its `@ServiceConnection` support wires Floci endpoints automatically in tests. The raw `software.amazon.awssdk:s3` dependency is removed.
+
+## AWS S3 over self-hosted MinIO
+
+The storage backend migrates from a self-hosted MinIO instance (`minio.elegantsoftware.de`) to AWS S3 in `eu-central-1`. MinIO was the interim solution before AWS deployment; S3 eliminates the MinIO operational overhead and is the natural fit for ECS Fargate. Locally, Floci emulates S3 via Docker Compose. The `blitzpay.storage.endpoint/accessKey/secretKey/pathStyleAccess/region` properties are removed; only `blitzpay.storage.bucket` remains.
+
+## Secrets Manager for runtime secrets
+
+Application secrets (Stripe keys, Braintree private key, Keycloak admin credentials, Expo access token) are loaded from AWS Secrets Manager at bootstrap via `spring.config.import`. Secrets are grouped by provider:
+
+- `/blitzpay/stripe` — `stripe.secret-key`, `stripe.webhook-secret`, `stripe.connect-webhook-secret`
+- `/blitzpay/braintree` — `braintree.private-key`
+- `/blitzpay/keycloak` — `keycloak.iam.admin-client-id`, `keycloak.iam.admin-client-secret`
+- `/blitzpay/expo` — `blitzpay.expo.access-token`
+
+Non-sensitive config (public keys, URLs, realm names) stays in `application.yml` with env-var substitution.
+
+The import is declared in `application.yml` (always active). Locally, Floci emulates Secrets Manager; an init container seeded from a `.env` file populates the secrets before the app starts. In the `contract-test` profile, `spring.cloud.aws.secretsmanager.enabled=false` disables the integration.
+
+## Floci for local AWS emulation
+
+**Floci** (`floci/floci:latest`) is used as the local AWS service emulator, replacing the previous MinIO S3 setup. It runs as a service in `docker-compose.yml`. For tests, `io.floci:testcontainers-floci` + `io.floci:spring-boot-testcontainers-floci` provide `FlociContainer` with `@ServiceConnection` for zero-config endpoint wiring. LocalStack was considered but its community edition is archived; Floci is a maintained, free alternative.
+
+## AWS region: eu-central-1 (Frankfurt)
+
+All AWS resources (ECS, RDS, S3, Secrets Manager) are deployed in `eu-central-1`. The platform operates under German domain names and targets EU data residency.
+
+## CDK infrastructure in `infra/` within the application repo
+
+The CDK TypeScript project lives at `infra/` in the `blitz-pay` root, alongside the existing `helm/` and `k8s/` directories. A separate infrastructure repository was considered but ruled out: CDK is TypeScript with its own `package.json`/`cdk.json`/`tsconfig.json`; Gradle and Spring Modulith are completely blind to it. Co-locating infra and app allows a single PR to change both (e.g. adding an env var and its Secrets Manager entry together). A dedicated infra repo would be a 6th repository for a single ECS service.
+
+CDK stacks are split by concern: `NetworkStack` (VPC/subnets/security groups), `DataStack` (shared RDS), `SecretsStack` (Secrets Manager secrets), `EcrStack` (Docker image repository), `AppStack` (ECS Fargate, ALB, task definition, IAM role). The ECS task role is granted exactly `s3:GetObject/PutObject/DeleteObject` on the storage bucket and `secretsmanager:GetSecretValue` on `/blitzpay/*`.
+
 ## Open decisions
 
 - **Domain name** for the backend API (needed before any mobile app release — mobile clients embed the URL and cannot be force-updated)

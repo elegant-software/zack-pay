@@ -45,6 +45,11 @@ secrets/
 *.key
 *.crt
 
+### CDK ###
+infra/node_modules/
+infra/dist/
+infra/cdk.out/
+
 ### Kotlin ###
 .kotlin
 *.class
