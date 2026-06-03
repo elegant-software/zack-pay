@@ -15,6 +15,7 @@ import com.truelayer.java.payments.entities.paymentmethod.PaymentMethod
 import com.truelayer.java.payments.entities.providerselection.ProviderSelection
 import com.truelayer.java.payments.entities.schemeselection.preselected.SchemeSelection
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 import java.net.URI
@@ -35,6 +36,7 @@ import java.util.concurrent.TimeoutException
  * same fields assembled below.
  */
 @EnableConfigurationProperties(TrueLayerProperties::class)
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
 @Component
 class PaymentService(
     private val trueLayerProperties: TrueLayerProperties,
