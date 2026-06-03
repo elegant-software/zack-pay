@@ -4,10 +4,12 @@ import com.elegant.software.blitzpay.config.ApiVersionProperties
 import com.elegant.software.blitzpay.config.OpenApiGroupProperties
 import com.elegant.software.blitzpay.config.rewriteVersionPaths
 import org.springdoc.core.models.GroupedOpenApi
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
 class TruelayerOpenApiConfig(
     private val apiVersionProperties: ApiVersionProperties,
     private val openApiGroupProperties: OpenApiGroupProperties,

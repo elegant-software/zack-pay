@@ -14,12 +14,14 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.*
 import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
 
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/webhooks/truelayer", version = "1")
 class TlWebhookController(
