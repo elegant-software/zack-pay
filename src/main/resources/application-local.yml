@@ -24,6 +24,12 @@ arconia:
           - host-path: blitzpay-postgres-data
             container-path: /var/lib/postgresql
 
+blitzpay:
+  cors:
+    allowed-origins:
+      - http://localhost:4200
+      - http://localhost:4201
+
 logging:
   level:
     io.awspring.cloud: DEBUG
