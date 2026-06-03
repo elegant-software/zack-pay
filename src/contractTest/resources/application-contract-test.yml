@@ -12,6 +12,14 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+  cloud:
+    aws:
+      secretsmanager:
+        enabled: false
+      s3:
+        enabled: false
+  config:
+    import: ""
 
 observability:
   otlp:

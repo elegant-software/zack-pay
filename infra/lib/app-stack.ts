@@ -1,0 +1,104 @@
+import * as cdk from 'aws-cdk-lib';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as rds from 'aws-cdk-lib/aws-rds';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import { Construct } from 'constructs';
+
+interface AppStackProps extends cdk.StackProps {
+  vpc: ec2.Vpc;
+  cluster: ecs.Cluster;
+  repository: ecr.Repository;
+  db: rds.DatabaseInstance;
+  storageBucket: s3.Bucket;
+  stripeSecret: secretsmanager.Secret;
+  braintreeSecret: secretsmanager.Secret;
+  keycloakSecret: secretsmanager.Secret;
+  expoSecret: secretsmanager.Secret;
+}
+
+export class AppStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: AppStackProps) {
+    super(scope, id, props);
+
+    const taskRole = new iam.Role(this, 'TaskRole', {
+      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+    });
+
+    // S3: scoped to the storage bucket only
+    props.storageBucket.grantReadWrite(taskRole);
+
+    // Secrets Manager: scoped to /blitzpay/* only
+    taskRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['secretsmanager:GetSecretValue'],
+      resources: [
+        props.stripeSecret.secretArn,
+        props.braintreeSecret.secretArn,
+        props.keycloakSecret.secretArn,
+        props.expoSecret.secretArn,
+      ],
+    }));
+
+    const taskDef = new ecs.FargateTaskDefinition(this, 'TaskDef', {
+      memoryLimitMiB: 1024,
+      cpu: 512,
+      taskRole,
+    });
+
+    const dbSecret = props.db.secret!;
+
+    taskDef.addContainer('App', {
+      image: ecs.ContainerImage.fromEcrRepository(props.repository, 'latest'),
+      portMappings: [{ containerPort: 8080 }],
+      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'blitzpay' }),
+      environment: {
+        SPRING_PROFILES_ACTIVE: 'production',
+        STORAGE_BUCKET: props.storageBucket.bucketName,
+        SPRING_DATASOURCE_URL: `jdbc:postgresql://${props.db.dbInstanceEndpointAddress}:5432/blitzpay`,
+      },
+      secrets: {
+        SPRING_DATASOURCE_USERNAME: ecs.Secret.fromSecretsManager(dbSecret, 'username'),
+        SPRING_DATASOURCE_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret, 'password'),
+      },
+    });
+
+    const sg = new ec2.SecurityGroup(this, 'AppSg', { vpc: props.vpc });
+
+    const service = new ecs.FargateService(this, 'Service', {
+      cluster: props.cluster,
+      taskDefinition: taskDef,
+      desiredCount: 1,
+      assignPublicIp: true,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      securityGroups: [sg],
+      circuitBreaker: { rollback: true },
+    });
+
+    const alb = new elbv2.ApplicationLoadBalancer(this, 'Alb', {
+      vpc: props.vpc,
+      internetFacing: true,
+    });
+
+    const listener = alb.addListener('Http', { port: 80 });
+    listener.addTargets('App', {
+      port: 8080,
+      targets: [service],
+      healthCheck: { path: '/actuator/health' },
+    });
+
+    // Allow ALB → app; restrict direct internet access to Fargate tasks
+    sg.addIngressRule(
+      ec2.Peer.securityGroupId(alb.connections.securityGroups[0].securityGroupId),
+      ec2.Port.tcp(8080),
+    );
+
+    // Allow app → RDS
+    props.db.connections.allowFrom(service, ec2.Port.tcp(5432));
+
+    new cdk.CfnOutput(this, 'AlbDns', { value: alb.loadBalancerDnsName });
+  }
+}
