@@ -1,3 +1,4 @@
+import java.net.Socket
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 
@@ -74,7 +75,14 @@ dependencies {
     // ----------------------------
     implementation(libs.stripe.java)
     implementation(libs.braintree.java)
-    implementation(libs.aws.s3)
+
+    // ----------------------------
+    // AWS: Spring Cloud AWS (S3 + Secrets Manager) + Arconia dev services
+    // ----------------------------
+    implementation(libs.spring.cloud.aws.starter.s3)
+    implementation(libs.spring.cloud.aws.starter.secrets.manager)
+    developmentOnly(libs.arconia.dev.services.postgresql)
+    developmentOnly(libs.arconia.dev.services.floci)
 
     // ----------------------------
     // Modulith: `payments` (TrueLayer + QRPay)
@@ -130,12 +138,16 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-postgresql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.testcontainers.floci)
+    testImplementation(libs.spring.boot.testcontainers.floci)
 }
 
 dependencyManagement {
     imports {
         mavenBom("org.springframework.modulith:spring-modulith-bom:${libs.versions.spring.modulith.get()}")
         mavenBom("org.springframework.ai:spring-ai-bom:${libs.versions.spring.ai.get()}")
+        mavenBom("io.awspring.cloud:spring-cloud-aws-dependencies:${libs.versions.spring.cloud.aws.get()}")
+        mavenBom("io.arconia:arconia-bom:${libs.versions.arconia.get()}")
     }
 }
 
@@ -161,6 +173,11 @@ allOpen {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Disable Secrets Manager and config import for all tests.
+    // Integration tests using FlociTestConfig override these via @SpringBootTest(properties=[...]).
+    systemProperty("spring.config.import", "")
+    systemProperty("spring.cloud.aws.secretsmanager.enabled", "false")
+    systemProperty("spring.cloud.aws.s3.enabled", "false")
 }
 
 tasks.named<Test>("contractTest") {
@@ -175,6 +192,24 @@ tasks.named<Test>("contractTest") {
 tasks.named("check") {
     dependsOn("contractTest")
 }
+
+tasks.register<Exec>("dockerTunnel") {
+    group = "docker"
+    description = "Ensures SSH tunnel to myserver Docker socket is active"
+    onlyIf {
+        try { Socket("localhost", 2375).close(); false }
+        catch (_: Exception) { true }
+    }
+    commandLine("ssh", "-NfL", "localhost:2375:/var/run/docker.sock",
+        "-L", "4566:localhost:4566",
+        "-L", "5433:localhost:5433",
+        "mehdi@myserver")
+}
+
+tasks.named("bootRun") {
+    dependsOn("dockerTunnel")
+}
+
 
 
 

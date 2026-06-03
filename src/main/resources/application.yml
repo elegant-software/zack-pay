@@ -3,8 +3,14 @@ spring:
     name: quickpay
   main:
     web-application-type: servlet
+  config:
+    import:
+      - optional:aws-secretsmanager:/blitzpay/stripe
+      - optional:aws-secretsmanager:/blitzpay/braintree
+      - optional:aws-secretsmanager:/blitzpay/keycloak
+      - optional:aws-secretsmanager:/blitzpay/expo
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/quickpay_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/blitzpay_db}
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
@@ -33,6 +39,10 @@ spring:
   threads:
     virtual:
       enabled: true
+  cloud:
+    aws:
+      region:
+        static: eu-central-1
   ai:
     mcp:
       server:
@@ -79,10 +89,8 @@ truelayer:
     maxSkew: PT60M
 
 stripe:
-  secret-key: ${STRIPE_SECRET_KEY:}
+  # secret-key, webhook-secret, connect-webhook-secret — loaded from /blitzpay/stripe via Secrets Manager
   publishable-key: ${EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY:}
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-  connect-webhook-secret: ${STRIPE_CONNECT_WEBHOOK_SECRET:}
   connect:
     return-url: ${STRIPE_CONNECT_RETURN_URL:}
     api-base-url: ${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}
@@ -91,7 +99,7 @@ stripe:
 braintree:
   merchant-id: ${BRAINTREE_MERCHANT_ID:}
   public-key: ${BRAINTREE_PUBLIC_KEY:}
-  private-key: ${BRAINTREE_PRIVATE_KEY:}
+  # private-key — loaded from /blitzpay/braintree via Secrets Manager
   environment: ${BRAINTREE_ENVIRONMENT:sandbox}
 
 blitzpay:
@@ -137,12 +145,7 @@ blitzpay:
     allowed-headers:
       - "*"
   storage:
-    endpoint: ${STORAGE_ENDPOINT:https://minio.elegantsoftware.de}
-    region: ${STORAGE_REGION:us-east-1}
-    access-key: ${STORAGE_ACCESS_KEY:minioadmin}
-    secret-key: ${STORAGE_SECRET_KEY:Halil@avina4410}
     bucket: ${STORAGE_BUCKET:blitzpay}
-    path-style-access: ${STORAGE_PATH_STYLE:true}
   google-maps:
     enabled: ${GOOGLE_MAPS_ENABLED:false}
     api-key: ${GOOGLE_MAPS_API_KEY:}
@@ -153,7 +156,7 @@ blitzpay:
     proximity-cooldown-seconds: ${GEOFENCE_PROXIMITY_COOLDOWN_SECONDS:30}
     default-radius-meters: ${GEOFENCE_DEFAULT_RADIUS_METERS:500}
   expo:
-    access-token: ${EXPO_ACCESS_TOKEN:}
+    # access-token — loaded from /blitzpay/expo via Secrets Manager
     base-url: ${EXPO_PUSH_URL:https://exp.host/--/api/v2/push/send}
     receipts-url: ${EXPO_RECEIPTS_URL:https://exp.host/--/api/v2/push/getReceipts}
     request-timeout-ms: ${EXPO_TIMEOUT_MS:10000}
@@ -180,5 +183,4 @@ keycloak:
   iam:
     server-url: ${KEYCLOAK_IAM_SERVER_URL:https://keycloak.elegantsoftware.de}
     realm: ${KEYCLOAK_IAM_REALM:blitzpay}
-    admin-client-id: ${KEYCLOAK_IAM_ADMIN_CLIENT_ID:}
-    admin-client-secret: ${KEYCLOAK_IAM_ADMIN_CLIENT_SECRET:}
+    # admin-client-id, admin-client-secret — loaded from /blitzpay/keycloak via Secrets Manager
