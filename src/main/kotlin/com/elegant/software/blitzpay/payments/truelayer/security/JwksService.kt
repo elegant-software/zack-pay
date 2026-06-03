@@ -1,11 +1,13 @@
 package com.elegant.software.blitzpay.payments.truelayer.support
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import java.time.Duration
 
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(TlWebhookProperties::class)
 @Service
 class JwksService(private val props: TlWebhookProperties) {

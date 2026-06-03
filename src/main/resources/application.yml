@@ -75,15 +75,16 @@ api:
     voice: 1
 
 truelayer:
+  enabled: ${TRUELAYER_ENABLED:true}
   webhookJku: ${TRUELAYER_WEBHOOK_JKU:http://localhost:8080/.well-known/jwks.json}
   # SDK configuration
-  clientId: ${TRUELAYER_CLIENT_ID}
-  clientSecret: ${TRUELAYER_CLIENT_SECRET}
-  keyId: ${TRUELAYER_KEY_ID}
-  privateKeyPath: ${TRUELAYER_PRIVATE_KEY_PATH}
+  clientId: ${TRUELAYER_CLIENT_ID:}
+  clientSecret: ${TRUELAYER_CLIENT_SECRET:}
+  keyId: ${TRUELAYER_KEY_ID:}
+  privateKeyPath: ${TRUELAYER_PRIVATE_KEY_PATH:}
   environment: ${TRUELAYER_ENV:sandbox}
   httpLogs: ${TRUELAYER_HTTP_LOGS:false}
-  merchantAccountId: ${TRUELAYER_MERCHANT_ACCOUNT_ID}
+  merchantAccountId: ${TRUELAYER_MERCHANT_ACCOUNT_ID:}
   webhooks:
     environment: sandbox
     maxSkew: PT60M

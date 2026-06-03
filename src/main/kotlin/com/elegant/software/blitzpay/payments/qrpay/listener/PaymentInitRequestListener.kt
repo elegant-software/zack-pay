@@ -10,9 +10,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.modulith.ApplicationModule
 import org.springframework.modulith.events.ApplicationModuleListener
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import java.util.*
 
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
 @Component
 class PaymentInitRequestListener(
     private val paymentUpdateBus: PaymentUpdateBus,
