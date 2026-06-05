@@ -72,6 +72,18 @@ class MerchantApplication(
     @Column
     var lastUpdatedAt: Instant = createdAt,
 
+    @Column(name = "booking_interval_minutes")
+    var bookingIntervalMinutes: Int? = null,
+
+    @Column(name = "booking_lead_time_minutes")
+    var bookingLeadTimeMinutes: Int? = null,
+
+    @Column(name = "booking_horizon_days")
+    var bookingHorizonDays: Int? = null,
+
+    @Column(name = "reminder_lead_time_minutes")
+    var reminderLeadTimeMinutes: Int? = null,
+
 ) {
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(

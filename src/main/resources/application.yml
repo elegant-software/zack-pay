@@ -64,6 +64,7 @@ api:
     payments: 1
     merchant: 1
     order: 1
+    appointment: 1
     voice: 1
 
 truelayer:
@@ -122,6 +123,8 @@ blitzpay:
         label: Operations-Merchant
       order:
         label: Orders
+      appointment:
+        label: Appointments
       voice:
         label: Voice
       actuator:
