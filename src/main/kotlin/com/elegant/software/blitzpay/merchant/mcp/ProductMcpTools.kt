@@ -18,8 +18,6 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.math.BigDecimal
-import java.nio.file.Files
-import java.nio.file.Path
 import java.util.Base64
 import java.util.LinkedHashSet
 import java.util.UUID
@@ -35,7 +33,9 @@ class ProductMcpTools(
     @McpTool(
         name = "merchant_product_update",
         description = "Update a product's name, description, price, and category for a merchant. " +
-            "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly."
+            "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly. " +
+            "Optional product image upload uses imageBase64 and imageContentType only. " +
+            "Images must be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller."
     )
     fun updateProduct(
         merchantId: String,
@@ -48,7 +48,6 @@ class ProductMcpTools(
         categoryName: String? = null,
         productCode: String? = null,
         imageBase64: String? = null,
-        imageFilePath: String? = null,
         imageContentType: String? = null,
         cropX: Int? = null,
         cropY: Int? = null,
@@ -70,7 +69,6 @@ class ProductMcpTools(
             ),
             image = productImageUploadOrNull(
                 imageBase64 = imageBase64,
-                imageFilePath = imageFilePath,
                 imageContentType = imageContentType,
                 cropX = cropX,
                 cropY = cropY,
@@ -96,6 +94,8 @@ class ProductMcpTools(
         name = "product_id_by_name_or_create",
         description = "Get or create a SINGLE product by name. " +
             "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly. " +
+            "Optional product image upload uses imageBase64 and imageContentType only. " +
+            "Images must be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller. " +
             "WARNING: if you need to create or update 2 or more products, call products_bulk_upsert instead — do NOT call this tool in a loop."
     )
     fun getOrCreateProductId(
@@ -108,7 +108,6 @@ class ProductMcpTools(
         categoryName: String? = null,
         productCode: String? = null,
         imageBase64: String? = null,
-        imageFilePath: String? = null,
         imageContentType: String? = null,
         cropX: Int? = null,
         cropY: Int? = null,
@@ -121,7 +120,6 @@ class ProductMcpTools(
         val parsedCode = productCode?.trim()?.takeIf { it.isNotEmpty() }?.toLong()
         val image = productImageUploadOrNull(
             imageBase64 = imageBase64,
-            imageFilePath = imageFilePath,
             imageContentType = imageContentType,
             cropX = cropX,
             cropY = cropY,
@@ -171,7 +169,7 @@ class ProductMcpTools(
             "Returns created, updated, skipped (within-batch duplicates only), and failed items with their IDs. " +
             "Accepts categoryName per item (resolved or created automatically) or categoryId. " +
             "Re-running the same payload is safe — existing products are updated, not duplicated. " +
-            "Max 200 items per call. Images are not supported in bulk; use merchant_product_update after import."
+            "Max 200 items per call. Images are not supported in bulk; use merchant_product_update after import with clear, high-quality, directly related JPEG/PNG/WebP images that are 5 MB or smaller."
     )
     fun bulkUpsertProducts(
         merchantId: String,
@@ -268,7 +266,6 @@ class ProductMcpTools(
 
     private fun productImageUploadOrNull(
         imageBase64: String?,
-        imageFilePath: String?,
         imageContentType: String?,
         cropX: Int?,
         cropY: Int?,
@@ -276,29 +273,19 @@ class ProductMcpTools(
         cropHeight: Int?
     ): ProductImageUpload? {
         val normalizedBase64 = imageBase64?.trim()?.takeIf { it.isNotEmpty() }
-        val normalizedFilePath = imageFilePath?.trim()?.takeIf { it.isNotEmpty() }
         val normalizedContentType = imageContentType?.trim()?.takeIf { it.isNotEmpty() }
 
-        require(normalizedBase64 == null || normalizedFilePath == null) {
-            "Provide either imageBase64 or imageFilePath, not both"
-        }
-        if (normalizedBase64 == null && normalizedFilePath == null) {
+        if (normalizedBase64 == null) {
             require(listOf(normalizedContentType, cropX, cropY, cropWidth, cropHeight).all { it == null }) {
-                "imageBase64 or imageFilePath is required when imageContentType or crop parameters are provided"
+                "imageBase64 is required when imageContentType or crop parameters are provided"
             }
             return null
         }
 
-        val imagePath = normalizedFilePath?.let { Path.of(it).normalize() }
         val contentType = normalizedContentType
-            ?: imagePath?.let { Files.probeContentType(it) }
-            ?: throw IllegalArgumentException("imageContentType is required when it cannot be inferred from imageFilePath")
+            ?: throw IllegalArgumentException("imageContentType is required when imageBase64 is provided")
         ProductImagePolicy.extensionFor(contentType)
-        val originalBytes = when {
-            normalizedBase64 != null -> Base64.getDecoder().decode(normalizedBase64.substringAfter("base64,", normalizedBase64))
-            imagePath != null -> Files.readAllBytes(imagePath)
-            else -> error("No product image source provided")
-        }
+        val originalBytes = Base64.getDecoder().decode(normalizedBase64.substringAfter("base64,", normalizedBase64))
         val imageBytes = cropImageIfRequested(
             bytes = originalBytes,
             contentType = contentType,

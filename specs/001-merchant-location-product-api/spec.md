@@ -43,12 +43,12 @@ Acceptance Scenarios:
 ### User Story 4 - Ingest Catalog Images from Agent Sources (Priority: P2)
 Agents must be able to create or update product records from menu photos by supplying a local image path or base64 image bytes, optionally with crop coordinates that isolate the product image before upload.
 
-Independent Test: Call the MCP product tool with a valid JPEG/PNG file path and crop rectangle; verify the product image is uploaded to object storage, the product stores an object key, and the product remains inactive if newly created.
+Independent Test: Call the MCP product tool with valid base64-encoded JPEG/PNG image bytes, content type, and crop rectangle; verify the product image is uploaded to object storage, the product stores an object key, and the product remains inactive if newly created.
 
 Acceptance Scenarios:
-1. Given a server-readable image file path, when the agent creates or updates a product through MCP, then the image is uploaded through the standard private object-storage path.
+1. Given base64-encoded image bytes and a supported content type, when the agent creates or updates a product through MCP, then the image is uploaded through the standard private object-storage path.
 2. Given valid crop coordinates, when the agent submits the image through MCP, then only the cropped image is stored.
-3. Given a missing file path, invalid base64, unsupported content type, oversized image, or invalid crop rectangle, then the MCP call fails without leaving a partial product update.
+3. Given missing base64 image bytes, invalid base64, unsupported content type, oversized image, or invalid crop rectangle, then the MCP call fails without leaving a partial product update.
 
 ## Edge Cases
 
@@ -71,7 +71,7 @@ Acceptance Scenarios:
 - FR-007: Auditing: user/agent identity and request metadata recorded for create/update actions.
 - FR-008: Updates MUST support partial updates via PATCH for MerchantLocation and Product; PUT (full replace) optional.
 - FR-009: MCP branch and product creation MUST default new records to `active = false`; lookup/update tools MUST search active and inactive records.
-- FR-010: MCP product image ingestion MUST accept either `imageBase64` or `imageFilePath` plus content type, and MAY accept `cropX`, `cropY`, `cropWidth`, and `cropHeight` for server-side JPEG/PNG cropping before upload.
+- FR-010: MCP product image ingestion MUST accept `imageBase64` plus `imageContentType`, and MAY accept `cropX`, `cropY`, `cropWidth`, and `cropHeight` for server-side JPEG/PNG cropping before upload. Tool callers SHOULD provide clear, high-quality images directly related to the product; product images MUST be JPEG, PNG, or WebP and 5 MB or smaller.
 - FR-011: MCP image ingestion MUST use the same private object-storage, object-key persistence, MIME validation, size validation, and signed retrieval behavior as the REST product image API.
 ### Key Entities
 
@@ -105,4 +105,4 @@ Acceptance Scenarios:
 
 ### Session 2026-04-23
 - Q: Can MCP tools create branches/products during catalog ingestion? → A: Yes, helper tools can create missing records by name, but created records default to inactive.
-- Q: How should MCP product image upload work? → A: Accept base64 bytes or a server-readable image file path, with optional crop coordinates, then upload through the same object-storage path as the REST product image API.
+- Q: How should MCP product image upload work? → A: Accept base64 bytes plus an explicit content type, with optional crop coordinates, then upload through the same object-storage path as the REST product image API.
