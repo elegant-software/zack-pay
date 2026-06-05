@@ -65,6 +65,9 @@ class MerchantBranch(
     @Column(name = "stripe_terminal_location_id")
     var stripeTerminalLocationId: String? = null,
 
+    @Column(name = "timezone", length = 64)
+    var timezone: String? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 

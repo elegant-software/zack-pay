@@ -21,6 +21,7 @@ class MerchantOpenApiConfig(
             .group(openApiGroupProperties.groups.merchant.label)
             .packagesToScan(MerchantOnboardingController::class.java.packageName)
             .pathsToMatch("/{version}/merchants/**")
+            .pathsToExclude("/{version}/merchants/*/appointments/**")
             .addOpenApiCustomizer { openApi ->
                 openApi.info = Info().title("BlitzPay — Merchant Onboarding API").version("v${apiVersionProperties.versions.merchant}")
                 openApi.paths = rewriteVersionPaths(openApi.paths, apiVersionProperties.versions.merchant)

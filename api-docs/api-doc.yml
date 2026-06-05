@@ -6,16 +6,18 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
-- name: User Management
-  description: Manage Platform User assignments to Merchants and Branches
 - name: Merchant Orders
   description: Create and list orders for authenticated merchant branches
 - name: Merchant Verticals
   description: Platform-managed industry verticals available for merchant registration
 - name: Voice
   description: Voice query processing for authenticated mobile clients
+- name: Appointments
+  description: Merchant-side calendar and appointment management
 - name: Merchant Product Categories
   description: Manage merchant product categories
+- name: Appointments
+  description: "Shopper appointment search, booking, history, cancellation, and rescheduling"
 - name: Appearances
   description: Discover currently active mobile merchant appearances
 - name: Merchant Onboarding
@@ -52,6 +54,36 @@ tags:
 - name: Merchant Products
   description: Product catalog management for merchants
 paths:
+  /{version}/shopper/appointments/{appointmentId}/reschedule:
+    put:
+      tags:
+      - Appointments
+      operationId: reschedule
+      parameters:
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RescheduleRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
   /{version}/merchants/{merchantId}/provider-accounts/{pspCode}:
     put:
       tags:
@@ -448,6 +480,93 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AppearanceResponse"
+  /{version}/merchants/{merchantId}/appointments/{appointmentId}/reschedule:
+    put:
+      tags:
+      - Appointments
+      operationId: reschedule_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RescheduleRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
+  /{version}/merchants/{merchantId}/appointments/{appointmentId}/override:
+    put:
+      tags:
+      - Appointments
+      operationId: supportOverride
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportOverrideRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
+  /{version}/merchants/{merchantId}/appointments/{appointmentId}/complete:
+    put:
+      tags:
+      - Appointments
+      operationId: complete
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
   /{version}/merchants/{id}:
     get:
       tags:
@@ -615,19 +734,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VoiceTranscriptionResponse"
-  /{version}/user-management/users/{userId}/assignments:
-    get:
+  /{version}/shopper/devices:
+    post:
       tags:
-      - User Management
-      summary: Get all Merchant User Assignments for a Platform User
-      operationId: getAssignments
+      - shopper-device-registration-controller
+      operationId: register
       parameters:
-      - name: userId
-        in: path
+      - name: Authorization
+        in: header
         required: true
         schema:
           type: string
-          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShopperDeviceRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShopperDeviceResponse"
+  /{version}/shopper/appointments:
+    get:
+      tags:
+      - Appointments
+      operationId: history
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -636,24 +777,22 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/MerchantUserAssignmentResponse"
+                  $ref: "#/components/schemas/AppointmentResponse"
     post:
       tags:
-      - User Management
-      summary: Create a Merchant User Assignment
-      operationId: createAssignment
+      - Appointments
+      operationId: book
       parameters:
-      - name: userId
-        in: path
-        required: true
+      - name: Authorization
+        in: header
+        required: false
         schema:
           type: string
-          format: uuid
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateAssignmentRequest"
+              $ref: "#/components/schemas/BookAppointmentRequest"
         required: true
       responses:
         "200":
@@ -661,7 +800,27 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/MerchantUserAssignmentResponse"
+                $ref: "#/components/schemas/AppointmentResponse"
+  /{version}/shopper/appointments/search:
+    post:
+      tags:
+      - Appointments
+      operationId: search
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookableTimeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BookableSlotResponse"
   /{version}/proximity:
     post:
       tags:
@@ -1207,6 +1366,63 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AppearanceResponse"
+  /{version}/merchants/{merchantId}/appointments:
+    get:
+      tags:
+      - Appointments
+      operationId: listByMerchant
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppointmentResponse"
+    post:
+      tags:
+      - Appointments
+      operationId: create_6
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MerchantBookAppointmentRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
   /{version}/merchants/{id}/logo/upload-url:
     post:
       tags:
@@ -1263,7 +1479,7 @@ paths:
       description: "Full-text search across merchant, branch, and product fields,\
         \ with optional enum filters. All fields are optional — an empty body returns\
         \ the 50 most recently updated merchants."
-      operationId: search
+      operationId: search_1
       requestBody:
         content:
           application/json:
@@ -1320,7 +1536,7 @@ paths:
       - Merchant Orders
       summary: Create an order from branch products and return a QR code for customer
         payment
-      operationId: create_6
+      operationId: create_7
       parameters:
       - name: Authorization
         in: header
@@ -1418,7 +1634,7 @@ paths:
       tags:
       - Device Registration
       summary: Register or refresh a push token against an order.
-      operationId: register
+      operationId: register_1
       requestBody:
         content:
           application/json:
@@ -1533,27 +1749,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
-  /{version}/user-management/users:
-    get:
-      tags:
-      - User Management
-      summary: Search Platform Users by name or email
-      operationId: searchUsers
-      parameters:
-      - name: q
-        in: query
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/UserSearchResult"
   /{version}/qr-payments/{paymentRequestId}/events:
     get:
       tags:
@@ -1742,6 +1937,45 @@ paths:
       responses:
         "200":
           description: OK
+  /{version}/merchants/{merchantId}/appointments/employee/{employeeId}:
+    get:
+      tags:
+      - Appointments
+      operationId: listByEmployee
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppointmentResponse"
   /{version}/merchants/verticals:
     get:
       tags:
@@ -1982,28 +2216,49 @@ paths:
             application/json:
               schema:
                 type: object
-  /{version}/user-management/users/{userId}/assignments/{assignmentId}:
+  /{version}/shopper/devices/{expoPushToken}:
     delete:
       tags:
-      - User Management
-      summary: Revoke a Merchant User Assignment
-      operationId: revokeAssignment
+      - shopper-device-registration-controller
+      operationId: unregister
       parameters:
-      - name: userId
+      - name: expoPushToken
         in: path
         required: true
         schema:
           type: string
-          format: uuid
-      - name: assignmentId
-        in: path
+      - name: Authorization
+        in: header
         required: true
         schema:
           type: string
-          format: uuid
       responses:
         "200":
           description: OK
+  /{version}/shopper/appointments/{appointmentId}:
+    delete:
+      tags:
+      - Appointments
+      operationId: cancel_1
+      parameters:
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
   /{version}/merchants/{merchantId}/stripe-connect/tap-to-pay:
     delete:
       tags:
@@ -2024,12 +2279,37 @@ paths:
             '*/*':
               schema:
                 type: object
+  /{version}/merchants/{merchantId}/appointments/{appointmentId}:
+    delete:
+      tags:
+      - Appointments
+      operationId: cancel_2
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
   /{version}/devices/{expoPushToken}:
     delete:
       tags:
       - Device Registration
       summary: Explicit unregister (user logout / privacy).
-      operationId: unregister
+      operationId: unregister_1
       parameters:
       - name: expoPushToken
         in: path
@@ -2041,6 +2321,93 @@ paths:
           description: No Content
 components:
   schemas:
+    RescheduleRequest:
+      type: object
+      properties:
+        newProductId:
+          type: string
+          format: uuid
+        newProductCategoryId:
+          type: string
+          format: uuid
+        newStartTime:
+          type: string
+          format: date-time
+        newEmployeeId:
+          type: string
+          format: uuid
+        overrideReason:
+          type: string
+      required:
+      - newProductCategoryId
+      - newProductId
+      - newStartTime
+    AppointmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchantId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        shopperAccountId:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        status:
+          type: string
+        contactType:
+          type: string
+        contactName:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        productName:
+          type: string
+        productPrice:
+          type: number
+        durationMinutes:
+          type: integer
+          format: int32
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - branchId
+      - contactName
+      - contactType
+      - createdAt
+      - durationMinutes
+      - employeeId
+      - endTime
+      - id
+      - merchantId
+      - productId
+      - productName
+      - startTime
+      - status
+      - updatedAt
     ProviderAccountResponse:
       type: object
       properties:
@@ -2402,6 +2769,29 @@ components:
       - merchantId
       - startTime
       - updatedAt
+    SupportOverrideRequest:
+      type: object
+      properties:
+        newProductId:
+          type: string
+          format: uuid
+        newProductCategoryId:
+          type: string
+          format: uuid
+        newStartTime:
+          type: string
+          format: date-time
+        newEmployeeId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+      required:
+      - newProductCategoryId
+      - newProductId
+      - newStartTime
+      - reason
     MerchantAddress:
       type: object
       properties:
@@ -2666,55 +3056,103 @@ components:
           type: string
       required:
       - transcript
-    CreateAssignmentRequest:
+    ShopperDeviceRequest:
       type: object
       properties:
-        merchantId:
+        expoPushToken:
           type: string
-          format: uuid
-        branchId:
+          minLength: 1
+          pattern: "^ExponentPushToken\\[[^\\]]+\\]$"
+        platform:
           type: string
-          format: uuid
-        role:
-          type: string
-          enum:
-          - MERCHANT_MANAGER
-          - MERCHANT_EMPLOYEE
-        employeeId:
-          type: string
-          format: uuid
       required:
-      - merchantId
-      - role
-    MerchantUserAssignmentResponse:
+      - expoPushToken
+    ShopperDeviceResponse:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        merchantId:
+        expoPushToken:
           type: string
-          format: uuid
-        merchantName:
-          type: string
+      required:
+      - expoPushToken
+      - id
+    BookAppointmentRequest:
+      type: object
+      properties:
         branchId:
           type: string
           format: uuid
-        branchName:
+        productId:
           type: string
-        role:
+          format: uuid
+        productCategoryId:
           type: string
-          enum:
-          - MERCHANT_MANAGER
-          - MERCHANT_EMPLOYEE
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
         employeeId:
           type: string
           format: uuid
+        contactName:
+          type: string
+          minLength: 1
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        note:
+          type: string
       required:
-      - id
-      - merchantId
-      - merchantName
-      - role
+      - branchId
+      - contactName
+      - productCategoryId
+      - productId
+      - startTime
+    BookableTimeRequest:
+      type: object
+      properties:
+        branchId:
+          type: string
+          format: uuid
+        productCategoryId:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+      required:
+      - branchId
+      - from
+      - productCategoryId
+      - to
+    BookableSlotResponse:
+      type: object
+      properties:
+        employeeId:
+          type: string
+          format: uuid
+        employeeName:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+      required:
+      - employeeId
+      - employeeName
+      - endTime
+      - startTime
     ProximityEventRequest:
       type: object
       properties:
@@ -3331,6 +3769,39 @@ components:
       - declaredLongitude
       - endTime
       - startTime
+    MerchantBookAppointmentRequest:
+      type: object
+      properties:
+        branchId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        productCategoryId:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        employeeId:
+          type: string
+          format: uuid
+        contactName:
+          type: string
+          minLength: 1
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        note:
+          type: string
+      required:
+      - branchId
+      - contactName
+      - productCategoryId
+      - productId
+      - startTime
     MerchantLogoUploadRequest:
       type: object
       properties:
@@ -3680,37 +4151,6 @@ components:
           format: int64
       required:
       - unitPriceMinor
-    UserGroupMembership:
-      type: object
-      properties:
-        id:
-          type: string
-        merchantName:
-          type: string
-        branchName:
-          type: string
-      required:
-      - merchantName
-    UserSearchResult:
-      type: object
-      properties:
-        id:
-          type: string
-        displayName:
-          type: string
-        email:
-          type: string
-        enabled:
-          type: boolean
-        groups:
-          type: array
-          items:
-            $ref: "#/components/schemas/UserGroupMembership"
-      required:
-      - displayName
-      - enabled
-      - groups
-      - id
     SseEmitter:
       type: object
       properties:

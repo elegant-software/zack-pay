@@ -19,6 +19,7 @@ data class OpenApiGroupProperties(
         val mobileGeofencing: Group = Group(),
         val merchant: Group = Group(),
         val order: Group = Group(),
+        val appointment: Group = Group(),
         val voice: Group = Group(),
         val actuator: Group = Group(),
     )
