@@ -1,0 +1,56 @@
+services:
+
+  floci:
+    image: floci/floci:latest-compat
+    ports:
+      - "4566:4566"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./src/main/resources/floci/init.sh:/etc/floci/init/ready.d/init.sh:ro
+    environment:
+      FLOCI_DEFAULT_REGION: eu-central-1
+    networks:
+      - blitzpay
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4566/_floci/health"]
+      interval: 5s
+      retries: 10
+
+  floci-ui:
+    build: https://github.com/floci-io/floci-ui.git
+    ports:
+      - "3000:3000"
+    environment:
+      FLOCI_ENDPOINT: http://floci:4566
+      AWS_REGION: eu-central-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    depends_on:
+      floci:
+        condition: service_healthy
+    networks:
+      - blitzpay
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: blitzpay_db
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME:-blitzpay}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-change-me-strong-password}
+    volumes:
+      - blitzpay-postgres-data:/var/lib/postgresql/data
+    networks:
+      - blitzpay
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_USERNAME:-blitzpay}"]
+      interval: 5s
+      retries: 10
+
+networks:
+  blitzpay:
+    name: blitzpay
+
+volumes:
+  blitzpay-postgres-data:
