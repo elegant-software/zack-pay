@@ -1,13 +1,8 @@
 package com.elegant.software.blitzpay.contract
 
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
-import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
-import com.elegant.software.blitzpay.merchant.application.MerchantProductCategoryService
-import com.elegant.software.blitzpay.merchant.domain.MerchantOffering
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.iam.repository.MerchantUserAssignmentRepository
-import com.elegant.software.blitzpay.merchant.iam.service.UserManagementService
-import com.elegant.software.blitzpay.merchant.repository.*
+import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
 import com.elegant.software.blitzpay.order.repository.OrderItemRepository
