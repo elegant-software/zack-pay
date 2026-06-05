@@ -201,12 +201,7 @@ blitzpay:
     allowed-headers:
       - "*"
   storage:
-    endpoint: ${STORAGE_ENDPOINT:https://minio.elegantsoftware.de}
-    region: ${STORAGE_REGION:us-east-1}
-    access-key: ${STORAGE_ACCESS_KEY:minioadmin}
-    secret-key: ${STORAGE_SECRET_KEY:Halil@avina4410}
     bucket: ${STORAGE_BUCKET:blitzpay}
-    path-style-access: ${STORAGE_PATH_STYLE:true}
   google-maps:
     enabled: ${GOOGLE_MAPS_ENABLED:false}
     api-key: ${GOOGLE_MAPS_API_KEY:}

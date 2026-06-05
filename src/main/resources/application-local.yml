@@ -5,25 +5,6 @@ management:
         include: metrics,health,prometheus
         exclude: env
 
-arconia:
-  dev:
-    services:
-      floci:
-        port: 4566
-        shared: true
-        resources:
-          - source-path: classpath:floci/init.sh
-            container-path: /etc/floci/init/ready.d/init.sh
-      postgresql:
-        port: 5433
-        shared: true
-        db-name: blitzpay_db
-        username: ${SPRING_DATASOURCE_USERNAME:blitzpay}
-        password: ${SPRING_DATASOURCE_PASSWORD:change-me-strong-password}
-        volumes:
-          - host-path: blitzpay-postgres-data
-            container-path: /var/lib/postgresql
-
 blitzpay:
   cors:
     allowed-origins:

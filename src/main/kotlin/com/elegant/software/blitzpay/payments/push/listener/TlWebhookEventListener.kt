@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.payments.push.listener
 
-import TlWebhookEnvelope
+import com.elegant.software.blitzpay.payments.truelayer.inbound.TlWebhookEnvelope
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.order.api.PaymentStatusChanged
 import com.elegant.software.blitzpay.order.api.PaymentStatusCode

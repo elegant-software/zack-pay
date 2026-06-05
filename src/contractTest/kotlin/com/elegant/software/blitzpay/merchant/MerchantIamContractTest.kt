@@ -114,7 +114,7 @@ class MerchantIamContractTest : ContractVerifierBase() {
         assertEquals("Branch IAM GmbH", event.merchantName)
     }
 
-    @TestConfiguration
+    @TestConfiguration(proxyBeanMethods = false)
     class TestConfig {
 
         @Bean
@@ -131,18 +131,18 @@ class MerchantIamContractTest : ContractVerifierBase() {
         }
     }
 
-    class PublishedEventSink {
-        private val events = CopyOnWriteArrayList<Any>()
+    open class PublishedEventSink {
+        private val events: CopyOnWriteArrayList<Any> by lazy { CopyOnWriteArrayList() }
 
-        fun record(event: Any) {
+        open fun record(event: Any) {
             events += event
         }
 
-        fun <T : Any> first(type: Class<T>): T? = events.firstNotNullOfOrNull { event ->
+        open fun <T : Any> first(type: Class<T>): T? = events.firstNotNullOfOrNull { event ->
             if (type.isInstance(event)) type.cast(event) else null
         }
 
-        fun clear() {
+        open fun clear() {
             events.clear()
         }
     }

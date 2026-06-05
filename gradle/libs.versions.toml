@@ -54,7 +54,7 @@ keycloak-admin-client = "26.0.9"
 # Modulith: `payments.stripe` + `payments.braintree` — mobile payment gateways
 stripe-java          = "33.0.0"
 braintree-java       = "3.50.0"
-aws-sdk              = "2.46.11"
+spring-cloud-aws     = "4.0.2"
 
 # Optional runtime integrations
 dr-jskill            = "2026_02_19-a951a5e"
@@ -126,7 +126,8 @@ keycloak-admin-client = { module = "org.keycloak:keycloak-admin-client", version
 
 stripe-java          = { module = "com.stripe:stripe-java", version.ref = "stripe-java" }
 braintree-java       = { module = "com.braintreepayments.gateway:braintree-java", version.ref = "braintree-java" }
-aws-s3               = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk" }
+spring-cloud-aws-starter-s3              = { module = "io.awspring.cloud:spring-cloud-aws-starter-s3" }
+spring-cloud-aws-starter-secrets-manager = { module = "io.awspring.cloud:spring-cloud-aws-starter-secrets-manager" }
 
 # -----------------------------------------------------------------------------
 # Tests (shared across all modules)

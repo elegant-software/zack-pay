@@ -1,5 +1,6 @@
+package com.elegant.software.blitzpay.payments.truelayer.inbound
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-// ...existing code...
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class TlWebhookEnvelope(
     val type: String,

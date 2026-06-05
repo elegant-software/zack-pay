@@ -2,7 +2,7 @@
 
 package com.elegant.software.blitzpay.payments.qrpay.listener
 
-import TlWebhookEnvelope
+import com.elegant.software.blitzpay.payments.truelayer.inbound.TlWebhookEnvelope
 import com.elegant.software.blitzpay.order.api.OrderPaymentInitiationRequested
 import com.elegant.software.blitzpay.order.api.PaymentMethod
 import com.elegant.software.blitzpay.payments.support.PaymentUpdateBus
