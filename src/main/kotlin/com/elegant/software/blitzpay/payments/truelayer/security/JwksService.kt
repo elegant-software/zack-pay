@@ -1,5 +1,6 @@
-package com.elegant.software.blitzpay.payments.truelayer.support
+package com.elegant.software.blitzpay.payments.truelayer.security
 
+import com.elegant.software.blitzpay.payments.truelayer.config.TlWebhookProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.http.MediaType
