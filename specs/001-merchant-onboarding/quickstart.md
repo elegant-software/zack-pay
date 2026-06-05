@@ -53,7 +53,7 @@ Expected coverage for this feature:
 - Multipart create with valid JPEG/PNG/WebP stores a product and object key.
 - Multipart create/update accepts optional Markdown description up to 2,000 characters.
 - Multipart update with valid image replaces the stored image key.
-- MCP product ingestion with `imageBase64` or `imageFilePath` stores a product image through the same object-key storage path.
+- MCP product ingestion with `imageBase64` and `imageContentType` stores a product image through the same object-key storage path.
 - MCP product ingestion with crop coordinates stores the cropped image, not the uncropped source image.
 - MCP-created branches and products are persisted as inactive by default and can be updated by later MCP calls while inactive.
 - Description longer than 2,000 characters returns HTTP 400 and performs no DB/object write.
@@ -128,7 +128,8 @@ Expected MCP behavior:
 - `branch_id_by_name_or_create` finds and updates existing inactive branches by merchant/name.
 - `product_id_by_name_or_create` creates a missing product with `active = false`.
 - `product_id_by_name_or_create` finds and updates existing inactive products by merchant/branch/name.
-- `product_id_by_name_or_create` and `merchant_product_update` accept `imageBase64` or `imageFilePath`.
+- `product_id_by_name_or_create` and `merchant_product_update` accept `imageBase64` and `imageContentType`.
+- Product images should be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller.
 - Optional `cropX`, `cropY`, `cropWidth`, and `cropHeight` crop JPEG/PNG inputs before upload.
 
 Example MCP product update payload shape:
@@ -140,7 +141,7 @@ Example MCP product update payload shape:
   "productName": "Erdbeer Becher",
   "unitPrice": "8.00",
   "description": "Vanilleeis, frische Erdbeeren, Sahne und selbst gemachte Erdbeersoße.",
-  "imageFilePath": "/tmp/eis-molin-crops/erdbeer-becher-thumb.jpg",
+  "imageBase64": "<base64-encoded JPEG bytes>",
   "imageContentType": "image/jpeg"
 }
 ```
@@ -154,7 +155,7 @@ When using an uncropped source image:
   "productName": "Erdbeer Becher",
   "unitPrice": "8.00",
   "description": "Vanilleeis, frische Erdbeeren, Sahne und selbst gemachte Erdbeersoße.",
-  "imageFilePath": "/tmp/eis-molin-menu.jpg",
+  "imageBase64": "<base64-encoded JPEG bytes>",
   "imageContentType": "image/jpeg",
   "cropX": 120,
   "cropY": 2500,

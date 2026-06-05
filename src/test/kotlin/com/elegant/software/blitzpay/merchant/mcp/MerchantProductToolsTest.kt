@@ -133,7 +133,6 @@ class MerchantProductToolsTest {
             productName = "Latte",
             unitPrice = "3.50",
             imageBase64 = "   ",
-            imageFilePath = "",
             imageContentType = "  "
         )
 

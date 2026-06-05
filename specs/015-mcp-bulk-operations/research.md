@@ -63,4 +63,4 @@ Within-batch duplicates (same `productName` appears twice): track seen names in 
 
 ## Decision 8: `getOrCreateProductId` image parameters — unchanged
 
-The bulk create tool intentionally omits image upload (no `imageBase64`/`imageFilePath`). This is consistent with the spec ("catalog import" scenario) and keeps the bulk payload size reasonable. Images can be added post-import via `merchant_product_update`.
+The bulk create tool intentionally omits image upload (no `imageBase64`). This is consistent with the spec ("catalog import" scenario) and keeps the bulk payload size reasonable. Images can be added post-import via `merchant_product_update` using base64 image bytes plus an explicit content type.

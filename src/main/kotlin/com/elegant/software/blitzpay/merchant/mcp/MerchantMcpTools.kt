@@ -16,8 +16,6 @@ import com.elegant.software.blitzpay.merchant.application.MerchantVerticalServic
 import com.elegant.software.blitzpay.storage.StorageService
 import org.springframework.ai.mcp.annotation.McpTool
 import org.springframework.stereotype.Component
-import java.nio.file.Files
-import java.nio.file.Path
 import java.util.Base64
 import java.util.UUID
 
@@ -49,11 +47,16 @@ class MerchantMcpTools(
         Branches
           1 branch   → branch_id_by_name_or_create
           2+ branches → branches_bulk_upsert  (never loop the single-branch tool; supports all attributes)
+          GOOD → provide branch address when known; BEST → provide address plus latitude/longitude for the same branch
+          If coordinates are unknown, still provide the branch address when available
           MOBILE merchant branches → address fields are the depot/registered address, NOT the operating location
 
         Products
           1 product  → product_id_by_name_or_create
           2+ products → products_bulk_upsert  (never loop the single-product tool)
+          GOOD → provide product images when available using imageBase64 + imageContentType only
+          Product images must be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller
+          For bulk imports, create products first, then use merchant_product_update for images
 
         Categories
           1 category  → category_id_by_name_or_create
@@ -98,7 +101,7 @@ class MerchantMcpTools(
         description = "Create or update a merchant by name. Always upserts — creates when not found, updates profile when found. " +
             "Pass mobility = \"MOBILE\" for food trucks, street sellers, circuses, pop-up theatres, or any merchant that operates from variable locations. " +
             "Omit mobility (or pass \"BRICK_AND_MORTAR\") for fixed-location merchants. " +
-            "Optionally uploads a logo via logoBase64 or logoFilePath. " +
+            "Optionally uploads a logo via logoBase64 and logoContentType only; use a clear, high-quality merchant logo in JPEG, PNG, or WebP format. " +
             "Returns full merchant details; use the returned applicationId as merchantId in subsequent branch and product calls."
     )
     fun upsertMerchant(
@@ -112,7 +115,6 @@ class MerchantMcpTools(
         contactPhoneNumber: String? = null,
         defaultBranchName: String = "Main Branch",
         logoBase64: String? = null,
-        logoFilePath: String? = null,
         logoContentType: String? = null,
         mobility: String? = null,
     ): MerchantDetailsResponse {
@@ -161,7 +163,7 @@ class MerchantMcpTools(
 
         ensureBranchExists(merchantId, defaultBranchName)
 
-        val logo = merchantLogoOrNull(logoBase64, logoFilePath, logoContentType)
+        val logo = merchantLogoOrNull(logoBase64, logoContentType)
         if (logo != null) {
             val key = MerchantLogoPolicy.storageKeyFor(merchantId, logo.first)
             storageService.upload(key, logo.first, logo.second)
@@ -173,26 +175,20 @@ class MerchantMcpTools(
 
     private fun merchantLogoOrNull(
         logoBase64: String?,
-        logoFilePath: String?,
         logoContentType: String?
     ): Pair<String, ByteArray>? {
         val normalizedBase64 = logoBase64?.trim()?.takeIf { it.isNotEmpty() }
-        val normalizedFilePath = logoFilePath?.trim()?.takeIf { it.isNotEmpty() }
         val normalizedContentType = logoContentType?.trim()?.takeIf { it.isNotEmpty() }
-        require(normalizedBase64 == null || normalizedFilePath == null) {
-            "Provide either logoBase64 or logoFilePath, not both"
+        if (normalizedBase64 == null) {
+            require(normalizedContentType == null) {
+                "logoBase64 is required when logoContentType is provided"
+            }
+            return null
         }
-        if (normalizedBase64 == null && normalizedFilePath == null) return null
-        val imagePath = normalizedFilePath?.let { Path.of(it).normalize() }
         val contentType = normalizedContentType
-            ?: imagePath?.let { Files.probeContentType(it) }
-            ?: throw IllegalArgumentException("logoContentType is required when it cannot be inferred from logoFilePath")
+            ?: throw IllegalArgumentException("logoContentType is required when logoBase64 is provided")
         MerchantLogoPolicy.extensionFor(contentType)
-        val bytes = when {
-            normalizedBase64 != null -> Base64.getDecoder().decode(normalizedBase64.substringAfter("base64,", normalizedBase64))
-            imagePath != null -> Files.readAllBytes(imagePath)
-            else -> error("No logo source provided")
-        }
+        val bytes = Base64.getDecoder().decode(normalizedBase64.substringAfter("base64,", normalizedBase64))
         return contentType to bytes
     }
 
