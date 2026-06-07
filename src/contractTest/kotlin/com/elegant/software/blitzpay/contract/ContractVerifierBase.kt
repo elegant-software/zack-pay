@@ -1,47 +1,34 @@
 package com.elegant.software.blitzpay.contract
 
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
+import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
+import com.elegant.software.blitzpay.merchant.application.MerchantProductCategoryService
+import com.elegant.software.blitzpay.merchant.domain.MerchantOffering
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
+import com.elegant.software.blitzpay.merchant.iam.repository.MerchantUserAssignmentRepository
+import com.elegant.software.blitzpay.merchant.iam.service.UserManagementService
+import com.elegant.software.blitzpay.merchant.repository.*
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
 import com.elegant.software.blitzpay.order.repository.OrderItemRepository
 import com.elegant.software.blitzpay.order.repository.OrderRepository
 import com.elegant.software.blitzpay.order.repository.PaymentAttemptRepository
 import com.elegant.software.blitzpay.payments.QuickpayApplication
-import com.elegant.software.blitzpay.merchant.application.MerchantProductCategoryService
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingRepository
-import com.elegant.software.blitzpay.merchant.domain.MerchantOffering
-import com.elegant.software.blitzpay.merchant.repository.MerchantVerticalRepository
-import com.elegant.software.blitzpay.merchant.repository.MonitoringRecordRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchAppearanceRepository
-import com.elegant.software.blitzpay.merchant.repository.ProximityEventRepository
+import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
+import com.elegant.software.blitzpay.payments.push.api.PaymentStatusUpdateGateway
 import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistrationRepository
 import com.elegant.software.blitzpay.payments.push.persistence.PaymentStatusRepository
 import com.elegant.software.blitzpay.payments.push.persistence.ProcessedWebhookEventRepository
 import com.elegant.software.blitzpay.payments.push.persistence.PushDeliveryAttemptRepository
-import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
-import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantStripeProviderAccountRepository
-import com.elegant.software.blitzpay.merchant.repository.PaymentServiceProviderRepository
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusUpdateGateway
-import com.elegant.software.blitzpay.storage.StorageService
-import com.elegant.software.blitzpay.support.ContractTestConfig
-import com.elegant.software.blitzpay.voice.api.VoiceGateway
-import jakarta.persistence.EntityManager
-import org.springframework.context.annotation.Import
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentRequested
-import java.util.Base64 as JavaBase64
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentResult
 import com.elegant.software.blitzpay.payments.truelayer.outbound.PaymentService
 import com.elegant.software.blitzpay.payments.truelayer.support.JwksService
+import com.elegant.software.blitzpay.storage.StorageService
+import com.elegant.software.blitzpay.support.ContractTestConfig
+import com.elegant.software.blitzpay.voice.api.VoiceGateway
 import com.truelayer.java.TrueLayerClient
+import jakarta.persistence.EntityManager
 import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -49,10 +36,12 @@ import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.whenever
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import java.net.URI
+import java.util.Base64 as JavaBase64
 
 @SpringBootTest(
     classes = [QuickpayApplication::class],
@@ -132,6 +121,12 @@ abstract class ContractVerifierBase {
 
     @MockitoBean
     protected lateinit var storageService: StorageService
+
+    @MockitoBean
+    protected lateinit var merchantUserAssignmentRepository: MerchantUserAssignmentRepository
+
+    @MockitoBean
+    protected lateinit var userManagementService: UserManagementService
 
     @MockitoBean
     protected lateinit var voiceGateway: VoiceGateway

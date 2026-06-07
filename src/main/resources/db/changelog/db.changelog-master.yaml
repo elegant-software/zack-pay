@@ -91,3 +91,5 @@ databaseChangeLog:
       file: db/changelog/20260528-001-stripe-tap-to-pay.sql
   - include:
       file: db/changelog/20260529-001-order-checkout-payment-method.sql
+  - include:
+      file: db/changelog/20260606-001-merchant-user-assignments.sql

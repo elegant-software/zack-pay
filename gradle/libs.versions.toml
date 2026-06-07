@@ -47,6 +47,9 @@ springdoc            = "3.0.2"
 bootui               = "0.3.0"
 mockito-kotlin       = "6.3.0"
 
+# Modulith: `merchant.iam` — Keycloak user/group management
+keycloak-admin-client = "26.0.9"
+
 # Modulith: `payments.stripe` + `payments.braintree` — mobile payment gateways
 stripe-java          = "32.1.0"
 braintree-java       = "3.48.0"
@@ -112,6 +115,8 @@ springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openap
 # Modulith: `payments.stripe` + `payments.braintree`
 # Purpose: mobile payment gateway integrations (Stripe card + Braintree PayPal)
 # -----------------------------------------------------------------------------
+keycloak-admin-client = { module = "org.keycloak:keycloak-admin-client", version.ref = "keycloak-admin-client" }
+
 stripe-java          = { module = "com.stripe:stripe-java", version.ref = "stripe-java" }
 braintree-java       = { module = "com.braintreepayments.gateway:braintree-java", version.ref = "braintree-java" }
 aws-s3               = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk" }
