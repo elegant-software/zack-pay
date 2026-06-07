@@ -6,6 +6,8 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
+- name: User Management
+  description: Manage Platform User assignments to Merchants and Branches
 - name: Merchant Orders
   description: Create and list orders for authenticated merchant branches
 - name: Merchant Verticals
@@ -1749,6 +1751,27 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/user-management/users:
+    get:
+      tags:
+      - User Management
+      summary: Search Platform Users by name or email
+      operationId: searchUsers
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSearchResult"
   /{version}/qr-payments/{paymentRequestId}/events:
     get:
       tags:
@@ -4151,6 +4174,37 @@ components:
           format: int64
       required:
       - unitPriceMinor
+    UserGroupMembership:
+      type: object
+      properties:
+        id:
+          type: string
+        merchantName:
+          type: string
+        branchName:
+          type: string
+      required:
+      - merchantName
+    UserSearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        enabled:
+          type: boolean
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserGroupMembership"
+      required:
+      - displayName
+      - enabled
+      - groups
+      - id
     SseEmitter:
       type: object
       properties:

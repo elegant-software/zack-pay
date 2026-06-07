@@ -103,3 +103,5 @@ databaseChangeLog:
       file: db/changelog/20260605-004-appointments-table.sql
   - include:
       file: db/changelog/20260605-005-push-shopper-devices.sql
+  - include:
+      file: db/changelog/20260606-001-merchant-user-assignments.sql
