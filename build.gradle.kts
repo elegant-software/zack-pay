@@ -87,6 +87,12 @@ dependencies {
 
 
     // ----------------------------
+    // Modulith: `merchant.iam` — User Management
+    // Purpose: Keycloak Admin Client for user search and group membership management
+    // ----------------------------
+    implementation(libs.keycloak.admin.client)
+
+    // ----------------------------
     // Shared platform (all Modulith modules)
     // Purpose: web/http, JSON, Modulith runtime, OpenAPI
     // ----------------------------

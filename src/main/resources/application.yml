@@ -1,6 +1,8 @@
 spring:
   application:
     name: quickpay
+  profiles:
+    default: local
   main:
     web-application-type: servlet
   datasource:

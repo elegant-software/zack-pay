@@ -5,6 +5,8 @@ import com.elegant.software.blitzpay.payments.push.internal.ExpoMessage
 import com.elegant.software.blitzpay.payments.push.internal.ExpoPushClient
 import com.elegant.software.blitzpay.payments.push.internal.ExpoTicket
 import jakarta.persistence.EntityManagerFactory
+import jakarta.persistence.metamodel.Metamodel
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -26,5 +28,12 @@ class ContractTestConfig {
 
     @Bean(name = ["entityManagerFactory"])
     @Primary
-    fun mockEntityManagerFactory(): EntityManagerFactory = mock()
+    fun mockEntityManagerFactory(): EntityManagerFactory {
+        val metamodel = mock<Metamodel> {
+            on { entities } doReturn emptySet()
+            on { managedTypes } doReturn emptySet()
+            on { embeddables } doReturn emptySet()
+        }
+        return mock { on { getMetamodel() } doReturn metamodel }
+    }
 }

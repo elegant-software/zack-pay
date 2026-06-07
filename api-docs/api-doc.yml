@@ -6,6 +6,8 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
+- name: User Management
+  description: Manage Platform User assignments to Merchants and Branches
 - name: Merchant Orders
   description: Create and list orders for authenticated merchant branches
 - name: Merchant Verticals
@@ -613,6 +615,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VoiceTranscriptionResponse"
+  /{version}/user-management/users/{userId}/assignments:
+    get:
+      tags:
+      - User Management
+      summary: Get all Merchant User Assignments for a Platform User
+      operationId: getAssignments
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerchantUserAssignmentResponse"
+    post:
+      tags:
+      - User Management
+      summary: Create a Merchant User Assignment
+      operationId: createAssignment
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssignmentRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MerchantUserAssignmentResponse"
   /{version}/proximity:
     post:
       tags:
@@ -1484,6 +1533,27 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/user-management/users:
+    get:
+      tags:
+      - User Management
+      summary: Search Platform Users by name or email
+      operationId: searchUsers
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSearchResult"
   /{version}/qr-payments/{paymentRequestId}/events:
     get:
       tags:
@@ -1912,6 +1982,28 @@ paths:
             application/json:
               schema:
                 type: object
+  /{version}/user-management/users/{userId}/assignments/{assignmentId}:
+    delete:
+      tags:
+      - User Management
+      summary: Revoke a Merchant User Assignment
+      operationId: revokeAssignment
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
   /{version}/merchants/{merchantId}/stripe-connect/tap-to-pay:
     delete:
       tags:
@@ -2574,6 +2666,55 @@ components:
           type: string
       required:
       - transcript
+    CreateAssignmentRequest:
+      type: object
+      properties:
+        merchantId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+          - MERCHANT_MANAGER
+          - MERCHANT_EMPLOYEE
+        employeeId:
+          type: string
+          format: uuid
+      required:
+      - merchantId
+      - role
+    MerchantUserAssignmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchantId:
+          type: string
+          format: uuid
+        merchantName:
+          type: string
+        branchId:
+          type: string
+          format: uuid
+        branchName:
+          type: string
+        role:
+          type: string
+          enum:
+          - MERCHANT_MANAGER
+          - MERCHANT_EMPLOYEE
+        employeeId:
+          type: string
+          format: uuid
+      required:
+      - id
+      - merchantId
+      - merchantName
+      - role
     ProximityEventRequest:
       type: object
       properties:
@@ -3539,6 +3680,37 @@ components:
           format: int64
       required:
       - unitPriceMinor
+    UserGroupMembership:
+      type: object
+      properties:
+        id:
+          type: string
+        merchantName:
+          type: string
+        branchName:
+          type: string
+      required:
+      - merchantName
+    UserSearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        enabled:
+          type: boolean
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserGroupMembership"
+      required:
+      - displayName
+      - enabled
+      - groups
+      - id
     SseEmitter:
       type: object
       properties:

@@ -21,10 +21,15 @@ object MerchantSearchSpecification {
             val q = request.q?.trim()
             if (!q.isNullOrEmpty()) {
                 val like = "%${q.lowercase()}%"
+                val normalizedCodeLike = "%${q.lowercase().replace("-", "")}%"
                 val textPreds = mutableListOf<Predicate>()
 
                 // Code and reference fields: matched at any length
                 textPreds += cb.like(cb.lower(root.get("merchantCode")), like)
+                textPreds += cb.like(
+                    cb.lower(cb.function("replace", String::class.java, root.get<String>("merchantCode"), cb.literal("-"), cb.literal(""))),
+                    normalizedCodeLike
+                )
                 textPreds += cb.like(cb.lower(root.get("applicationReference")), like)
                 textPreds += cb.like(cb.lower(root.get("publicEmail")), like)
 
@@ -50,6 +55,11 @@ object MerchantSearchSpecification {
                     branchSubq.where(
                         cb.equal(branch.get<UUID>("merchantApplicationId"), root.get<UUID>("id")),
                         cb.or(
+                            cb.like(cb.lower(branch.get("branchCode")), like),
+                            cb.like(
+                                cb.lower(cb.function("replace", String::class.java, branch.get<String>("branchCode"), cb.literal("-"), cb.literal(""))),
+                                normalizedCodeLike
+                            ),
                             cb.like(cb.lower(branch.get("name")), like),
                             cb.like(cb.lower(branchAddr.get("addressLine1")), like),
                             cb.like(cb.lower(branchAddr.get("city")), like),
