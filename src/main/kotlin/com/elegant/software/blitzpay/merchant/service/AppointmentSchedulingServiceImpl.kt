@@ -70,6 +70,13 @@ class AppointmentSchedulingServiceImpl(
         val merchant = merchantRepo.findById(branch.merchantApplicationId)
             .orElseThrow { NoSuchElementException("Merchant not found for branch $branchId") }
 
+        check(merchant.merchantStatus == com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus.ACTIVE) {
+            "Merchant is not active"
+        }
+        check(branch.status == com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus.ACTIVE) {
+            "Branch is not active"
+        }
+
         val timezone = branch.timezone?.let { ZoneId.of(it) } ?: ZoneId.of("UTC")
 
         val employeeIds: List<UUID> = if (employeeId != null) {

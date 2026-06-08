@@ -258,6 +258,28 @@ class AppointmentService(
         return appointment
     }
 
+    @Transactional
+    fun updateDetails(appointmentId: UUID, cmd: UpdateDetailsCommand): AppointmentEntity {
+        val appointment = appointmentRepo.findByIdForUpdate(appointmentId)
+            ?: throw NoSuchElementException("Appointment $appointmentId not found")
+        check(appointment.status == AppointmentStatus.BOOKED) { "Only BOOKED appointments can be edited" }
+
+        cmd.note?.let { appointment.note = it.value }
+
+        val hasContactUpdate = cmd.contactName != null || cmd.contactEmail != null || cmd.contactPhone != null
+        if (hasContactUpdate) {
+            check(appointment.contactType == AppointmentContactType.MERCHANT_CAPTURED) {
+                "Contact details on shopper-owned appointments may only be edited by the shopper"
+            }
+            cmd.contactName?.let { appointment.contactName = it }
+            cmd.contactEmail?.let { appointment.contactEmail = it.value }
+            cmd.contactPhone?.let { appointment.contactPhone = it.value }
+        }
+
+        appointment.updatedAt = Instant.now()
+        return appointment
+    }
+
     @Transactional(readOnly = true)
     fun findById(id: UUID): AppointmentEntity =
         appointmentRepo.findById(id).orElseThrow { NoSuchElementException("Appointment $id not found") }
@@ -282,25 +304,20 @@ class AppointmentService(
         if (cmd.employeeId != null) return cmd.employeeId
 
         val from = cmd.startTime.atZone(tz).toLocalDate()
-        val existing = appointmentRepo.findAllByEmployeeIdAndStatusAndStartTimeBetween(
-            UUID.randomUUID(), AppointmentStatus.BOOKED,
-            from.atStartOfDay(tz).toInstant(),
-            from.plusDays(1).atStartOfDay(tz).toInstant(),
-        )
+        val dayStart = from.atStartOfDay(tz).toInstant()
+        val dayEnd = from.plusDays(1).atStartOfDay(tz).toInstant()
 
-        val countByEmployee = context.employees
-            .filter { cmd.productCategoryId in it.serviceProductCategoryIds }
-            .associate { emp ->
-                emp.employeeId to appointmentRepo.findAllByEmployeeIdAndStatusAndStartTimeBetween(
-                    emp.employeeId, AppointmentStatus.BOOKED,
-                    from.atStartOfDay(tz).toInstant(),
-                    from.plusDays(1).atStartOfDay(tz).toInstant(),
-                ).size
-            }
+        val qualified = context.employees.filter { cmd.productCategoryId in it.serviceProductCategoryIds }
 
-        return countByEmployee.entries
-            .sortedWith(compareBy({ it.value }, { it.key.toString() }))
-            .firstOrNull()?.key
+        val countByEmployee = qualified.associate { emp ->
+            emp.employeeId to appointmentRepo.findAllByEmployeeIdAndStatusAndStartTimeBetween(
+                emp.employeeId, AppointmentStatus.BOOKED, dayStart, dayEnd,
+            ).size
+        }
+
+        return qualified
+            .sortedWith(compareBy({ countByEmployee[it.employeeId] ?: 0 }, { it.employeeName }, { it.employeeId.toString() }))
+            .firstOrNull()?.employeeId
             ?: throw IllegalStateException("No qualified employee available")
     }
 
@@ -339,6 +356,16 @@ sealed class CancelledBy {
     object MerchantManager : CancelledBy()
     data class Support(val reason: String) : CancelledBy()
 }
+
+/** Wraps a field that can be explicitly set to null (distinct from "not provided"). */
+data class Nullable<out T>(val value: T?)
+
+data class UpdateDetailsCommand(
+    val note: Nullable<String>? = null,
+    val contactName: String? = null,
+    val contactEmail: Nullable<String>? = null,
+    val contactPhone: Nullable<String>? = null,
+)
 
 sealed class CompletedBy {
     data class MerchantEmployee(val employeeId: UUID) : CompletedBy()

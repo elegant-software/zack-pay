@@ -67,4 +67,32 @@ interface AppointmentRepository : JpaRepository<AppointmentEntity, UUID> {
     fun existsByEmployeeIdAndStatusAndStartTimeAfter(
         employeeId: UUID, status: String, cutoff: Instant,
     ): Boolean
+
+    fun existsByBranchIdAndStatusAndStartTimeAfter(
+        branchId: UUID, status: String, cutoff: Instant,
+    ): Boolean
+
+    fun existsByMerchantIdAndStatusAndStartTimeAfter(
+        merchantId: UUID, status: String, cutoff: Instant,
+    ): Boolean
+
+    fun existsByProductIdAndStatusAndStartTimeAfter(
+        productId: UUID, status: String, cutoff: Instant,
+    ): Boolean
+
+    @Query("""
+        SELECT CASE WHEN COUNT(a) > 0 THEN TRUE ELSE FALSE END
+        FROM AppointmentEntity a
+        WHERE a.productId IN :productIds
+          AND a.status = 'BOOKED'
+          AND a.startTime > :cutoff
+    """)
+    fun existsByProductIdInAndStatusBookedAndStartTimeAfter(
+        @Param("productIds") productIds: Set<UUID>,
+        @Param("cutoff") cutoff: Instant,
+    ): Boolean
+
+    fun existsByEmployeeIdAndBranchIdAndStatusAndStartTimeAfter(
+        employeeId: UUID, branchId: UUID, status: String, cutoff: Instant,
+    ): Boolean
 }
