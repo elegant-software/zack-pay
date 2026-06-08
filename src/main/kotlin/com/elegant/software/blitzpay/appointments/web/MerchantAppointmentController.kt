@@ -4,17 +4,19 @@ import com.elegant.software.blitzpay.appointments.service.AppointmentService
 import com.elegant.software.blitzpay.appointments.service.BookAppointmentCommand
 import com.elegant.software.blitzpay.appointments.service.CancelledBy
 import com.elegant.software.blitzpay.appointments.service.CompletedBy
+import com.elegant.software.blitzpay.appointments.service.Nullable
 import com.elegant.software.blitzpay.appointments.service.RescheduleCommand
+import com.elegant.software.blitzpay.appointments.service.UpdateDetailsCommand
 import com.elegant.software.blitzpay.merchant.scheduling.AppointmentSchedulingService
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
-import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -134,6 +136,23 @@ class MerchantAppointmentController(
         return ResponseEntity.ok(updated.toResponse())
     }
 
+    /** Merchant Manager / Employee: update note and/or Merchant-Captured contact details. */
+    @PatchMapping("/{appointmentId}")
+    fun updateDetails(
+        @PathVariable merchantId: UUID,
+        @PathVariable appointmentId: UUID,
+        @RequestBody req: UpdateAppointmentDetailsRequest,
+    ): ResponseEntity<AppointmentResponse> {
+        val cmd = UpdateDetailsCommand(
+            note = req.note?.let { Nullable(it) } ?: if (req.clearNote == true) Nullable(null) else null,
+            contactName = req.contactName,
+            contactEmail = req.contactEmail?.let { Nullable(it) } ?: if (req.clearContactEmail == true) Nullable(null) else null,
+            contactPhone = req.contactPhone?.let { Nullable(it) } ?: if (req.clearContactPhone == true) Nullable(null) else null,
+        )
+        val updated = appointmentService.updateDetails(appointmentId, cmd)
+        return ResponseEntity.ok(updated.toResponse())
+    }
+
     /** Admin: support override with required reason. */
     @PutMapping("/{appointmentId}/override")
     fun supportOverride(
@@ -174,6 +193,16 @@ data class MerchantBookAppointmentRequest(
     val contactEmail: String? = null,
     val contactPhone: String? = null,
     val note: String? = null,
+)
+
+data class UpdateAppointmentDetailsRequest(
+    val note: String? = null,
+    val clearNote: Boolean? = null,
+    val contactName: String? = null,
+    val contactEmail: String? = null,
+    val clearContactEmail: Boolean? = null,
+    val contactPhone: String? = null,
+    val clearContactPhone: Boolean? = null,
 )
 
 data class SupportOverrideRequest(
