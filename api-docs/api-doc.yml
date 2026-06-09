@@ -6,10 +6,6 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
-- name: User Management
-  description: Manage Platform User assignments to Merchants and Branches
-- name: Merchant Orders
-  description: Create and list orders for authenticated merchant branches
 - name: Merchant Verticals
   description: Platform-managed industry verticals available for merchant registration
 - name: Voice
@@ -18,43 +14,57 @@ tags:
   description: Merchant-side calendar and appointment management
 - name: Merchant Product Categories
   description: Manage merchant product categories
-- name: Appointments
-  description: "Shopper appointment search, booking, history, cancellation, and rescheduling"
 - name: Appearances
   description: Discover currently active mobile merchant appearances
 - name: Merchant Onboarding
   description: Endpoints for merchant onboarding and lifecycle
 - name: Proximity
   description: Mobile geofence enter and exit event recording
-- name: Merchant Branches
-  description: Manage branches under a merchant
-- name: Merchant Provider Accounts
-  description: Manage which Payment Service Providers are enabled for a merchant
+- name: Admin Appointments
+  description: Support-facing branch calendar and appointment override
+- name: Employees
+  description: Employee management for appointment booking
 - name: Appearances
   description: Manage scheduled location appearances for MOBILE merchant branches
-- name: Geofence
-  description: Geofence region discovery for mobile clients
-- name: Stripe Connect
-  description: Stripe Connect Express account onboarding for merchants
 - name: Invoices
   description: EU-standard ZUGFeRD / Factur-X invoice generation
 - name: Payment Status
   description: Fallback query for authoritative payment status
 - name: Device Registration
   description: Expo push token registration for payment status notifications
+- name: Employee Availability
+  description: Manage employee recurring availability and date-specific exceptions
 - name: Actuator
   description: Monitor and interact
   externalDocs:
     description: Spring Boot Actuator Web API Documentation
     url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
-- name: Orders
-  description: Create and inspect orders for shoppers
 - name: Merchant Location
   description: Geolocation and geofencing for merchants
 - name: Merchant Search
   description: Full-text and filter-based merchant search
 - name: Merchant Products
   description: Product catalog management for merchants
+- name: Branch Opening Hours
+  description: Manage branch recurring opening hours and date-specific exceptions
+- name: User Management
+  description: Manage Platform User assignments to Merchants and Branches
+- name: Merchant Orders
+  description: Create and list orders for authenticated merchant branches
+- name: Appointments
+  description: "Shopper appointment search, booking, history, cancellation, and rescheduling"
+- name: Merchant Branches
+  description: Manage branches under a merchant
+- name: Merchant Provider Accounts
+  description: Manage which Payment Service Providers are enabled for a merchant
+- name: Geofence
+  description: Geofence region discovery for mobile clients
+- name: Appointment Policy
+  description: Merchant-level appointment scheduling configuration
+- name: Stripe Connect
+  description: Stripe Connect Express account onboarding for merchants
+- name: Orders
+  description: Create and inspect orders for shoppers
 paths:
   /{version}/shopper/appointments/{appointmentId}/reschedule:
     put:
@@ -355,6 +365,102 @@ paths:
       responses:
         "200":
           description: OK
+  /{version}/merchants/{merchantId}/employees/{employeeId}/name:
+    put:
+      tags:
+      - Employees
+      operationId: rename
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameEmployeeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EmployeeResponse"
+  /{version}/merchants/{merchantId}/employees/{employeeId}/deactivate:
+    put:
+      tags:
+      - Employees
+      operationId: deactivate_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EmployeeResponse"
+  /{version}/merchants/{merchantId}/employees/{employeeId}/activate:
+    put:
+      tags:
+      - Employees
+      operationId: activate
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EmployeeResponse"
   /{version}/merchants/{merchantId}/branches/{branchId}:
     get:
       tags:
@@ -736,6 +842,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VoiceTranscriptionResponse"
+  /{version}/user-management/users/{userId}/assignments:
+    get:
+      tags:
+      - User Management
+      summary: Get all Merchant User Assignments for a Platform User
+      operationId: getAssignments
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerchantUserAssignmentResponse"
+    post:
+      tags:
+      - User Management
+      summary: Create a Merchant User Assignment
+      operationId: createAssignment
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssignmentRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MerchantUserAssignmentResponse"
   /{version}/shopper/devices:
     post:
       tags:
@@ -1262,12 +1415,371 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProductCategoryResponse"
+  /{version}/merchants/{merchantId}/employees:
+    get:
+      tags:
+      - Employees
+      operationId: list_3
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: productCategoryId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmployeeResponse"
+    post:
+      tags:
+      - Employees
+      operationId: create_4
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEmployeeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EmployeeResponse"
+  /{version}/merchants/{merchantId}/employees/{employeeId}/service-assignments:
+    get:
+      tags:
+      - Employees
+      operationId: listServiceAssignments
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServiceAssignmentResponse"
+    post:
+      tags:
+      - Employees
+      operationId: addServiceAssignment
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceAssignmentRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ServiceAssignmentResponse"
+  /{version}/merchants/{merchantId}/employees/{employeeId}/branches/{branchId}/availability:
+    get:
+      tags:
+      - Employee Availability
+      operationId: listWindows
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailabilityWindowResponse"
+    post:
+      tags:
+      - Employee Availability
+      operationId: addWindow
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityWindowRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AvailabilityWindowResponse"
+  /{version}/merchants/{merchantId}/employees/{employeeId}/branches/{branchId}/availability/exceptions:
+    get:
+      tags:
+      - Employee Availability
+      operationId: listExceptions
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailabilityExceptionResponse"
+    post:
+      tags:
+      - Employee Availability
+      operationId: addException
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityExceptionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AvailabilityExceptionResponse"
+  /{version}/merchants/{merchantId}/employees/{employeeId}/branch-assignments:
+    get:
+      tags:
+      - Employees
+      operationId: listBranchAssignments
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchAssignmentResponse"
+    post:
+      tags:
+      - Employees
+      operationId: addBranchAssignment
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchAssignmentRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BranchAssignmentResponse"
   /{version}/merchants/{merchantId}/branches:
     get:
       tags:
       - Merchant Branches
       summary: List branches for a merchant
-      operationId: list_3
+      operationId: list_4
       parameters:
       - name: merchantId
         in: path
@@ -1288,7 +1800,7 @@ paths:
       tags:
       - Merchant Branches
       summary: Create a new branch under a merchant
-      operationId: create_4
+      operationId: create_5
       parameters:
       - name: merchantId
         in: path
@@ -1309,12 +1821,146 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BranchResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/opening-hours:
+    get:
+      tags:
+      - Branch Opening Hours
+      operationId: listWindows_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchOpeningWindowResponse"
+    post:
+      tags:
+      - Branch Opening Hours
+      operationId: addWindow_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchOpeningWindowRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BranchOpeningWindowResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/opening-hours/exceptions:
+    get:
+      tags:
+      - Branch Opening Hours
+      operationId: listExceptions_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchOpeningExceptionResponse"
+    post:
+      tags:
+      - Branch Opening Hours
+      operationId: addException_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchOpeningExceptionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BranchOpeningExceptionResponse"
   /{version}/merchants/{merchantId}/branches/{branchId}/appearances:
     get:
       tags:
       - Appearances
       summary: List all appearances for a branch
-      operationId: list_4
+      operationId: list_5
       parameters:
       - name: merchantId
         in: path
@@ -1341,7 +1987,7 @@ paths:
       tags:
       - Appearances
       summary: Create a new appearance for a MOBILE branch
-      operationId: create_5
+      operationId: create_6
       parameters:
       - name: merchantId
         in: path
@@ -1404,7 +2050,7 @@ paths:
     post:
       tags:
       - Appointments
-      operationId: create_6
+      operationId: create_7
       parameters:
       - name: merchantId
         in: path
@@ -1458,7 +2104,7 @@ paths:
       tags:
       - Merchant Onboarding
       summary: Directly activate a merchant application (skips onboarding flow)
-      operationId: activate
+      operationId: activate_1
       parameters:
       - name: id
         in: path
@@ -1499,7 +2145,7 @@ paths:
       tags:
       - Merchant Orders
       summary: "List today's orders for the given branch, with optional status filter"
-      operationId: list_5
+      operationId: list_6
       parameters:
       - name: branchId
         in: query
@@ -1538,7 +2184,7 @@ paths:
       - Merchant Orders
       summary: Create an order from branch products and return a QR code for customer
         payment
-      operationId: create_7
+      operationId: create_8
       parameters:
       - name: Authorization
         in: header
@@ -1581,6 +2227,60 @@ paths:
             schema:
               $ref: "#/components/schemas/SettleOrderRequest"
         required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchant/orders/{orderId}/items:
+    post:
+      tags:
+      - Merchant Orders
+      summary: Add an item to an unpaid merchant order
+      operationId: addItem_1
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddOrderItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchant/orders/{orderId}/cancel:
+    post:
+      tags:
+      - Merchant Orders
+      summary: Cancel an unpaid merchant order
+      operationId: cancel_1
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -1715,6 +2415,180 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchants/{merchantId}/appointments/{appointmentId}:
+    delete:
+      tags:
+      - Appointments
+      operationId: cancel_2
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
+    patch:
+      tags:
+      - Appointments
+      operationId: updateDetails
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAppointmentDetailsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
+  /{version}/merchants/{merchantId}/appointment-policy:
+    get:
+      tags:
+      - Appointment Policy
+      operationId: get_3
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentPolicyResponse"
+    patch:
+      tags:
+      - Appointment Policy
+      operationId: update_4
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAppointmentPolicyRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppointmentPolicyResponse"
+  /{version}/merchant/orders/{orderId}/items/{itemId}:
+    delete:
+      tags:
+      - Merchant Orders
+      summary: Remove an item from an unpaid merchant order (auto-cancels if last
+        item)
+      operationId: removeItem_1
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+    patch:
+      tags:
+      - Merchant Orders
+      summary: Update quantity of an item in an unpaid merchant order
+      operationId: updateItem_1
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderItemRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
   /{version}/merchant/orders/{orderId}/items/{itemId}/price:
     patch:
       tags:
@@ -1815,7 +2689,7 @@ paths:
       tags:
       - Orders
       summary: Get the latest business status for an order
-      operationId: get_3
+      operationId: get_4
       parameters:
       - name: orderId
         in: path
@@ -1884,7 +2758,7 @@ paths:
       tags:
       - Merchant Provider Accounts
       summary: List all provider accounts for a merchant
-      operationId: list_6
+      operationId: list_7
       parameters:
       - name: merchantId
         in: path
@@ -1906,7 +2780,7 @@ paths:
       tags:
       - Appearances
       summary: Get an appearance by ID
-      operationId: get_4
+      operationId: get_5
       parameters:
       - name: merchantId
         in: path
@@ -2004,7 +2878,7 @@ paths:
       tags:
       - Merchant Verticals
       summary: List all active merchant verticals
-      operationId: list_7
+      operationId: list_8
       responses:
         "200":
           description: OK
@@ -2127,6 +3001,39 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/CurrentlyHappeningResponse"
+  /{version}/admin/branches/{branchId}/appointments:
+    get:
+      tags:
+      - Admin Appointments
+      operationId: branchCalendar
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppointmentResponse"
   /stripe-connect/return:
     get:
       tags:
@@ -2239,6 +3146,28 @@ paths:
             application/json:
               schema:
                 type: object
+  /{version}/user-management/users/{userId}/assignments/{assignmentId}:
+    delete:
+      tags:
+      - User Management
+      summary: Revoke a Merchant User Assignment
+      operationId: revokeAssignment
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
   /{version}/shopper/devices/{expoPushToken}:
     delete:
       tags:
@@ -2262,7 +3191,7 @@ paths:
     delete:
       tags:
       - Appointments
-      operationId: cancel_1
+      operationId: cancel_3
       parameters:
       - name: appointmentId
         in: path
@@ -2302,11 +3231,11 @@ paths:
             '*/*':
               schema:
                 type: object
-  /{version}/merchants/{merchantId}/appointments/{appointmentId}:
+  /{version}/merchants/{merchantId}/employees/{employeeId}/service-assignments/{productCategoryId}:
     delete:
       tags:
-      - Appointments
-      operationId: cancel_2
+      - Employees
+      operationId: removeServiceAssignment
       parameters:
       - name: merchantId
         in: path
@@ -2314,19 +3243,198 @@ paths:
         schema:
           type: string
           format: uuid
-      - name: appointmentId
+      - name: employeeId
         in: path
         required: true
         schema:
           type: string
           format: uuid
+      - name: productCategoryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/AppointmentResponse"
+  /{version}/merchants/{merchantId}/employees/{employeeId}/branches/{branchId}/availability/{availabilityId}:
+    delete:
+      tags:
+      - Employee Availability
+      operationId: removeWindow
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: availabilityId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+  /{version}/merchants/{merchantId}/employees/{employeeId}/branches/{branchId}/availability/exceptions/{exceptionId}:
+    delete:
+      tags:
+      - Employee Availability
+      operationId: removeException
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: exceptionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+  /{version}/merchants/{merchantId}/employees/{employeeId}/branch-assignments/{branchId}:
+    delete:
+      tags:
+      - Employees
+      operationId: removeBranchAssignment
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+  /{version}/merchants/{merchantId}/branches/{branchId}/opening-hours/{windowId}:
+    delete:
+      tags:
+      - Branch Opening Hours
+      operationId: removeWindow_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: windowId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+  /{version}/merchants/{merchantId}/branches/{branchId}/opening-hours/exceptions/{exceptionId}:
+    delete:
+      tags:
+      - Branch Opening Hours
+      operationId: removeException_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: exceptionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
   /{version}/devices/{expoPushToken}:
     delete:
       tags:
@@ -2380,7 +3488,12 @@ components:
         employeeId:
           type: string
           format: uuid
+        employeeName:
+          type: string
         productId:
+          type: string
+          format: uuid
+        productCategoryId:
           type: string
           format: uuid
         shopperAccountId:
@@ -2409,6 +3522,8 @@ components:
           type: integer
           format: int32
         note:
+          type: string
+        cancelledReason:
           type: string
         createdAt:
           type: string
@@ -2602,6 +3717,40 @@ components:
       - latitude
       - longitude
       - merchantId
+    RenameEmployeeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+      - name
+    EmployeeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - id
+      - merchantId
+      - name
+      - status
+      - updatedAt
     UpdateBranchRequest:
       type: object
       properties:
@@ -3079,6 +4228,55 @@ components:
           type: string
       required:
       - transcript
+    CreateAssignmentRequest:
+      type: object
+      properties:
+        merchantId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+          - MERCHANT_MANAGER
+          - MERCHANT_EMPLOYEE
+        employeeId:
+          type: string
+          format: uuid
+      required:
+      - merchantId
+      - role
+    MerchantUserAssignmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchantId:
+          type: string
+          format: uuid
+        merchantName:
+          type: string
+        branchId:
+          type: string
+          format: uuid
+        branchName:
+          type: string
+        role:
+          type: string
+          enum:
+          - MERCHANT_MANAGER
+          - MERCHANT_EMPLOYEE
+        employeeId:
+          type: string
+          format: uuid
+      required:
+      - id
+      - merchantId
+      - merchantName
+      - role
     ShopperDeviceRequest:
       type: object
       properties:
@@ -3555,6 +4753,9 @@ components:
     OrderItemResponse:
       type: object
       properties:
+        itemId:
+          type: string
+          format: uuid
         productId:
           type: string
           format: uuid
@@ -3570,6 +4771,7 @@ components:
           type: integer
           format: int64
       required:
+      - itemId
       - lineTotalMinor
       - name
       - productId
@@ -3734,6 +4936,169 @@ components:
           format: int32
       required:
       - name
+    CreateEmployeeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+      - name
+    ServiceAssignmentRequest:
+      type: object
+      properties:
+        productCategoryId:
+          type: string
+          format: uuid
+      required:
+      - productCategoryId
+    ServiceAssignmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+        productCategoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - employeeId
+      - id
+      - productCategoryId
+    AvailabilityWindowRequest:
+      type: object
+      properties:
+        dayOfWeek:
+          type: integer
+          format: int32
+          maximum: 7
+          minimum: 1
+        startTime:
+          type: string
+        endTime:
+          type: string
+      required:
+      - dayOfWeek
+      - endTime
+      - startTime
+    AvailabilityWindowResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        dayOfWeek:
+          type: integer
+          format: int32
+        startTime:
+          type: string
+        endTime:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - branchId
+      - createdAt
+      - dayOfWeek
+      - employeeId
+      - endTime
+      - id
+      - startTime
+      - updatedAt
+    AvailabilityExceptionRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        type:
+          type: string
+          minLength: 1
+        startTime:
+          type: string
+        endTime:
+          type: string
+      required:
+      - date
+      - type
+    AvailabilityExceptionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        type:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - branchId
+      - createdAt
+      - date
+      - employeeId
+      - id
+      - type
+    BranchAssignmentRequest:
+      type: object
+      properties:
+        branchId:
+          type: string
+          format: uuid
+      required:
+      - branchId
+    BranchAssignmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - branchId
+      - createdAt
+      - employeeId
+      - id
     CreateBranchRequest:
       type: object
       properties:
@@ -3770,6 +5135,95 @@ components:
           type: string
       required:
       - name
+    BranchOpeningWindowRequest:
+      type: object
+      properties:
+        dayOfWeek:
+          type: integer
+          format: int32
+          maximum: 7
+          minimum: 1
+        startTime:
+          type: string
+        endTime:
+          type: string
+      required:
+      - dayOfWeek
+      - endTime
+      - startTime
+    BranchOpeningWindowResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        dayOfWeek:
+          type: integer
+          format: int32
+        startTime:
+          type: string
+        endTime:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - branchId
+      - createdAt
+      - dayOfWeek
+      - endTime
+      - id
+      - startTime
+      - updatedAt
+    BranchOpeningExceptionRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        type:
+          type: string
+          minLength: 1
+        startTime:
+          type: string
+        endTime:
+          type: string
+      required:
+      - date
+      - type
+    BranchOpeningExceptionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        type:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - branchId
+      - createdAt
+      - date
+      - id
+      - type
     CreateAppearanceRequest:
       type: object
       properties:
@@ -4166,6 +5620,55 @@ components:
           format: int32
       required:
       - quantity
+    UpdateAppointmentDetailsRequest:
+      type: object
+      properties:
+        note:
+          type: string
+        clearNote:
+          type: boolean
+        contactName:
+          type: string
+        contactEmail:
+          type: string
+        clearContactEmail:
+          type: boolean
+        contactPhone:
+          type: string
+        clearContactPhone:
+          type: boolean
+    UpdateAppointmentPolicyRequest:
+      type: object
+      properties:
+        bookingIntervalMinutes:
+          type: integer
+          format: int32
+        bookingLeadTimeMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+        bookingHorizonDays:
+          type: integer
+          format: int32
+        reminderLeadTimeMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+    AppointmentPolicyResponse:
+      type: object
+      properties:
+        bookingIntervalMinutes:
+          type: integer
+          format: int32
+        bookingLeadTimeMinutes:
+          type: integer
+          format: int32
+        bookingHorizonDays:
+          type: integer
+          format: int32
+        reminderLeadTimeMinutes:
+          type: integer
+          format: int32
     MerchantItemPriceOverrideRequest:
       type: object
       properties:

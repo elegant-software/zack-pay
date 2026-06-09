@@ -1,10 +1,12 @@
 package com.elegant.software.blitzpay.order.web
 
+import com.elegant.software.blitzpay.order.api.AddOrderItemRequest
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.MerchantItemPriceOverrideRequest
 import com.elegant.software.blitzpay.order.api.MerchantOrderResponse
 import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.SettleOrderRequest
+import com.elegant.software.blitzpay.order.api.UpdateOrderItemRequest
 import com.elegant.software.blitzpay.order.application.OrderCreationConflictException
 import com.elegant.software.blitzpay.order.application.OrderMutationConflictException
 import com.elegant.software.blitzpay.order.application.OrderService
@@ -43,6 +45,50 @@ class MerchantOrderController(private val orderService: OrderService) {
     ): ResponseEntity<List<OrderResponse>> {
         val zoneId = runCatching { ZoneId.of(timezone) }.getOrDefault(ZoneId.of("UTC"))
         return ResponseEntity.ok(orderService.listMerchantOrders(branchId, status, zoneId))
+    }
+
+    @Operation(summary = "Add an item to an unpaid merchant order")
+    @PostMapping("/{orderId}/items")
+    fun addItem(
+        @PathVariable orderId: String,
+        @RequestBody request: AddOrderItemRequest,
+        @RequestHeader(name = "Authorization", required = false) authorization: String?,
+    ): ResponseEntity<OrderResponse> {
+        val merchantUserId = requireSubject(authorization)
+        return ResponseEntity.ok(orderService.addItem(orderId, request, merchantUserId))
+    }
+
+    @Operation(summary = "Update quantity of an item in an unpaid merchant order")
+    @PatchMapping("/{orderId}/items/{itemId}")
+    fun updateItem(
+        @PathVariable orderId: String,
+        @PathVariable itemId: UUID,
+        @RequestBody request: UpdateOrderItemRequest,
+        @RequestHeader(name = "Authorization", required = false) authorization: String?,
+    ): ResponseEntity<OrderResponse> {
+        val merchantUserId = requireSubject(authorization)
+        return ResponseEntity.ok(orderService.updateItemQuantity(orderId, itemId, request, merchantUserId))
+    }
+
+    @Operation(summary = "Remove an item from an unpaid merchant order (auto-cancels if last item)")
+    @DeleteMapping("/{orderId}/items/{itemId}")
+    fun removeItem(
+        @PathVariable orderId: String,
+        @PathVariable itemId: UUID,
+        @RequestHeader(name = "Authorization", required = false) authorization: String?,
+    ): ResponseEntity<OrderResponse> {
+        val merchantUserId = requireSubject(authorization)
+        return ResponseEntity.ok(orderService.removeItem(orderId, itemId, merchantUserId))
+    }
+
+    @Operation(summary = "Cancel an unpaid merchant order")
+    @PostMapping("/{orderId}/cancel")
+    fun cancel(
+        @PathVariable orderId: String,
+        @RequestHeader(name = "Authorization", required = false) authorization: String?,
+    ): ResponseEntity<OrderResponse> {
+        val merchantUserId = requireSubject(authorization)
+        return ResponseEntity.ok(orderService.cancelOrder(orderId, merchantUserId))
     }
 
     @Operation(summary = "Apply a merchant price override to a specific order item")
