@@ -2,25 +2,19 @@ package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.appointments.api.AppointmentQueryService
 import com.elegant.software.blitzpay.merchant.domain.MerchantEmployee
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeAvailability
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeAvailabilityException
 import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeBranchAssignment
 import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeServiceAssignment
 import com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeAvailabilityExceptionRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeAvailabilityRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeBranchAssignmentRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeServiceAssignmentRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.*
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalTime
-import java.util.UUID
+import java.util.*
 
 @Service
 class MerchantEmployeeService(
@@ -31,6 +25,7 @@ class MerchantEmployeeService(
     private val availabilityExceptionRepo: MerchantEmployeeAvailabilityExceptionRepository,
     private val branchRepo: MerchantBranchRepository,
     private val productRepo: MerchantProductRepository,
+    private val productCategoryRepo: MerchantProductCategoryRepository,
     private val appointmentQuery: AppointmentQueryService,
 ) {
     private val log = LoggerFactory.getLogger(MerchantEmployeeService::class.java)
@@ -115,6 +110,24 @@ class MerchantEmployeeService(
     @Transactional(readOnly = true)
     fun listServiceAssignments(employeeId: UUID): List<MerchantEmployeeServiceAssignment> =
         serviceAssignmentRepo.findAllByEmployeeId(employeeId)
+
+    @Transactional(readOnly = true)
+    fun listServiceAssignmentCategoryNames(employeeId: UUID): Map<UUID, String?> {
+        val assignments = serviceAssignmentRepo.findAllByEmployeeId(employeeId)
+        val categoryIds = assignments.map { it.productCategoryId }.toSet()
+        return productCategoryRepo.findAllById(categoryIds).associate { it.id to it.name }
+    }
+
+    @Transactional(readOnly = true)
+    fun listEligibleForServiceAtBranch(branchId: UUID, productCategoryId: UUID): List<MerchantEmployee> {
+        val branchEmployeeIds = branchAssignmentRepo.findAllByBranchId(branchId).map { it.employeeId }.toSet()
+        if (branchEmployeeIds.isEmpty()) return emptyList()
+        val eligibleIds = serviceAssignmentRepo.findAllByEmployeeIdIn(branchEmployeeIds)
+            .filter { it.productCategoryId == productCategoryId }
+            .map { it.employeeId }
+            .toSet()
+        return employeeRepo.findAllById(eligibleIds).filter { it.status == MerchantEntityStatus.ACTIVE }
+    }
 
     @Transactional
     fun addServiceAssignment(employeeId: UUID, productCategoryId: UUID): MerchantEmployeeServiceAssignment {
