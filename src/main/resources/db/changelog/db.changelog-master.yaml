@@ -106,12 +106,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/20260606-001-merchant-user-assignments.sql
   - include:
-      file: db/changelog/20260605-001-merchant-employee-tables.sql
+      file: db/changelog/20260609-001-appointment-employee-name-category.sql
   - include:
-      file: db/changelog/20260605-002-merchant-branch-opening-hours.sql
-  - include:
-      file: db/changelog/20260605-003-merchant-booking-policies.sql
-  - include:
-      file: db/changelog/20260605-004-appointments-table.sql
-  - include:
-      file: db/changelog/20260605-005-push-shopper-devices.sql
+      file: db/changelog/20260609-002-order-appointment-id.sql

@@ -5,6 +5,8 @@ import java.util.UUID
 object KeycloakGroupNames {
     const val ROOT = "merchants"
     const val MERCHANT_APP_USERS = "merchant-app-users"
+    const val MERCHANT_MANAGER = "merchant_manager"
+    const val MERCHANT_EMPLOYEE = "merchant_employee"
     const val MERCHANT_PREFIX = "merchant_"
     const val BRANCH_PREFIX = "branch_"
     const val ATTR_MERCHANT_ID = "merchant_id"

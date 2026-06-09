@@ -74,6 +74,9 @@ class Order(
 
     @Column(name = "settlement_note", length = 2000)
     var settlementNote: String? = null,
+
+    @Column(name = "appointment_id")
+    val appointmentId: UUID? = null,
 ) {
     fun markPaymentInProgress(paymentRequestId: UUID, provider: String, at: Instant = Instant.now()) {
         require(status != OrderStatus.PAID) { "Order is already paid: $orderId" }

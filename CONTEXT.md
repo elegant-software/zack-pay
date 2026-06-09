@@ -101,7 +101,7 @@ A platform-managed customer-facing offering enabled for a Merchant, such as pre-
 _Avoid_: Capability, service, mode, branch feature, vertical feature
 
 **Pre-Order**:
-The ability for a customer to place an order while away from the branch and collect or receive it later.
+The ability for a customer to place an order while away from the branch and collect or receive it later, or for a Merchant Manager to create an order from a Completed Appointment.
 _Avoid_: Ordering, walk-in order, in-place order
 
 **Walk-In Ordering**:
@@ -300,6 +300,10 @@ _Avoid_: merchant-only order
 The explicit business classification of an Order, distinguishing Pre-Order from Walk-In Ordering.
 _Avoid_: inferring order kind from channel, actor, or payment state
 
+**Appointment Order**:
+A Pre-Order created automatically when a Merchant Manager marks an Appointment Completed and the Merchant has Deferred Payment enabled. Carries the Appointment's booked Product as its initial line item priced at the live Product price at completion time. May be modified and paid through the normal order flow. At most one Appointment Order may exist per Appointment.
+_Avoid_: post-appointment invoice, automatic checkout, appointment payment, appointment checkout
+
 ## Relationships
 
 - A **Merchant** owns one or more **Branch**es
@@ -353,12 +357,16 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 - A **Merchant** owns zero or more **Employee** entries
 - An **Employee** belongs to exactly one **Merchant**
 - An **Employee** has exactly one **Employee Status**
+- A newly created **Employee** starts Inactive
+- An Inactive **Employee** may exist without branch assignments, service assignments, or availability
 - Inactive **Employee** entries remain visible for historical **Appointment** references but are not bookable
 - An **Employee** with future **Booked** **Appointment** entries may not be set inactive until those appointments are cancelled or rescheduled
 - **Employee** is separate from **Merchant User Assignment**; an **Employee** may exist without a merchant user login
 - An **Employee** may have one or more **Employee Branch Assignment** entries
 - An **Employee Branch Assignment** belongs to exactly one **Employee** and exactly one **Branch**
 - **Employee Branch Assignment** is required before an **Employee** can have **Employee Availability** or **Appointment** entries at that **Branch**
+- An **Employee Branch Assignment** may not be removed while the **Employee** has future **Booked** **Appointment** entries at that **Branch**
+- Removing an **Employee Branch Assignment** removes that Employee's **Employee Availability** and **Availability Exception** entries for the **Branch**
 - An **Employee** may have zero or more **Employee Availability** entries
 - **Employee Availability** is scoped to exactly one **Employee** and exactly one **Branch**
 - An **Employee** may have multiple **Employee Availability** windows on the same weekday and Branch when those windows do not overlap
@@ -368,6 +376,7 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 - An **Employee** may have zero or more **Employee Service Assignment** entries
 - An **Employee Service Assignment** belongs to exactly one **Employee** and exactly one **Product Category**
 - **Employee Service Assignment** applies to all **Product** entries in the assigned **Product Category**
+- An **Employee Service Assignment** may not be removed while the **Employee** has future **Booked** **Appointment** entries for Products in that **Product Category**
 - **Bookable Time** is generated from **Branch Opening Hours**, **Branch Opening Exception**, **Employee Availability**, **Availability Exception**, existing appointments, **Employee Service Assignment**, and the selected **Product**'s **Product Category** **Estimated Service Duration**
 - A **Bookable Time** is valid only when the full appointment time window fits within **Branch Opening Hours** and **Employee Availability**
 - **Booking Interval** controls the cadence of generated **Bookable Time** start times and is separate from **Estimated Service Duration**
@@ -401,12 +410,20 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 - **Merchant-Captured Contact Details** may be edited by a **Merchant Employee** when the **Appointment** is assigned to their linked **Employee**
 - Shopper booking creates a **Booked** **Appointment** immediately; merchant approval is not part of the lifecycle
 - Shopper booking requires an active **Merchant** and active **Branch**
-- An **Appointment** is reservation-only and does not create an **Order** or require payment in this context
+- Appointment booking is reservation-only and does not create an **Order** or require payment; an **Appointment Order** may be created when the **Appointment** is marked **Completed**
+- A **Completed Appointment** may have zero or one **Appointment Order**
+- An **Appointment Order** is created only when the **Merchant** has **Deferred Payment** enabled; if the offering is absent the **Appointment** is still marked **Completed** and no order is created
+- An **Appointment Order** uses the live **Product** price at the time the **Appointment** is marked **Completed**, not the **Appointment Product Snapshot** price
+- An **Order** may carry a reference to zero or one source **Appointment**
+- An **Appointment Order** is a **Pre-Order** with **Deferred Payment**
+- For a shopper-linked **Appointment**, the **Appointment Order** is created with `creatorType = SHOPPER`; for a contact-only **Appointment**, it is created with `creatorType = MERCHANT`
 - An **Appointment** may show an **Appointment Price** from its booked **Product**
 - An **Appointment** keeps an **Appointment Product Snapshot**
 - An **Appointment** keeps an **Appointment Duration Snapshot**
 - A **Merchant Manager** may create an **Appointment** from **Appointment Contact Details** without a linked shopper account
 - A **Merchant Employee** may create an **Appointment** from **Appointment Contact Details** for their linked **Employee** when the time is bookable
+- A **Merchant Manager** may manage **Employee Status**, **Employee Branch Assignment**, **Employee Service Assignment**, **Employee Availability**, **Availability Exception**, and **Branch Opening Hours** for the **Merchant**
+- An **Employee** without a linked **Merchant User Assignment** has scheduling configuration managed by a **Merchant Manager**
 - Creating or rescheduling an **Appointment** must reject overlaps with the assigned **Employee**'s existing **Booked** **Appointment** time windows
 - Only **Booked** **Appointment** time windows block **Bookable Time**
 - **Completed** **Appointment** entries are historical and do not block future **Bookable Time**
@@ -558,8 +575,14 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 > **Dev:** "Can Sara have availability at Branch B before she is assigned to Branch B?"
 > **Domain expert:** "No. **Employee Branch Assignment** is required before an **Employee** can have availability or appointments at that **Branch**."
 >
+> **Dev:** "Can a manager remove Sara from Branch B while she has future appointments there?"
+> **Domain expert:** "No. Those appointments must be cancelled or rescheduled first. Removing the assignment then removes Sara's availability and exceptions for Branch B."
+>
 > **Dev:** "If Ali leaves the business, do we delete his **Employee** record?"
 > **Domain expert:** "No. Set **Employee Status** to inactive so historical **Appointment** references stay meaningful while Ali is no longer bookable."
+>
+> **Dev:** "Must a new Employee have branches, qualifications, and availability before their profile can be saved?"
+> **Domain expert:** "No. A new **Employee** starts Inactive and may be configured incrementally before activation."
 >
 > **Dev:** "Can Ali be set inactive while he has future Booked appointments?"
 > **Domain expert:** "No. Future **Booked** appointments assigned to Ali must be cancelled or rescheduled first."
@@ -597,6 +620,9 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 > **Dev:** "If Sara can perform Haircut, does that include Fade and Kids Haircut products under Haircut?"
 > **Domain expert:** "Yes. **Employee Service Assignment** applies to all **Product** entries in the assigned **Product Category**."
 >
+> **Dev:** "Can a manager remove Sara's Haircut qualification while future Haircut appointments are assigned to her?"
+> **Domain expert:** "No. Those appointments must be cancelled or rescheduled first."
+>
 > **Dev:** "Can shoppers book a **Product Category** that has no **Estimated Service Duration**?"
 > **Domain expert:** "No. Services without duration can exist, but they cannot be scheduled as **Appointment**s."
 >
@@ -625,7 +651,7 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 > **Domain expert:** "No. Booking creates a **Booked** **Appointment** immediately; approval is not part of the appointment lifecycle."
 >
 > **Dev:** "Does booking an **Appointment** create an **Order** or require payment?"
-> **Domain expert:** "No. An **Appointment** is reservation-only in this context."
+> **Domain expert:** "No. Booking is reservation-only. An **Appointment Order** may be created later when the **Merchant Manager** marks the **Appointment** **Completed**, but only when the **Merchant** has **Deferred Payment** enabled."
 >
 > **Dev:** "If the booked Product has a price, does the shopper pay during booking?"
 > **Domain expert:** "No. **Appointment Price** is informational and does not create an **Order** or require payment."
@@ -647,6 +673,9 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 >
 > **Dev:** "Can Sara create a phone booking directly on her own calendar?"
 > **Domain expert:** "Yes. A **Merchant Employee** may create an **Appointment** for their linked **Employee** when the time is bookable."
+>
+> **Dev:** "Who manages availability for an Employee who does not use the merchant app?"
+> **Domain expert:** "A **Merchant Manager** manages that Employee's scheduling configuration."
 >
 > **Dev:** "If an appointment moves from Sara at 10:00 to Ali at 10:30, is it cancelled and recreated?"
 > **Domain expert:** "No. Use **Appointment Rescheduling** so the same **Appointment** keeps its identity while the new Product, assignment, and time are validated."
@@ -1001,7 +1030,7 @@ _Avoid_: Terminal secret, SDK token, auth token
 - Any-employee assignment could have used arbitrary ordering. Resolved: **Any-Employee Assignment** balances by fewest **Booked** appointments at the selected **Branch** on the selected date, then Employee display name, then stable Employee identifier.
 - Shopper employee selection could have shown all Employees. Resolved: **Selectable Employee** includes only Employees who can perform the selected **Product Category** and have **Bookable Time** in the searched window.
 - Appointment booking could have created a pending request requiring merchant approval. Resolved: shopper booking immediately creates a **Booked** **Appointment**; the initial lifecycle is **Booked**, **Cancelled**, and **Completed**.
-- Appointment booking could have created an **Order** or required upfront payment. Resolved: **Appointment** is reservation-only and remains independent from ordering and payment in this context.
+- Appointment booking could have created an **Order** or required upfront payment. Resolved: booking is reservation-only and does not create an **Order**; an **Appointment Order** is created only when the **Merchant Manager** marks the **Appointment** **Completed** and the **Merchant** has **Deferred Payment** enabled.
 - Product price could have made appointment booking a payment flow. Resolved: **Appointment Price** is informational and does not create an **Order** or require payment.
 - Appointment display could have depended only on the live Product after booking. Resolved: **Appointment Product Snapshot** keeps the booked Product name and informational price from booking time.
 - Appointment display could have depended only on the live Product Category duration. Resolved: **Appointment Duration Snapshot** captures the duration used at booking or rescheduling.

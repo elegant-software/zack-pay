@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.appointments.service
 
 import com.elegant.software.blitzpay.appointments.api.AppointmentBooked
 import com.elegant.software.blitzpay.appointments.api.AppointmentCancelled
+import com.elegant.software.blitzpay.appointments.api.AppointmentCompleted
 import com.elegant.software.blitzpay.appointments.api.AppointmentRescheduled
 import com.elegant.software.blitzpay.appointments.persistence.AppointmentContactType
 import com.elegant.software.blitzpay.appointments.persistence.AppointmentEntity
@@ -40,20 +41,24 @@ class AppointmentService(
 
         val resolvedEmployeeId = resolveEmployee(cmd, context, tz)
 
+        val existingAppointments = appointmentRepo.findAllByEmployeeIdAndStatusAndStartTimeBetween(
+            resolvedEmployeeId, AppointmentStatus.BOOKED,
+            from.atStartOfDay(tz).toInstant(),
+            from.plusDays(1).atStartOfDay(tz).toInstant(),
+        )
+        val now = Instant.now()
         val slot = bookableTimeService.compute(
             context = context,
             productCategoryId = cmd.productCategoryId,
             requestedEmployeeId = resolvedEmployeeId,
             from = from,
             to = from,
-            existingAppointments = appointmentRepo.findAllByEmployeeIdAndStatusAndStartTimeBetween(
-                resolvedEmployeeId, AppointmentStatus.BOOKED,
-                from.atStartOfDay(tz).toInstant(),
-                from.plusDays(1).atStartOfDay(tz).toInstant(),
-            ),
-            now = Instant.now(),
+            existingAppointments = existingAppointments,
+            now = now,
         ).firstOrNull { it.startTime == cmd.startTime && it.employeeId == resolvedEmployeeId }
-            ?: throw IllegalStateException("Requested time is not available")
+            ?: throw IllegalStateException(
+                bookableTimeService.diagnose(context, cmd.productCategoryId, resolvedEmployeeId, cmd.startTime, existingAppointments, now)
+            )
 
         // Acquire employee-level lock before inserting
         employeeRepo.findByIdForUpdate(resolvedEmployeeId)
@@ -83,7 +88,9 @@ class AppointmentService(
             merchantId = cmd.merchantId,
             branchId = cmd.branchId,
             employeeId = resolvedEmployeeId,
+            employeeSnapshotName = employee.employeeName,
             productId = cmd.productId,
+            productCategoryId = cmd.productCategoryId,
             shopperAccountId = cmd.shopperAccountId,
             startTime = slot.startTime,
             endTime = slot.endTime,
@@ -173,6 +180,17 @@ class AppointmentService(
 
         appointment.status = AppointmentStatus.COMPLETED
         appointment.updatedAt = Instant.now()
+
+        eventPublisher.publishEvent(
+            AppointmentCompleted(
+                appointmentId = appointment.id,
+                merchantId = appointment.merchantId,
+                branchId = appointment.branchId,
+                productId = appointment.productId,
+                shopperAccountId = appointment.shopperAccountId,
+            )
+        )
+
         return appointment
     }
 
@@ -197,20 +215,24 @@ class AppointmentService(
             "Employee cannot perform the selected product category"
         }
 
+        val existingAppointments = appointmentRepo.findAllByEmployeeIdAndStatusAndStartTimeBetween(
+            targetEmployeeId, AppointmentStatus.BOOKED,
+            from.atStartOfDay(tz).toInstant(),
+            from.plusDays(1).atStartOfDay(tz).toInstant(),
+        ).filter { it.id != appointmentId }
+        val now = Instant.now()
         val slot = bookableTimeService.compute(
             context = context,
             productCategoryId = cmd.newProductCategoryId,
             requestedEmployeeId = targetEmployeeId,
             from = from,
             to = from,
-            existingAppointments = appointmentRepo.findAllByEmployeeIdAndStatusAndStartTimeBetween(
-                targetEmployeeId, AppointmentStatus.BOOKED,
-                from.atStartOfDay(tz).toInstant(),
-                from.plusDays(1).atStartOfDay(tz).toInstant(),
-            ).filter { it.id != appointmentId },
-            now = Instant.now(),
+            existingAppointments = existingAppointments,
+            now = now,
         ).firstOrNull { it.startTime == cmd.newStartTime }
-            ?: throw IllegalStateException("Requested time is not available")
+            ?: throw IllegalStateException(
+                bookableTimeService.diagnose(context, cmd.newProductCategoryId, targetEmployeeId, cmd.newStartTime, existingAppointments, now)
+            )
 
         employeeRepo.findByIdForUpdate(targetEmployeeId)
 
@@ -225,10 +247,11 @@ class AppointmentService(
         }
 
         val product = context.bookableProducts.first { it.productId == cmd.newProductId }
-        val now = Instant.now()
 
         appointment.employeeId = targetEmployeeId
+        appointment.employeeSnapshotName = empSchedule.employeeName
         appointment.productId = cmd.newProductId
+        appointment.productCategoryId = cmd.newProductCategoryId
         appointment.startTime = slot.startTime
         appointment.endTime = slot.endTime
         appointment.productSnapshotName = product.productName

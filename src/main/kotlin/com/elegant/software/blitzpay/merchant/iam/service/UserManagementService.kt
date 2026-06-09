@@ -34,20 +34,8 @@ class UserManagementService(
 
     fun searchUsers(query: String): List<UserSearchResult> {
         val usersResource = keycloak.realm(keycloakProperties.realm).users()
-        val merchantAppGroupId = resolveMerchantAppUsersGroupId()
 
-        val candidates = if (merchantAppGroupId != null) {
-            val members = keycloak.realm(keycloakProperties.realm).groups().group(merchantAppGroupId).members(0, 500)
-            if (query.isBlank()) members
-            else members.filter { u ->
-                u.email?.contains(query, ignoreCase = true) == true ||
-                u.username?.contains(query, ignoreCase = true) == true ||
-                u.firstName?.contains(query, ignoreCase = true) == true ||
-                u.lastName?.contains(query, ignoreCase = true) == true
-            }
-        } else {
-            usersResource.search(query, 0, 50)
-        }
+        val candidates = usersResource.search(query.ifBlank { null }, 0, 50)
 
         return candidates.take(50).map { u ->
             UserSearchResult(
@@ -99,6 +87,11 @@ class UserManagementService(
             log.info("merchant-app-users group assigned userId={}", userId)
         }
 
+        resolveRoleGroupId(request.role)?.let { roleGroupId ->
+            userResource.joinGroup(roleGroupId)
+            log.info("role group assigned userId={} role={} groupId={}", userId, request.role, roleGroupId)
+        }
+
         val assignment = assignmentRepository.save(
             MerchantUserAssignment(
                 keycloakUserId = userId,
@@ -131,7 +124,16 @@ class UserManagementService(
 
         assignmentRepository.delete(assignment)
 
-        if (assignmentRepository.findAllByKeycloakUserId(userId).isEmpty()) {
+        val remaining = assignmentRepository.findAllByKeycloakUserId(userId)
+
+        if (remaining.none { it.role == assignment.role }) {
+            resolveRoleGroupId(assignment.role)?.let { roleGroupId ->
+                userResource.leaveGroup(roleGroupId)
+                log.info("role group revoked userId={} role={} groupId={}", userId, assignment.role, roleGroupId)
+            }
+        }
+
+        if (remaining.isEmpty()) {
             resolveMerchantAppUsersGroupId()?.let { merchantAppGroupId ->
                 userResource.leaveGroup(merchantAppGroupId)
                 log.info("merchant-app-users group revoked userId={}", userId)
@@ -143,6 +145,17 @@ class UserManagementService(
         groupClient.searchGroups(KeycloakGroupNames.MERCHANT_APP_USERS, true).firstOrNull()?.id.also {
             if (it == null) log.warn("'{}' group not found in Keycloak", KeycloakGroupNames.MERCHANT_APP_USERS)
         }
+
+    private fun resolveRoleGroupId(role: MerchantOperationsRole): String? {
+        val merchantAppGroupId = resolveMerchantAppUsersGroupId() ?: return null
+        val roleName = when (role) {
+            MerchantOperationsRole.MERCHANT_MANAGER -> KeycloakGroupNames.MERCHANT_MANAGER
+            MerchantOperationsRole.MERCHANT_EMPLOYEE -> KeycloakGroupNames.MERCHANT_EMPLOYEE
+        }
+        return groupClient.getChildren(merchantAppGroupId, roleName, true).firstOrNull()?.id.also {
+            if (it == null) log.warn("role group '{}' not found under merchant-app-users", roleName)
+        }
+    }
 
     private fun resolveTargetGroupId(merchantId: UUID, branchId: UUID?): String {
         val rootGroups = groupClient.searchGroups(KeycloakGroupNames.ROOT, true)

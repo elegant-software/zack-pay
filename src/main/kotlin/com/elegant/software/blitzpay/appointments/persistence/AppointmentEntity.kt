@@ -50,6 +50,12 @@ class AppointmentEntity(
     @Column(name = "contact_phone", length = 64)
     var contactPhone: String? = null,
 
+    @Column(name = "employee_snapshot_name", length = 255)
+    var employeeSnapshotName: String? = null,
+
+    @Column(name = "product_category_id")
+    var productCategoryId: UUID? = null,
+
     @Column(name = "product_snapshot_name", nullable = false, length = 255)
     var productSnapshotName: String,
 

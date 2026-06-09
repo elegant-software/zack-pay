@@ -28,4 +28,6 @@ interface OrderRepository : JpaRepository<Order, UUID> {
         creatorType: CreatorType,
         after: Instant,
     ): List<Order>
+
+    fun findAllByAppointmentId(appointmentId: UUID): List<Order>
 }

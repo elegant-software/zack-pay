@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 import java.util.UUID
@@ -33,10 +34,17 @@ class MerchantEmployeeController(
     @GetMapping
     fun list(
         @PathVariable merchantId: UUID,
+        @RequestParam(required = false) branchId: UUID?,
+        @RequestParam(required = false) productCategoryId: UUID?,
         @RequestHeader("Authorization") auth: String,
     ): ResponseEntity<List<EmployeeResponse>> {
         callerResolver.resolve(auth, merchantId).requireManagerOrEmployee(merchantId)
-        return ResponseEntity.ok(employeeService.listByMerchant(merchantId).map { it.toResponse() })
+        val employees = if (branchId != null && productCategoryId != null) {
+            employeeService.listEligibleForServiceAtBranch(branchId, productCategoryId)
+        } else {
+            employeeService.listByMerchant(merchantId)
+        }
+        return ResponseEntity.ok(employees.map { it.toResponse() })
     }
 
     @PostMapping
@@ -126,7 +134,9 @@ class MerchantEmployeeController(
         @RequestHeader("Authorization") auth: String,
     ): ResponseEntity<List<ServiceAssignmentResponse>> {
         callerResolver.resolve(auth, merchantId).requireManagerOrEmployee(merchantId)
-        return ResponseEntity.ok(employeeService.listServiceAssignments(employeeId).map { it.toResponse() })
+        val assignments = employeeService.listServiceAssignments(employeeId)
+        val categoryNames = employeeService.listServiceAssignmentCategoryNames(employeeId)
+        return ResponseEntity.ok(assignments.map { it.toResponse(categoryNames[it.productCategoryId]) })
     }
 
     @PostMapping("/{employeeId}/service-assignments")
@@ -171,8 +181,8 @@ data class EmployeeResponse(
 )
 
 data class BranchAssignmentResponse(val id: UUID, val employeeId: UUID, val branchId: UUID, val createdAt: Instant)
-data class ServiceAssignmentResponse(val id: UUID, val employeeId: UUID, val productCategoryId: UUID, val createdAt: Instant)
+data class ServiceAssignmentResponse(val id: UUID, val employeeId: UUID, val productCategoryId: UUID, val categoryName: String?, val createdAt: Instant)
 
 fun MerchantEmployee.toResponse() = EmployeeResponse(id, merchantId, name, status, createdAt, updatedAt)
 fun MerchantEmployeeBranchAssignment.toResponse() = BranchAssignmentResponse(id, employeeId, branchId, createdAt)
-fun MerchantEmployeeServiceAssignment.toResponse() = ServiceAssignmentResponse(id, employeeId, productCategoryId, createdAt)
+fun MerchantEmployeeServiceAssignment.toResponse(categoryName: String? = null) = ServiceAssignmentResponse(id, employeeId, productCategoryId, categoryName, createdAt)
