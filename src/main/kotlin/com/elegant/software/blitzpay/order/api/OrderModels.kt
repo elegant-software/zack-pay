@@ -72,6 +72,7 @@ data class CreateOrderItemRequest(
 )
 
 data class OrderItemResponse(
+    val itemId: UUID,
     val productId: UUID,
     val name: String,
     val quantity: Int,
@@ -169,6 +170,7 @@ internal fun Order.toResponse(items: List<OrderItem>, paymentReference: PaymentR
     checkoutPaymentMethod = checkoutPaymentMethod?.let { runCatching { CheckoutPaymentMethod.valueOf(it) }.getOrNull() },
     items = items.sortedBy { it.createdAt }.map {
         OrderItemResponse(
+            itemId = it.id,
             productId = it.merchantProductId,
             name = it.productName,
             quantity = it.quantity,
@@ -213,6 +215,7 @@ internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: Stri
     qrCode = QrCodeResponse(paymentUrl = qrPaymentUrl),
     items = items.sortedBy { it.createdAt }.map {
         OrderItemResponse(
+            itemId = it.id,
             productId = it.merchantProductId,
             name = it.productName,
             quantity = it.quantity,

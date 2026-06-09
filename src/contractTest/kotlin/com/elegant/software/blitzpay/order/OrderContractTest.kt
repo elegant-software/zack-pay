@@ -46,6 +46,7 @@ class OrderContractTest : ContractVerifierBase() {
                 checkoutPaymentMethod = CheckoutPaymentMethod.BANK_ACCOUNT,
                 items = listOf(
                     OrderItemResponse(
+                        itemId = UUID.fromString("44444444-4444-4444-4444-444444444441"),
                         productId = UUID.fromString("22222222-2222-2222-2222-222222222221"),
                         name = "Coffee",
                         quantity = 2,
@@ -87,6 +88,7 @@ class OrderContractTest : ContractVerifierBase() {
             .jsonPath("$.checkoutPaymentMethod").isEqualTo("BANK_ACCOUNT")
             .jsonPath("$.paymentReference").doesNotExist()
             .jsonPath("$.totalAmountMinor").isEqualTo(2900)
+            .jsonPath("$.items[0].itemId").isEqualTo("44444444-4444-4444-4444-444444444441")
     }
 
     @Test
@@ -105,6 +107,7 @@ class OrderContractTest : ContractVerifierBase() {
                 qrCode = QrCodeResponse(paymentUrl = "blitzpay://payment/qr?orderId=ORD-MERCHANT00001&amount=1250&currency=EUR"),
                 items = listOf(
                     OrderItemResponse(
+                        itemId = UUID.fromString("44444444-4444-4444-4444-444444444441"),
                         productId = UUID.fromString("22222222-2222-2222-2222-222222222221"),
                         name = "Coffee",
                         quantity = 1,
@@ -226,6 +229,7 @@ class OrderContractTest : ContractVerifierBase() {
                 paymentSource = null,
                 items = listOf(
                     OrderItemResponse(
+                        itemId = UUID.fromString("44444444-4444-4444-4444-444444444441"),
                         productId = UUID.fromString("22222222-2222-2222-2222-222222222221"),
                         name = "Coffee",
                         quantity = 1,
@@ -315,7 +319,7 @@ class OrderContractTest : ContractVerifierBase() {
                 totalAmountMinor = 2500,
                 paymentRetryAllowed = true,
                 items = listOf(
-                    OrderItemResponse(UUID.fromString("22222222-2222-2222-2222-222222222221"), "Coffee", 2, 1250, 2500),
+                    OrderItemResponse(itemId, UUID.fromString("22222222-2222-2222-2222-222222222221"), "Coffee", 2, 1250, 2500),
                 ),
                 createdAt = Instant.parse("2026-05-15T10:00:00Z"),
             )
@@ -351,7 +355,7 @@ class OrderContractTest : ContractVerifierBase() {
                 totalAmountMinor = 3750,
                 paymentRetryAllowed = true,
                 items = listOf(
-                    OrderItemResponse(UUID.fromString("22222222-2222-2222-2222-222222222221"), "Coffee", 3, 1250, 3750),
+                    OrderItemResponse(itemId, UUID.fromString("22222222-2222-2222-2222-222222222221"), "Coffee", 3, 1250, 3750),
                 ),
                 createdAt = Instant.parse("2026-05-15T10:00:00Z"),
             )
@@ -444,6 +448,86 @@ class OrderContractTest : ContractVerifierBase() {
     // ── US3: Merchant price override ───────────────────────────────────────────
 
     @Test
+    fun `post merchant appointment order item adds item`() {
+        whenever(orderService.addItem(eq("ORD-APPOINTMENT01"), any(), any())).thenReturn(
+            appointmentOrderResponse(totalAmountMinor = 3750)
+        )
+
+        webTestClient.post()
+            .uri("/v1/merchant/orders/ORD-APPOINTMENT01/items")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer $fakeJwt")
+            .bodyValue("""{"productId":"22222222-2222-2222-2222-222222222221","quantity":1}""")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.totalAmountMinor").isEqualTo(3750)
+    }
+
+    @Test
+    fun `patch merchant appointment order item quantity returns updated order`() {
+        val itemId = UUID.fromString("44444444-4444-4444-4444-444444444441")
+        whenever(orderService.updateItemQuantity(eq("ORD-APPOINTMENT01"), eq(itemId), any(), any())).thenReturn(
+            OrderResponse(
+                orderId = "ORD-APPOINTMENT01",
+                merchantId = merchantId,
+                branchId = branchId,
+                orderType = OrderType.PRE_ORDER,
+                usesDeferredPayment = true,
+                status = OrderStatus.CREATED,
+                creatorType = CreatorType.MERCHANT,
+                createdById = "merchant-user",
+                currency = "EUR",
+                totalAmountMinor = 2500,
+                paymentRetryAllowed = true,
+                items = emptyList(),
+                createdAt = Instant.parse("2026-06-09T10:00:00Z"),
+            )
+        )
+
+        webTestClient.patch()
+            .uri("/v1/merchant/orders/ORD-APPOINTMENT01/items/$itemId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer $fakeJwt")
+            .bodyValue("""{"quantity": 2}""")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.totalAmountMinor").isEqualTo(2500)
+    }
+
+    @Test
+    fun `delete merchant appointment order item returns updated order`() {
+        val itemId = UUID.fromString("44444444-4444-4444-4444-444444444441")
+        whenever(orderService.removeItem(eq("ORD-APPOINTMENT01"), eq(itemId), any())).thenReturn(
+            appointmentOrderResponse(totalAmountMinor = 0, status = OrderStatus.CANCELLED)
+        )
+
+        webTestClient.delete()
+            .uri("/v1/merchant/orders/ORD-APPOINTMENT01/items/$itemId")
+            .header("Authorization", "Bearer $fakeJwt")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.status").isEqualTo("CANCELLED")
+    }
+
+    @Test
+    fun `post merchant appointment order cancel returns cancelled order`() {
+        whenever(orderService.cancelOrder(eq("ORD-APPOINTMENT01"), any())).thenReturn(
+            appointmentOrderResponse(totalAmountMinor = 1250, status = OrderStatus.CANCELLED)
+        )
+
+        webTestClient.post()
+            .uri("/v1/merchant/orders/ORD-APPOINTMENT01/cancel")
+            .header("Authorization", "Bearer $fakeJwt")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.status").isEqualTo("CANCELLED")
+    }
+
+    @Test
     fun `patch merchant order item price applies override and returns updated order`() {
         val itemId = UUID.fromString("44444444-4444-4444-4444-444444444441")
         whenever(orderService.applyMerchantPriceOverride(eq("ORD-DEFERRED00001"), eq(itemId), any(), any())).thenReturn(
@@ -460,7 +544,14 @@ class OrderContractTest : ContractVerifierBase() {
                 totalAmountMinor = 900,
                 paymentRetryAllowed = true,
                 items = listOf(
-                    OrderItemResponse(UUID.fromString("22222222-2222-2222-2222-222222222221"), "Coffee", 1, 900, 900),
+                    OrderItemResponse(
+                        itemId,
+                        UUID.fromString("22222222-2222-2222-2222-222222222221"),
+                        "Coffee",
+                        1,
+                        900,
+                        900,
+                    ),
                 ),
                 createdAt = Instant.parse("2026-05-15T10:00:00Z"),
             )
@@ -497,7 +588,14 @@ class OrderContractTest : ContractVerifierBase() {
                 paymentRetryAllowed = false,
                 paymentSource = PaymentSource.MANUAL_SETTLEMENT,
                 items = listOf(
-                    OrderItemResponse(UUID.fromString("22222222-2222-2222-2222-222222222221"), "Coffee", 1, 1250, 1250),
+                    OrderItemResponse(
+                        UUID.fromString("44444444-4444-4444-4444-444444444441"),
+                        UUID.fromString("22222222-2222-2222-2222-222222222221"),
+                        "Coffee",
+                        1,
+                        1250,
+                        1250,
+                    ),
                 ),
                 createdAt = Instant.parse("2026-05-15T10:00:00Z"),
                 paidAt = Instant.parse("2026-05-15T14:00:00Z"),
@@ -550,7 +648,14 @@ class OrderContractTest : ContractVerifierBase() {
                 paymentRetryAllowed = false,
                 paymentSource = PaymentSource.MANUAL_SETTLEMENT,
                 items = listOf(
-                    OrderItemResponse(UUID.fromString("22222222-2222-2222-2222-222222222221"), "Coffee", 1, 1250, 1250),
+                    OrderItemResponse(
+                        UUID.fromString("44444444-4444-4444-4444-444444444441"),
+                        UUID.fromString("22222222-2222-2222-2222-222222222221"),
+                        "Coffee",
+                        1,
+                        1250,
+                        1250,
+                    ),
                 ),
                 createdAt = Instant.parse("2026-05-15T10:00:00Z"),
                 paidAt = Instant.parse("2026-05-15T14:00:00Z"),
@@ -566,4 +671,23 @@ class OrderContractTest : ContractVerifierBase() {
             .jsonPath("$.paymentSource").isEqualTo("MANUAL_SETTLEMENT")
             .jsonPath("$.usesDeferredPayment").isEqualTo(true)
     }
+
+    private fun appointmentOrderResponse(
+        totalAmountMinor: Long,
+        status: OrderStatus = OrderStatus.CREATED,
+    ) = OrderResponse(
+        orderId = "ORD-APPOINTMENT01",
+        merchantId = merchantId,
+        branchId = branchId,
+        orderType = OrderType.PRE_ORDER,
+        usesDeferredPayment = true,
+        status = status,
+        creatorType = CreatorType.MERCHANT,
+        createdById = "merchant-user",
+        currency = "EUR",
+        totalAmountMinor = totalAmountMinor,
+        paymentRetryAllowed = status == OrderStatus.CREATED,
+        items = emptyList(),
+        createdAt = Instant.parse("2026-06-09T10:00:00Z"),
+    )
 }
