@@ -31,9 +31,9 @@ class AppointmentOrderCreationListener(
             .toSet()
 
         if ("PRE_ORDER" !in enabled || "DEFERRED_PAYMENT" !in enabled) {
-            log.info(
-                "Skipping appointment order — offerings not enabled merchantId={} appointmentId={}",
-                event.merchantId, event.appointmentId,
+            log.warn(
+                "Appointment order skipped — merchant does not have PRE_ORDER+DEFERRED_PAYMENT enabled merchantId={} enabled={} appointmentId={}",
+                event.merchantId, enabled, event.appointmentId,
             )
             return
         }
