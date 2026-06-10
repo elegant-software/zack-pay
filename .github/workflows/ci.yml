@@ -26,6 +26,10 @@ permissions:
   checks: write
 jobs:
   test:
+      permissions:
+        contents: read
+        actions: write
+        checks: write
       uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/backend-gradle-test.yml@main
       with:
         gradle-args: ${{ inputs.gradle-args }}
