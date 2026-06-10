@@ -86,6 +86,7 @@ stripe:
   publishable-key: ${EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY:}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   connect-webhook-secret: ${STRIPE_CONNECT_WEBHOOK_SECRET:}
+  dashboard-platform-account-id: ${STRIPE_DASHBOARD_PLATFORM_ACCOUNT_ID:}
   connect:
     return-url: ${STRIPE_CONNECT_RETURN_URL:}
     api-base-url: ${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}

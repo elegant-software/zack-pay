@@ -9,6 +9,7 @@ data class StripeProperties(
     val webhookSecret: String = "",
     val connectWebhookSecret: String = "",
     val applicationFeeAmount: Long = 0,
+    val dashboardPlatformAccountId: String = "",
     val connect: ConnectUrls = ConnectUrls(),
 ) {
     data class ConnectUrls(

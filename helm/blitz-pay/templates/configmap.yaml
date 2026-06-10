@@ -19,3 +19,4 @@ data:
   STRIPE_CONNECT_RETURN_URL: {{ .Values.config.stripeConnectReturnUrl | quote }}
   STRIPE_CONNECT_API_BASE_URL: {{ .Values.config.stripeConnectApiBaseUrl | quote }}
   STRIPE_CONNECT_APP_DEEP_LINK: {{ .Values.config.stripeConnectAppDeepLink | quote }}
+  STRIPE_DASHBOARD_PLATFORM_ACCOUNT_ID: {{ .Values.config.stripeDashboardPlatformAccountId | quote }}

@@ -304,6 +304,38 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 A Pre-Order created automatically when a Merchant Manager marks an Appointment Completed and the Merchant has Deferred Payment enabled. Carries the Appointment's booked Product as its initial line item priced at the live Product price at completion time. May be modified and paid through the normal order flow. At most one Appointment Order may exist per Appointment.
 _Avoid_: post-appointment invoice, automatic checkout, appointment payment, appointment checkout
 
+**Payment Attempt**:
+An individual attempt to pay an Order through a specific payment provider. An Order may have multiple Payment Attempts (e.g. after a failure and retry), each with its own provider reference.
+_Avoid_: payment, transaction, charge
+
+**Payment Settlement**:
+The financial outcome record of a successful Payment Attempt, capturing the gross amount charged, the provider's Processing Fee, the platform's Platform Fee, the Merchant's Net Amount, the payment method used, and provider-specific charge and balance-transaction references. Created asynchronously after a Payment Attempt succeeds. At most one Payment Settlement exists per Payment Attempt.
+_Avoid_: transaction record, charge record, fee record, payment detail
+
+**Processing Fee**:
+The payment provider's (e.g. Stripe's) transaction processing charge, deducted from the gross amount. Sourced from the provider's balance transaction after settlement.
+_Avoid_: Stripe fee, provider cut, transaction cost
+
+**Platform Fee**:
+BlitzPay's application fee collected on each transaction, separate from and in addition to the Processing Fee. Configured as `application_fee_amount` on Stripe PaymentIntents.
+_Avoid_: BlitzPay cut, service fee, commission
+
+**Net Amount**:
+The amount a Merchant actually receives after both the Processing Fee and Platform Fee are deducted from the gross amount. Net Amount = Gross − Processing Fee − Platform Fee.
+_Avoid_: payout, take-home, merchant amount
+
+**Payment Method**:
+The high-level payment channel used for a Payment Attempt: `CARD`, `BANK_ACCOUNT`, `PAY_BY_BANK`, `TERMINAL`, or `PAYPAL`.
+_Avoid_: provider, gateway, payment type
+
+**Payment Method Detail**:
+The provider-specific payment method sub-type within a Payment Method, such as card network (`visa`, `mastercard`) or bank transfer variant. Nullable; only populated when the provider supplies it.
+_Avoid_: card brand, card type, network
+
+**Payment Settlement Report**:
+An aggregate view of Payment Settlement records for a Merchant over a given time period, summarising total gross, total Processing Fees, total Platform Fees, and total Net Amounts, optionally broken down by Payment Method. Used by the merchant dashboard and admin panel.
+_Avoid_: revenue report, earnings summary, transaction report
+
 ## Relationships
 
 - A **Merchant** owns one or more **Branch**es
@@ -324,6 +356,11 @@ _Avoid_: post-appointment invoice, automatic checkout, appointment payment, appo
 - A **Branch** must have exactly one **Branch Location**
 - An **Order** belongs to exactly one **Branch**
 - An **Order** has exactly one **Order Type**
+- An **Order** may have zero or more **Payment Attempt** entries
+- A **Payment Attempt** belongs to exactly one **Order**
+- A **Payment Attempt** has zero or one **Payment Settlement**
+- A **Payment Settlement** is created only when a **Payment Attempt** succeeds
+- A **Payment Settlement** has exactly one **Payment Method** and zero or one **Payment Method Detail**
 - A **Merchant** may have zero or one **Merchant Address**
 - A **Merchant** may have zero or one **Merchant Location**
 - A **Merchant** has exactly one **Merchant Mobility** (`MOBILE` or `BRICK_AND_MORTAR`)

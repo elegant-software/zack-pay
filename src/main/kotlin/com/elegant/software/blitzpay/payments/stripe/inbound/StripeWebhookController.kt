@@ -12,6 +12,7 @@ import com.stripe.model.Event
 import com.stripe.model.PaymentIntent
 import com.stripe.net.Webhook
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -28,6 +29,7 @@ class StripeWebhookController(
     private val stripeProperties: StripeProperties,
     private val paymentStatusUpdateGateway: PaymentStatusUpdateGateway,
     private val stripeConnectGateway: StripeConnectGateway,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val log = LoggerFactory.getLogger(StripeWebhookController::class.java)
     private val objectMapper = jacksonObjectMapper()
@@ -88,6 +90,23 @@ class StripeWebhookController(
                         "payment_intent.succeeded" -> {
                             log.info("stripe webhook settling payment")
                             paymentStatusUpdateGateway.settle(paymentRequestId, "stripe:${event.id}", occurredAt)
+                            val merchantId = paymentIntent.metadata["merchantId"]
+                                ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                            val connectedAccountId = merchantId?.let {
+                                stripeConnectGateway.findConnectedAccountId(it)
+                            }
+                            eventPublisher.publishEvent(
+                                StripePaymentSettled(
+                                    paymentRequestId = paymentRequestId,
+                                    stripePaymentIntentId = paymentIntent.id,
+                                    stripeEventId = event.id,
+                                    connectedAccountId = connectedAccountId,
+                                    grossAmountMinor = paymentIntent.amount ?: 0L,
+                                    currency = paymentIntent.currency?.uppercase() ?: "EUR",
+                                    applicationFeeAmountMinor = paymentIntent.applicationFeeAmount,
+                                    occurredAt = occurredAt,
+                                )
+                            )
                         }
                         "payment_intent.payment_failed", "payment_intent.canceled" -> {
                             log.info("stripe webhook failing payment type={}", event.type)
@@ -169,7 +188,21 @@ class StripeWebhookController(
                     event.type, paymentRequestId, paymentIntent.id, occurredAt,
                 )
                 when (event.type) {
-                    "payment_intent.succeeded" -> paymentStatusUpdateGateway.settle(paymentRequestId, "stripe:${event.id}", occurredAt)
+                    "payment_intent.succeeded" -> {
+                        paymentStatusUpdateGateway.settle(paymentRequestId, "stripe:${event.id}", occurredAt)
+                        eventPublisher.publishEvent(
+                            StripePaymentSettled(
+                                paymentRequestId = paymentRequestId,
+                                stripePaymentIntentId = paymentIntent.id,
+                                stripeEventId = event.id,
+                                connectedAccountId = event.account,
+                                grossAmountMinor = paymentIntent.amount ?: 0L,
+                                currency = paymentIntent.currency?.uppercase() ?: "EUR",
+                                applicationFeeAmountMinor = paymentIntent.applicationFeeAmount,
+                                occurredAt = occurredAt,
+                            )
+                        )
+                    }
                     "payment_intent.payment_failed", "payment_intent.canceled" -> paymentStatusUpdateGateway.fail(paymentRequestId, "stripe:${event.id}", occurredAt)
                 }
             }

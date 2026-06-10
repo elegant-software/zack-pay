@@ -18,6 +18,7 @@ spring-dependency-management = { id = "io.spring.dependency-management", version
 cyclonedx            = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
 dependency-track     = { id = "com.liftric.dependency-track-companion-plugin", version.ref = "dependency-track" }
 spring-cloud-contract = { id = "org.springframework.cloud.contract", version.ref = "spring-cloud-contract" }
+studer-jooq          = { id = "nu.studer.jooq", version.ref = "studer-jooq-plugin" }
 
 # -----------------------------------------------------------------------------
 # [Versions] - Dependency Version Definitions
@@ -59,6 +60,8 @@ aws-sdk              = "2.31.78"
 dr-jskill            = "2026_02_19-a951a5e"
 # Contract stubs publishing
 spring-cloud-contract = "4.2.1"
+jooq                 = "3.19.30"
+studer-jooq-plugin   = "9.0"
 
 # Security scanning / SBOM + Dependency-Track upload
 cyclonedx            = "3.2.0"

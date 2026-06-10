@@ -1,4 +1,5 @@
 import org.springframework.boot.gradle.tasks.bundling.BootJar
+import org.jooq.meta.jaxb.Property
 
 
 plugins {
@@ -11,6 +12,7 @@ plugins {
     alias(libs.plugins.cyclonedx)
     alias(libs.plugins.dependency.track)
     alias(libs.plugins.spring.cloud.contract)
+    alias(libs.plugins.studer.jooq)
     `maven-publish`
 }
 
@@ -120,6 +122,10 @@ dependencies {
     runtimeOnly("org.springframework.modulith:spring-modulith-actuator")
     runtimeOnly("org.springframework.modulith:spring-modulith-observability")
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
+
+    jooqGenerator("org.jooq:jooq-meta-extensions:${libs.versions.jooq.get()}")
+    jooqGenerator("org.slf4j:slf4j-simple:2.0.16")
 
     // ----------------------------
     // Tests (shared)
@@ -136,6 +142,46 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-postgresql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation(libs.mockito.kotlin)
+}
+
+jooq {
+    version.set(libs.versions.jooq.get())
+
+    val reportingSchemaSql = listOf(
+        "20260417-001-create-blitzpay-schema.sql",
+        "20260430-001-create-order-tables.sql",
+        "20260610-001-payment-settlements.sql",
+        "20260610-002-payment-settlement-reconciliation.sql",
+    ).joinToString("\n") { file("src/main/resources/db/changelog/$it").readText() }
+
+    configurations {
+        create("main") {
+            generateSchemaSourceOnCompilation.set(true)
+            jooqConfiguration.apply {
+                generator.apply {
+                    database.apply {
+                        name = "org.jooq.meta.extensions.ddl.DDLDatabase"
+                        properties.addAll(listOf(
+                            Property().withKey("sql").withValue(reportingSchemaSql),
+                            Property().withKey("dialect").withValue("POSTGRES"),
+                            Property().withKey("defaultNameCase").withValue("lower"),
+                        ))
+                        inputSchema = "blitzpay"
+                    }
+                    generate.apply {
+                        isDeprecated = false
+                        isRecords = true
+                        isImmutablePojos = false
+                        isFluentSetters = false
+                    }
+                    target.apply {
+                        packageName = "com.elegant.software.blitzpay.jooq"
+                        directory = "build/generated/jooq/main"
+                    }
+                }
+            }
+        }
+    }
 }
 
 dependencyManagement {
@@ -167,6 +213,7 @@ allOpen {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    jvmArgs("--add-opens", "java.base/java.util=ALL-UNNAMED")
 }
 
 tasks.named<Test>("contractTest") {

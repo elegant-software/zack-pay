@@ -34,6 +34,8 @@ tags:
   description: Expo push token registration for payment status notifications
 - name: Employee Availability
   description: Manage employee recurring availability and date-specific exceptions
+- name: Settlement Reporting
+  description: Payment settlement summary and transaction list for merchants and admins
 - name: Actuator
   description: Monitor and interact
   externalDocs:
@@ -976,6 +978,25 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/BookableSlotResponse"
+  /{version}/reporting/settlements/refresh:
+    post:
+      tags:
+      - Settlement Reporting
+      summary: Refresh visible Stripe settlements from Stripe
+      operationId: refresh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettlementRefreshRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StripeSettlementRefreshResult"
   /{version}/proximity:
     post:
       tags:
@@ -2646,6 +2667,84 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/UserSearchResult"
+  /{version}/reporting/settlements:
+    get:
+      tags:
+      - Settlement Reporting
+      summary: Paginated settlement transaction list for a merchant (admin only)
+      operationId: list_7
+      parameters:
+      - name: merchantId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SettlementPageResponse"
+  /{version}/reporting/settlements/summary:
+    get:
+      tags:
+      - Settlement Reporting
+      summary: Aggregate settlement summary for a merchant over a date range
+      operationId: summary
+      parameters:
+      - name: merchantId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SettlementSummaryResponse"
   /{version}/qr-payments/{paymentRequestId}/events:
     get:
       tags:
@@ -2758,7 +2857,7 @@ paths:
       tags:
       - Merchant Provider Accounts
       summary: List all provider accounts for a merchant
-      operationId: list_7
+      operationId: list_8
       parameters:
       - name: merchantId
         in: path
@@ -2878,7 +2977,7 @@ paths:
       tags:
       - Merchant Verticals
       summary: List all active merchant verticals
-      operationId: list_8
+      operationId: list_9
       responses:
         "200":
           description: OK
@@ -4374,6 +4473,59 @@ components:
       - employeeName
       - endTime
       - startTime
+    SettlementRefreshRequest:
+      type: object
+      properties:
+        merchantId:
+          type: string
+          format: uuid
+        paymentRequestIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+      required:
+      - merchantId
+      - paymentRequestIds
+    StripeSettlementRefreshItem:
+      type: object
+      properties:
+        paymentRequestId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        message:
+          type: string
+      required:
+      - paymentRequestId
+      - status
+    StripeSettlementRefreshResult:
+      type: object
+      properties:
+        requested:
+          type: integer
+          format: int32
+        refreshed:
+          type: integer
+          format: int32
+        skipped:
+          type: integer
+          format: int32
+        failed:
+          type: integer
+          format: int32
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/StripeSettlementRefreshItem"
+      required:
+      - failed
+      - refreshed
+      - requested
+      - results
+      - skipped
     ProximityEventRequest:
       type: object
       properties:
@@ -5708,6 +5860,143 @@ components:
       - enabled
       - groups
       - id
+    SettlementPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/SettlementRow"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    SettlementRow:
+      type: object
+      properties:
+        paymentRequestId:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+        settledAt:
+          type: string
+          format: date-time
+        provider:
+          type: string
+        currency:
+          type: string
+        grossAmountMinor:
+          type: integer
+          format: int64
+        processingFeeMinor:
+          type: integer
+          format: int64
+        platformFeeMinor:
+          type: integer
+          format: int64
+        netAmountMinor:
+          type: integer
+          format: int64
+        paymentMethod:
+          type: string
+        paymentMethodDetail:
+          type: string
+        fundsAvailableAt:
+          type: string
+          format: date-time
+        providerPaymentReference:
+          type: string
+        providerChargeReference:
+          type: string
+        providerDashboardUrl:
+          type: string
+      required:
+      - currency
+      - grossAmountMinor
+      - netAmountMinor
+      - orderId
+      - paymentMethod
+      - paymentRequestId
+      - platformFeeMinor
+      - processingFeeMinor
+      - provider
+      - settledAt
+    PaymentMethodBreakdown:
+      type: object
+      properties:
+        paymentMethod:
+          type: string
+        transactionCount:
+          type: integer
+          format: int32
+        grossAmountMinor:
+          type: integer
+          format: int64
+        netAmountMinor:
+          type: integer
+          format: int64
+      required:
+      - grossAmountMinor
+      - netAmountMinor
+      - paymentMethod
+      - transactionCount
+    SettlementSummaryResponse:
+      type: object
+      properties:
+        merchantId:
+          type: string
+          format: uuid
+        from:
+          type: string
+        to:
+          type: string
+        currency:
+          type: string
+        transactionCount:
+          type: integer
+          format: int32
+        grossAmountMinor:
+          type: integer
+          format: int64
+        processingFeeMinor:
+          type: integer
+          format: int64
+        platformFeeMinor:
+          type: integer
+          format: int64
+        netAmountMinor:
+          type: integer
+          format: int64
+        byPaymentMethod:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentMethodBreakdown"
+      required:
+      - byPaymentMethod
+      - currency
+      - from
+      - grossAmountMinor
+      - merchantId
+      - netAmountMinor
+      - platformFeeMinor
+      - processingFeeMinor
+      - to
+      - transactionCount
     SseEmitter:
       type: object
       properties:

@@ -87,6 +87,7 @@ For technology-specific patterns and detailed best practices, refer to:
 | Spring Boot (`@ConfigurationProperties`, injection, reactive stack) | [`reference/spring-boot-best-practices.md`](reference/spring-boot-best-practices.md) |
 | Spring Modulith (module boundaries, events, verification) | [`reference/spring-modulith-best-practices.md`](reference/spring-modulith-best-practices.md) |
 | Spring Data JPA (entities, repositories, transactions) | [`reference/spring-data-jpa-best-practices.md`](reference/spring-data-jpa-best-practices.md) |
+| jOOQ (generated schema types, field access, aliases, query testing) | [`reference/jooq-best-practices.md`](reference/jooq-best-practices.md) |
 | Liquibase (schema migrations, changeset conventions, FK deletion strategy) | [`reference/liquibase-best-practices.md`](reference/liquibase-best-practices.md) |
 | FK deletion strategy (RESTRICT default, no CASCADE, explicit service deletion) | [`reference/liquibase-best-practices.md#10-foreign-key-deletion-strategy`](reference/liquibase-best-practices.md#10-foreign-key-deletion-strategy) |
 | HTTP Interface clients (`@HttpExchange` + `@ImportHttpServices`, token filters, contract-test guard) | [`reference/api-calls-best-practice.md`](reference/api-calls-best-practice.md) |

@@ -95,6 +95,7 @@ config:
   stripeConnectReturnUrl: http://localhost:8080/stripe-connect/return
   stripeConnectApiBaseUrl: http://localhost:8080
   stripeConnectAppDeepLink: ""
+  stripeDashboardPlatformAccountId: "acct_1TMybCLoNGD7heqR"
 
 # ---------------------------------------------------------------------------
 # Resource requests and limits
