@@ -147,12 +147,40 @@ dependencies {
 jooq {
     version.set(libs.versions.jooq.get())
 
+    // Minimal DDL for tables needed by the dashboard queries that live outside the
+    // original reporting schema. Inline rather than including full migration files
+    // to avoid PostgreSQL-specific syntax (RLS, ENABLE ROW LEVEL SECURITY, etc.)
+    // that jOOQ's DDLDatabase cannot parse.
+    val dashboardExtensionDdl = """
+        CREATE TABLE blitzpay.merchant_applications (
+            id              UUID        NOT NULL PRIMARY KEY,
+            merchant_status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+            created_at      TIMESTAMPTZ NOT NULL
+        );
+        CREATE TABLE blitzpay.merchant_branches (
+            id                      UUID        NOT NULL PRIMARY KEY,
+            merchant_application_id UUID        NOT NULL,
+            active                  BOOLEAN     NOT NULL DEFAULT TRUE,
+            created_at              TIMESTAMPTZ NOT NULL
+        );
+        CREATE TABLE blitzpay.appointments (
+            id          UUID        NOT NULL PRIMARY KEY,
+            merchant_id UUID        NOT NULL,
+            branch_id   UUID        NOT NULL,
+            status      VARCHAR(32) NOT NULL DEFAULT 'BOOKED',
+            created_at  TIMESTAMPTZ NOT NULL
+        );
+        ALTER TABLE blitzpay.order_orders
+            ADD COLUMN order_type VARCHAR(32) NOT NULL DEFAULT 'PRE_ORDER';
+    """.trimIndent()
+
     val reportingSchemaSql = listOf(
         "20260417-001-create-blitzpay-schema.sql",
         "20260430-001-create-order-tables.sql",
         "20260610-001-payment-settlements.sql",
         "20260610-002-payment-settlement-reconciliation.sql",
-    ).joinToString("\n") { file("src/main/resources/db/changelog/$it").readText() }
+    ).joinToString("\n") { file("src/main/resources/db/changelog/$it").readText() } +
+        "\n" + dashboardExtensionDdl
 
     configurations {
         create("main") {

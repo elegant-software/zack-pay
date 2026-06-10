@@ -26,6 +26,8 @@ tags:
   description: Employee management for appointment booking
 - name: Appearances
   description: Manage scheduled location appearances for MOBILE merchant branches
+- name: Dashboard
+  description: KPI dashboards for platform admins and merchant app users
 - name: Invoices
   description: EU-standard ZUGFeRD / Factur-X invoice generation
 - name: Payment Status
@@ -982,7 +984,7 @@ paths:
     post:
       tags:
       - Settlement Reporting
-      summary: Refresh visible Stripe settlements from Stripe
+      summary: Refresh settlement data
       operationId: refresh
       requestBody:
         content:
@@ -2745,6 +2747,81 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/SettlementSummaryResponse"
+  /{version}/reporting/dashboard/platform:
+    get:
+      tags:
+      - Dashboard
+      summary: Platform KPI Report
+      description: Platform-wide KPI snapshot for web admin. Pass merchantId to drill
+        into a single merchant.
+      operationId: platform
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: merchantId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlatformKpiReport"
+  /{version}/reporting/dashboard/merchant/{merchantId}:
+    get:
+      tags:
+      - Dashboard
+      summary: Merchant KPI Report
+      description: Merchant or branch KPI snapshot for the merchant app. Omit branchId
+        for a merchant-wide view (Merchant Manager); supply branchId for a branch-scoped
+        view (Merchant Employee).
+      operationId: merchant
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: branchId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MerchantKpiReport"
   /{version}/qr-payments/{paymentRequestId}/events:
     get:
       tags:
@@ -5997,6 +6074,190 @@ components:
       - processingFeeMinor
       - to
       - transactionCount
+    AppointmentKpi:
+      type: object
+      properties:
+        bookedCount:
+          type: integer
+          format: int64
+        completedCount:
+          type: integer
+          format: int64
+        cancelledCount:
+          type: integer
+          format: int64
+      required:
+      - bookedCount
+      - cancelledCount
+      - completedCount
+    BranchCountKpi:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        activeCount:
+          type: integer
+          format: int64
+        newInPeriodCount:
+          type: integer
+          format: int64
+      required:
+      - activeCount
+      - newInPeriodCount
+      - totalCount
+    MerchantCountKpi:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        activeCount:
+          type: integer
+          format: int64
+        newInPeriodCount:
+          type: integer
+          format: int64
+      required:
+      - activeCount
+      - newInPeriodCount
+      - totalCount
+    OrderKpi:
+      type: object
+      properties:
+        paidCount:
+          type: integer
+          format: int64
+        pendingCount:
+          type: integer
+          format: int64
+        failedOrCancelledCount:
+          type: integer
+          format: int64
+        byOrderType:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderTypeCount"
+      required:
+      - byOrderType
+      - failedOrCancelledCount
+      - paidCount
+      - pendingCount
+    OrderTypeCount:
+      type: object
+      properties:
+        orderType:
+          type: string
+        count:
+          type: integer
+          format: int64
+      required:
+      - count
+      - orderType
+    PaymentMethodFrequency:
+      type: object
+      properties:
+        paymentMethod:
+          type: string
+        transactionCount:
+          type: integer
+          format: int32
+        sharePercent:
+          type: number
+          format: double
+      required:
+      - paymentMethod
+      - sharePercent
+      - transactionCount
+    PlatformKpiReport:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        merchantId:
+          type: string
+          format: uuid
+        revenue:
+          $ref: "#/components/schemas/RevenueKpi"
+        orders:
+          $ref: "#/components/schemas/OrderKpi"
+        appointments:
+          $ref: "#/components/schemas/AppointmentKpi"
+        paymentMethodFrequency:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentMethodFrequency"
+        merchantCounts:
+          $ref: "#/components/schemas/MerchantCountKpi"
+        branchCounts:
+          $ref: "#/components/schemas/BranchCountKpi"
+      required:
+      - appointments
+      - from
+      - orders
+      - paymentMethodFrequency
+      - revenue
+      - to
+    RevenueKpi:
+      type: object
+      properties:
+        currency:
+          type: string
+        grossAmountMinor:
+          type: integer
+          format: int64
+        processingFeeMinor:
+          type: integer
+          format: int64
+        platformFeeMinor:
+          type: integer
+          format: int64
+        netAmountMinor:
+          type: integer
+          format: int64
+        settledTransactionCount:
+          type: integer
+          format: int32
+      required:
+      - currency
+      - grossAmountMinor
+      - netAmountMinor
+      - platformFeeMinor
+      - processingFeeMinor
+      - settledTransactionCount
+    MerchantKpiReport:
+      type: object
+      properties:
+        merchantId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        from:
+          type: string
+        to:
+          type: string
+        revenue:
+          $ref: "#/components/schemas/RevenueKpi"
+        orders:
+          $ref: "#/components/schemas/OrderKpi"
+        appointments:
+          $ref: "#/components/schemas/AppointmentKpi"
+        paymentMethodFrequency:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentMethodFrequency"
+      required:
+      - appointments
+      - from
+      - merchantId
+      - orders
+      - paymentMethodFrequency
+      - revenue
+      - to
     SseEmitter:
       type: object
       properties:

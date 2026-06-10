@@ -17,5 +17,6 @@ data class ApiVersionProperties(
         val order: String = "1",
         val appointment: String = "1",
         val voice: String = "1",
+        val reporting: String = "1",
     )
 }

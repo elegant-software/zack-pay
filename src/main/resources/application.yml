@@ -66,6 +66,7 @@ api:
     order: 1
     appointment: 1
     voice: 1
+    reporting: 1
 
 truelayer:
   webhookJku: ${TRUELAYER_WEBHOOK_JKU:http://localhost:8080/.well-known/jwks.json}
@@ -128,6 +129,8 @@ blitzpay:
         label: Appointments
       voice:
         label: Voice
+      reporting:
+        label: Reporting & Dashboards
       actuator:
         label: Monitoring-Actuator
   cors:

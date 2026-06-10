@@ -21,6 +21,7 @@ data class OpenApiGroupProperties(
         val order: Group = Group(),
         val appointment: Group = Group(),
         val voice: Group = Group(),
+        val reporting: Group = Group(),
         val actuator: Group = Group(),
     )
 

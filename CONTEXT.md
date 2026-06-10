@@ -336,6 +336,14 @@ _Avoid_: card brand, card type, network
 An aggregate view of Payment Settlement records for a Merchant over a given time period, summarising total gross, total Processing Fees, total Platform Fees, and total Net Amounts, optionally broken down by Payment Method. Used by the merchant dashboard and admin panel.
 _Avoid_: revenue report, earnings summary, transaction report
 
+**Platform KPI Report**:
+The platform-wide aggregate dashboard snapshot combining revenue (from Payment Settlements), Order counts, Appointment counts, and Payment Method frequency across all Merchants over a caller-supplied date range. Optionally scoped to a single Merchant for drill-down. Used by the web admin dashboard. Merchant identity is an optional filter, not a required param.
+_Avoid_: admin report, global summary, hardcoded platform stats
+
+**Merchant KPI Report**:
+The same aggregate snapshot as a Platform KPI Report but always scoped to one Merchant or one Branch, resolved from the authenticated caller's tenant context. A Merchant Manager receives a merchant-wide view; a Merchant Employee receives a view scoped to their assigned Branch. Used by the merchant app dashboard.
+_Avoid_: branch report, manager report, caller-supplied merchant filter
+
 ## Relationships
 
 - A **Merchant** owns one or more **Branch**es
