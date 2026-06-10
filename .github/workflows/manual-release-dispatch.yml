@@ -15,7 +15,7 @@ on:
         default: main
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: manual-release-${{ inputs.base_branch }}
@@ -24,7 +24,7 @@ concurrency:
 jobs:
   manual-release:
     permissions:
-      contents: read
+      contents: write
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/manual-release.yml@main
     with:
       release_boundary: ${{ inputs.release_boundary }}
