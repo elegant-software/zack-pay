@@ -34,7 +34,7 @@ class MerchantSearchService(
                     city = m.address?.city,
                     country = m.address?.country,
                     businessType = m.businessProfile.businessType,
-                    merchantMobility = m.merchantMobility.name,
+                    merchantMobility = m.merchantMobility,
                     status = m.status.name,
                     lastUpdatedAt = m.lastUpdatedAt,
                 )

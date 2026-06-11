@@ -13,6 +13,7 @@ import com.elegant.software.blitzpay.merchant.application.MerchantLogoService
 import com.elegant.software.blitzpay.merchant.application.MerchantManagementService
 import com.elegant.software.blitzpay.merchant.application.MerchantRegistrationService
 import com.elegant.software.blitzpay.merchant.application.MerchantVerticalService
+import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
 import com.elegant.software.blitzpay.storage.StorageService
 import org.springframework.ai.mcp.annotation.McpTool
 import org.springframework.stereotype.Component
@@ -134,7 +135,7 @@ class MerchantMcpTools(
                         registrationNumber = normalizedRegistrationNumber,
                         operatingCountry = operatingCountry,
                         primaryBusinessAddress = primaryBusinessAddress ?: "Unknown",
-                        merchantMobility = mobility,
+                        merchantMobility = mobility?.let(MerchantMobility::valueOf),
                     ),
                     primaryContact = MerchantPrimaryContactRequest(
                         fullName = contactFullName ?: "Merchant Owner",
@@ -156,7 +157,7 @@ class MerchantMcpTools(
                     contactFullName = contactFullName ?: current.contactFullName,
                     contactEmail = contactEmail ?: current.contactEmail,
                     contactPhoneNumber = contactPhoneNumber ?: current.contactPhoneNumber,
-                    merchantMobility = mobility,
+                    merchantMobility = mobility?.let(MerchantMobility::valueOf),
                 )
             )
         }

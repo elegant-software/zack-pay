@@ -52,6 +52,9 @@ class MerchantBranchAppearance(
     @Column(name = "name")
     var name: String? = null,
 
+    @Column(name = "cancelled_at")
+    var cancelledAt: Instant? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 
@@ -63,9 +66,9 @@ class MerchantBranchAppearance(
 
     fun isActiveAt(instant: Instant): Boolean = !instant.isBefore(startTime) && !instant.isAfter(endTime)
 
-    fun pushLivePosition(latitude: Double, longitude: Double, at: Instant = Instant.now()) {
-        liveLatitude = latitude
-        liveLongitude = longitude
+    fun cancel(at: Instant = Instant.now()) {
+        require(cancelledAt == null) { "Appearance is already cancelled" }
+        cancelledAt = at
         updatedAt = at
     }
 }

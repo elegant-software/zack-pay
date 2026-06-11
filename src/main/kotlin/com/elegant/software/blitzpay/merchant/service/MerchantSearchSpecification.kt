@@ -88,8 +88,7 @@ object MerchantSearchSpecification {
             }
 
             if (!request.merchantMobilities.isNullOrEmpty()) {
-                val mobilities = request.merchantMobilities.map { MerchantMobility.valueOf(it) }
-                predicates += root.get<MerchantMobility>("merchantMobility").`in`(mobilities)
+                predicates += root.get<MerchantMobility>("merchantMobility").`in`(request.merchantMobilities)
             }
 
             if (!request.statuses.isNullOrEmpty()) {

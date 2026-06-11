@@ -111,3 +111,5 @@ databaseChangeLog:
       file: db/changelog/20260610-001-payment-settlements.sql
   - include:
       file: db/changelog/20260610-002-payment-settlement-reconciliation.sql
+  - include:
+      file: db/changelog/20260611-001-appearance-history.sql

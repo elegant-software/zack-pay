@@ -1,6 +1,7 @@
 package com.elegant.software.blitzpay.merchant.api
 
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
 import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.domain.PersonRole
 import com.elegant.software.blitzpay.merchant.domain.SupportingMaterialType
@@ -34,7 +35,7 @@ data class MerchantBusinessProfileRequest(
     val registrationNumber: String,
     val operatingCountry: String,
     val primaryBusinessAddress: String,
-    val merchantMobility: String? = null,
+    val merchantMobility: MerchantMobility? = null,
 )
 
 data class MerchantPrimaryContactRequest(
@@ -58,7 +59,7 @@ data class UpdateMerchantRequest(
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
     val status: MerchantOnboardingStatus? = null,
-    val merchantMobility: String? = null,
+    val merchantMobility: MerchantMobility? = null,
 )
 
 data class MerchantPersonRequest(
@@ -133,7 +134,7 @@ data class MerchantDetailsResponse(
     val address: MerchantAddress = MerchantAddress(),
     val location: MerchantLocationInfo? = null,
     val offerings: Set<String> = emptySet(),
-    val merchantMobility: String = "BRICK_AND_MORTAR",
+    val merchantMobility: MerchantMobility = MerchantMobility.BRICK_AND_MORTAR,
 )
 
 data class MerchantVerticalResponse(

@@ -117,11 +117,11 @@ class MerchantManagementServiceTest {
 
         val response = service.update(
             application.id,
-            UpdateMerchantRequest(merchantMobility = "MOBILE")
+            UpdateMerchantRequest(merchantMobility = MerchantMobility.MOBILE)
         )
 
         assertEquals(MerchantMobility.MOBILE, application.merchantMobility)
-        assertEquals("MOBILE", response.merchantMobility)
+        assertEquals(MerchantMobility.MOBILE, response.merchantMobility)
     }
 
     @Test

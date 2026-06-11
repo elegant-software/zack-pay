@@ -15,6 +15,8 @@ tags:
 - name: Merchant Product Categories
   description: Manage merchant product categories
 - name: Appearances
+  description: Admin appearance history across a MOBILE merchant
+- name: Appearances
   description: Discover currently active mobile merchant appearances
 - name: Merchant Onboarding
   description: Endpoints for merchant onboarding and lifecycle
@@ -24,8 +26,6 @@ tags:
   description: Support-facing branch calendar and appointment override
 - name: Employees
   description: Employee management for appointment booking
-- name: Appearances
-  description: Manage scheduled location appearances for MOBILE merchant branches
 - name: Dashboard
   description: KPI dashboards for platform admins and merchant app users
 - name: Invoices
@@ -67,6 +67,8 @@ tags:
   description: Merchant-level appointment scheduling configuration
 - name: Stripe Connect
   description: Stripe Connect Express account onboarding for merchants
+- name: Appearances
+  description: Manage scheduled location appearances for MOBILE merchants
 - name: Orders
   description: Create and inspect orders for shoppers
 paths:
@@ -554,44 +556,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BranchResponse"
-  /{version}/merchants/{merchantId}/branches/{branchId}/appearances/{appearanceId}/live-position:
-    put:
-      tags:
-      - Appearances
-      summary: Push a live GPS position to an active appearance
-      operationId: pushLivePosition
-      parameters:
-      - name: merchantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: branchId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: appearanceId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PushLivePositionRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/AppearanceResponse"
   /{version}/merchants/{merchantId}/appointments/{appointmentId}/reschedule:
     put:
       tags:
@@ -1982,7 +1946,7 @@ paths:
     get:
       tags:
       - Appearances
-      summary: List all appearances for a branch
+      summary: List active and upcoming appearances for a branch
       operationId: list_5
       parameters:
       - name: merchantId
@@ -1997,6 +1961,11 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -2024,6 +1993,11 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -2976,6 +2950,11 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -3007,9 +2986,79 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
+  /{version}/merchants/{merchantId}/branches/{branchId}/appearances/history:
+    get:
+      tags:
+      - Appearances
+      summary: List paginated appearance history for a branch
+      operationId: history_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - COMPLETED
+          - CANCELLED
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppearanceHistoryPageResponse"
   /{version}/merchants/{merchantId}/appointments/employee/{employeeId}:
     get:
       tags:
@@ -3049,6 +3098,66 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AppointmentResponse"
+  /{version}/merchants/{merchantId}/appearances/history:
+    get:
+      tags:
+      - Appearances
+      summary: List paginated appearance history across merchant branches
+      operationId: history_2
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - COMPLETED
+          - CANCELLED
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AppearanceHistoryPageResponse"
   /{version}/merchants/verticals:
     get:
       tags:
@@ -4049,74 +4158,6 @@ components:
           type: string
       required:
       - storageKey
-    PushLivePositionRequest:
-      type: object
-      properties:
-        latitude:
-          type: number
-          format: double
-        longitude:
-          type: number
-          format: double
-      required:
-      - latitude
-      - longitude
-    AppearanceResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        branchId:
-          type: string
-          format: uuid
-        merchantId:
-          type: string
-          format: uuid
-        declaredLatitude:
-          type: number
-          format: double
-        declaredLongitude:
-          type: number
-          format: double
-        liveLatitude:
-          type: number
-          format: double
-        liveLongitude:
-          type: number
-          format: double
-        effectiveLatitude:
-          type: number
-          format: double
-        effectiveLongitude:
-          type: number
-          format: double
-        startTime:
-          type: string
-          format: date-time
-        endTime:
-          type: string
-          format: date-time
-        name:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required:
-      - branchId
-      - createdAt
-      - declaredLatitude
-      - declaredLongitude
-      - effectiveLatitude
-      - effectiveLongitude
-      - endTime
-      - id
-      - merchantId
-      - startTime
-      - updatedAt
     SupportOverrideRequest:
       type: object
       properties:
@@ -4240,6 +4281,9 @@ components:
           - REJECTED
         merchantMobility:
           type: string
+          enum:
+          - BRICK_AND_MORTAR
+          - MOBILE
     MerchantDetailsResponse:
       type: object
       properties:
@@ -4312,6 +4356,9 @@ components:
           uniqueItems: true
         merchantMobility:
           type: string
+          enum:
+          - BRICK_AND_MORTAR
+          - MOBILE
       required:
       - address
       - applicationId
@@ -5474,7 +5521,79 @@ components:
       - declaredLatitude
       - declaredLongitude
       - endTime
+      - name
       - startTime
+    AppearanceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+        branchName:
+          type: string
+        merchantId:
+          type: string
+          format: uuid
+        declaredLatitude:
+          type: number
+          format: double
+        declaredLongitude:
+          type: number
+          format: double
+        liveLatitude:
+          type: number
+          format: double
+        liveLongitude:
+          type: number
+          format: double
+        effectiveLatitude:
+          type: number
+          format: double
+        effectiveLongitude:
+          type: number
+          format: double
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        cancelledAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - UPCOMING
+          - COMPLETED
+          - CANCELLED
+      required:
+      - branchId
+      - branchName
+      - createdAt
+      - declaredLatitude
+      - declaredLongitude
+      - effectiveLatitude
+      - effectiveLongitude
+      - endTime
+      - id
+      - merchantId
+      - name
+      - startTime
+      - status
+      - updatedAt
     MerchantBookAppointmentRequest:
       type: object
       properties:
@@ -5542,6 +5661,9 @@ components:
           type: array
           items:
             type: string
+            enum:
+            - BRICK_AND_MORTAR
+            - MOBILE
         statuses:
           type: array
           items:
@@ -5600,6 +5722,9 @@ components:
           type: string
         merchantMobility:
           type: string
+          enum:
+          - BRICK_AND_MORTAR
+          - MOBILE
         status:
           type: string
         lastUpdatedAt:
@@ -6369,6 +6494,31 @@ components:
       - connected
       - detailsSubmitted
       - enabledPaymentFlows
+    AppearanceHistoryPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppearanceResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
     MerchantVerticalResponse:
       type: object
       properties:

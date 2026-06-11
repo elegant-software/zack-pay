@@ -78,10 +78,7 @@ class MerchantManagementService(
             nextStatus = request.status
         )
         application.merchantStatus = request.merchantStatus ?: application.merchantStatus
-        request.merchantMobility?.uppercase()?.let {
-            application.merchantMobility = runCatching { MerchantMobility.valueOf(it) }
-                .getOrElse { throw IllegalArgumentException("Unknown merchantMobility: $it. Valid values: ${MerchantMobility.entries.joinToString()}") }
-        }
+        request.merchantMobility?.let { application.merchantMobility = it }
         application.website = resolvedContactInfo.website
         application.publicEmail = resolvedContactInfo.email
         application.publicPhoneNumber = resolvedContactInfo.phoneNumber
@@ -162,7 +159,7 @@ class MerchantManagementService(
         offerings = merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(id)
             .map { it.offeringCode }
             .toSortedSet(),
-        merchantMobility = merchantMobility.name,
+        merchantMobility = merchantMobility,
     )
 
     private fun signedUrl(storageKey: String?): String? =
