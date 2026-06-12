@@ -9,6 +9,17 @@ Helm chart for deploying the BlitzPay Spring Boot application to Kubernetes.
 - Nginx Ingress Controller installed in the cluster
 - cert-manager installed (for TLS certificate provisioning)
 - The `blitzpay-secrets` Kubernetes Secret created in the target namespace (see [SECRET-SETUP.md](./SECRET-SETUP.md))
+- An OpenTelemetry Collector accepting OTLP/HTTP and forwarding traces to Tempo
+
+## Tracing
+
+The chart exports 100% of application spans to the collector configured by
+`config.otlpTracesEndpoint`. The collector owns tail sampling and should retain
+all errors, all traces slower than one second, and 10% of normal successful
+traces. Disable export with `--set config.tracingEnabled=false`.
+
+Grafana, Tempo, Loki, collector, dashboard, and alert provisioning references
+live under `observability/`.
 
 ## Create the Secret First
 

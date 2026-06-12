@@ -1,14 +1,19 @@
 package com.elegant.software.blitzpay.payments.stripe
 
+import com.elegant.software.blitzpay.config.ObservabilitySupport
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.elegant.software.blitzpay.payments.stripe.internal.StripePaymentService
+import io.micrometer.observation.ObservationRegistry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.UUID
 
 class StripePaymentServiceTest {
 
-    private val service = StripePaymentService(StripeProperties(secretKey = "sk_test_dummy", publishableKey = "pk_test_dummy"))
+    private val service = StripePaymentService(
+        StripeProperties(secretKey = "sk_test_dummy", publishableKey = "pk_test_dummy"),
+        ObservabilitySupport(ObservationRegistry.NOOP),
+    )
     private val connectedAccountId = "acct_test_dummy"
     private val merchantId: UUID = UUID.randomUUID()
     private val paymentRequestId: UUID = UUID.randomUUID()

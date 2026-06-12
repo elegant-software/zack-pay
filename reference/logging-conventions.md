@@ -60,7 +60,9 @@ LogContext.with(
 Canonical MDC keys (defined as constants on `LogContext`):
 | Key                 | Meaning                                                              |
 |---------------------|----------------------------------------------------------------------|
-| `traceId`           | Per-request correlation id, set by `TraceIdWebFilter`                |
+| `requestId`         | HTTP correlation id from `X-Request-Id`, set by `RequestIdWebFilter` |
+| `traceId`           | OpenTelemetry distributed trace id, populated by Micrometer          |
+| `spanId`            | OpenTelemetry current span id, populated by Micrometer               |
 | `paymentRequestId`  | Payment request UUID on webhook / status / push paths                |
 | `eventId`           | TrueLayer event id being processed                                   |
 | `webhookId`         | TrueLayer `x-tl-webhook-id` header                                   |
@@ -70,18 +72,22 @@ Add a new key only when it names a long-lived identifier that spans multiple log
 
 ### Reactive chains
 
-MDC is thread-local; in fully reactive `Mono` / `Flux` chains it can be lost across schedulers. Use `Mono.deferContextual { ctx -> ... }` and read the `traceId` from the Reactor `Context` populated by `TraceIdWebFilter`. In virtual-thread / blocking handlers, MDC Just Works.
+MDC is thread-local; in fully reactive `Mono` / `Flux` chains it can be lost
+across schedulers. Micrometer context propagation carries trace context through
+instrumented reactive clients. Do not read or manufacture trace identifiers in
+application code.
 
 ---
 
 ## 4. Trace id propagation
 
-`TraceIdWebFilter` (highest-precedence `WebFilter`) assigns each inbound request a `traceId`, falling back to the value of an incoming `X-Request-Id` or `x-tl-webhook-id` header so upstream correlation ids survive. It:
-- Puts `traceId` in MDC (so every log line carries it)
-- Writes it into the Reactor `Context` under key `traceId`
-- Sets the `X-Request-Id` response header
+`RequestIdWebFilter` assigns an independent `requestId`, falling back to the
+incoming `X-Request-Id` or `x-tl-webhook-id`, and returns it as
+`X-Request-Id`. Micrometer owns W3C `traceparent` propagation and populates the
+real `traceId` and `spanId`.
 
-Outbound HTTP calls that fan out to other services should forward `traceId` as `X-Request-Id` on the outgoing request.
+Outbound HTTP calls forward `requestId` as `X-Request-Id`; the managed Spring
+HTTP builders propagate W3C trace context independently.
 
 ---
 
@@ -147,7 +153,7 @@ Rules:
 All log-related configuration lives in one of:
 - `src/main/resources/logback-spring.xml` — profiles, encoders, root and package levels
 - `application.yml` — no logging config by default; use `LOGGING_LEVEL_{PACKAGE}` env vars to override levels at deploy time
-- `TraceIdWebFilter` — request-scope MDC plumbing
+- `RequestIdWebFilter` — HTTP request-id MDC plumbing
 - `LogContext` — operation-scope MDC plumbing
 
 Do not introduce per-module Logback XML files; do not set `logging.level.*` under `spring:` in `application.yml`. Keep the log config in one place.

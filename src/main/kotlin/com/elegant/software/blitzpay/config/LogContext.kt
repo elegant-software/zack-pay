@@ -16,7 +16,9 @@ import org.slf4j.MDC
  * Safely restores any previously-set value (re-entrant).
  */
 object LogContext {
+    const val REQUEST_ID = "requestId"
     const val TRACE_ID = "traceId"
+    const val SPAN_ID = "spanId"
     const val PAYMENT_REQUEST_ID = "paymentRequestId"
     const val EVENT_ID = "eventId"
     const val WEBHOOK_ID = "webhookId"

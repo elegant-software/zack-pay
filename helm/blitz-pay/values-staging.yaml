@@ -18,6 +18,7 @@ ingress:
 
 config:
   springProfilesActive: staging
+  tracingEnabled: "true"
   frontendOrigin: https://blitzpay-admin-dashboard.elegantsoftware.de
   truelayerApiBase: https://api.truelayer-sandbox.com
   truelayerEnv: sandbox

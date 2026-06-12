@@ -2,7 +2,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: metrics,health,env
+        include: metrics,health,prometheus,env
   endpoint:
     env:
       show-values: ALWAYS

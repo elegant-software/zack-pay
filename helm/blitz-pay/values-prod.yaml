@@ -18,6 +18,7 @@ ingress:
 
 config:
   springProfilesActive: prod
+  tracingEnabled: "true"
   frontendOrigin: https://blitzpay-admin-dashboard.elegantsoftware.de
   truelayerApiBase: https://api.truelayer.com
   truelayerEnv: live  # true layer treats this as "production" environment

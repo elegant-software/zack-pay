@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.braintree
 
+import com.elegant.software.blitzpay.config.ObservabilitySupport
 import com.elegant.software.blitzpay.merchant.api.BraintreeCredentials
 import com.elegant.software.blitzpay.payments.braintree.internal.BraintreeGatewayFactory
 import com.elegant.software.blitzpay.payments.braintree.internal.BraintreePaymentService
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
+import io.micrometer.observation.ObservationRegistry
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
@@ -14,7 +16,10 @@ import java.util.UUID
 class BraintreePaymentServiceTest {
 
     private val gatewayFactory: BraintreeGatewayFactory = mock()
-    private val service = BraintreePaymentService(gatewayFactory)
+    private val service = BraintreePaymentService(
+        gatewayFactory,
+        ObservabilitySupport(ObservationRegistry.NOOP),
+    )
     private val merchantId: UUID = UUID.randomUUID()
     private val branchId: UUID = UUID.randomUUID()
     private val credentials = BraintreeCredentials(

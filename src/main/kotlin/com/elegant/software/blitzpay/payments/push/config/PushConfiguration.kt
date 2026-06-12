@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.push.config
 
+import com.elegant.software.blitzpay.config.propagateRequestId
 import io.netty.channel.ChannelOption
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
@@ -19,7 +20,7 @@ import java.util.concurrent.TimeUnit
 class PushConfiguration {
 
     @Bean
-    fun expoWebClient(properties: ExpoPushProperties): WebClient {
+    fun expoWebClient(properties: ExpoPushProperties, webClientBuilder: WebClient.Builder): WebClient {
         val httpClient = HttpClient.create()
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, properties.requestTimeoutMs.toInt())
             .doOnConnected { conn ->
@@ -27,7 +28,8 @@ class PushConfiguration {
                     .addHandlerLast(WriteTimeoutHandler(properties.requestTimeoutMs, TimeUnit.MILLISECONDS))
             }
 
-        val builder = WebClient.builder()
+        val builder = webClientBuilder
+            .propagateRequestId()
             .clientConnector(ReactorClientHttpConnector(httpClient))
             .defaultHeader("Accept", "application/json")
 

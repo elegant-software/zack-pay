@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.payments.braintree.internal
 
 import com.braintreegateway.ClientTokenRequest
 import com.braintreegateway.TransactionRequest
+import com.elegant.software.blitzpay.config.ObservabilitySupport
 import com.elegant.software.blitzpay.merchant.api.BraintreeCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -24,12 +25,17 @@ sealed class BraintreeCheckoutResult {
 }
 
 @Service
-class BraintreePaymentService(private val gatewayFactory: BraintreeGatewayFactory) {
+class BraintreePaymentService(
+    private val gatewayFactory: BraintreeGatewayFactory,
+    private val observability: ObservabilitySupport,
+) {
 
     private val log = LoggerFactory.getLogger(BraintreePaymentService::class.java)
 
     fun generateClientToken(credentials: BraintreeCredentials): String {
-        val token = gatewayFactory.get(credentials).clientToken().generate(ClientTokenRequest())
+        val token = observe("client-token") {
+            gatewayFactory.get(credentials).clientToken().generate(ClientTokenRequest())
+        }
         log.info("braintree client_token issued merchantId={}", credentials.merchantId)
         return token
     }
@@ -53,7 +59,9 @@ class BraintreePaymentService(private val gatewayFactory: BraintreeGatewayFactor
             .paymentMethodNonce(nonce)
             .orderId(orderId)
             .options().submitForSettlement(true).done()
-        val result = gatewayFactory.get(credentials).transaction().sale(request)
+        val result = observe("checkout", orderId) {
+            gatewayFactory.get(credentials).transaction().sale(request)
+        }
         return if (result.isSuccess && result.target != null) {
             val tx = result.target
             log.info(
@@ -72,4 +80,13 @@ class BraintreePaymentService(private val gatewayFactory: BraintreeGatewayFactor
             BraintreeCheckoutResult.Failure(msg, code)
         }
     }
+
+    private fun <T> observe(operation: String, orderReference: String? = null, block: () -> T): T =
+        observability.observe(
+            name = "blitzpay.external",
+            contextualName = "braintree $operation",
+            lowCardinality = mapOf("provider" to "braintree", "operation" to operation),
+            highCardinality = mapOf("order.reference" to orderReference),
+            block = block,
+        )
 }

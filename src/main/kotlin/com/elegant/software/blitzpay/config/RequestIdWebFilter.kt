@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
 import java.util.UUID
 
 /**
- * Assigns a per-request correlation id (`traceId`) and exposes it via:
+ * Assigns a per-request correlation id (`requestId`) and exposes it via:
  *  - SLF4J MDC for structured logging
  *  - Response header `X-Request-Id`
  *
@@ -22,26 +22,26 @@ import java.util.UUID
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class TraceIdWebFilter : Filter {
+class RequestIdWebFilter : Filter {
 
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
         val req = request as HttpServletRequest
         val res = response as HttpServletResponse
 
         val incoming = req.getHeader(REQUEST_ID_HEADER) ?: req.getHeader("x-tl-webhook-id")
-        val traceId = incoming?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
-        res.setHeader(REQUEST_ID_HEADER, traceId)
+        val requestId = incoming?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
+        res.setHeader(REQUEST_ID_HEADER, requestId)
 
-        MDC.put(TRACE_ID_KEY, traceId)
+        MDC.put(REQUEST_ID_KEY, requestId)
         try {
             chain.doFilter(request, response)
         } finally {
-            MDC.remove(TRACE_ID_KEY)
+            MDC.remove(REQUEST_ID_KEY)
         }
     }
 
     companion object {
-        const val TRACE_ID_KEY = "traceId"
+        const val REQUEST_ID_KEY = "requestId"
         const val REQUEST_ID_HEADER = "X-Request-Id"
     }
 }

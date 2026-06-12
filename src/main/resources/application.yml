@@ -44,13 +44,42 @@ spring:
         protocol: STREAMABLE
 
 management:
+  metrics:
+    tags:
+      application: ${OTEL_SERVICE_NAME:${spring.application.name}}
+      environment: ${OTEL_DEPLOYMENT_ENVIRONMENT:${spring.profiles.active:local}}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        blitzpay.external: true
   endpoints:
     web:
       exposure:
-        include: metrics,health
+        include: metrics,health,prometheus
   endpoint:
     metrics:
       enabled: true
+    prometheus:
+      access: read-only
+  tracing:
+    sampling:
+      # Keep all spans until the collector applies error/latency/probabilistic tail sampling.
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+    export:
+      otlp:
+        enabled: ${MANAGEMENT_TRACING_EXPORT_OTLP_ENABLED:false}
+  opentelemetry:
+    resource-attributes:
+      service.name: ${OTEL_SERVICE_NAME:${spring.application.name}}
+      service.version: ${OTEL_SERVICE_VERSION:dev}
+      deployment.environment.name: ${OTEL_DEPLOYMENT_ENVIRONMENT:${spring.profiles.active:local}}
+      cloud.platform: ${OTEL_CLOUD_PLATFORM:local}
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+          transport: ${OTEL_EXPORTER_OTLP_TRACES_TRANSPORT:http}
+          timeout: ${OTEL_EXPORTER_OTLP_TRACES_TIMEOUT:10s}
 springdoc:
   api-docs:
     path: /api-docs
