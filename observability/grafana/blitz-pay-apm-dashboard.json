@@ -1,0 +1,113 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$service\",environment=\"$environment\"}[5m]))",
+          "legendFormat": "requests/s"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}
+    },
+    {
+      "id": 2,
+      "title": "5xx error rate",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$service\",environment=\"$environment\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{application=\"$service\",environment=\"$environment\"}[5m])), 0.001)",
+          "legendFormat": "5xx ratio"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}
+    },
+    {
+      "id": 3,
+      "title": "Server latency",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$service\",environment=\"$environment\"}[5m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$service\",environment=\"$environment\"}[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$service\",environment=\"$environment\"}[5m])))",
+          "legendFormat": "p99"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}
+    },
+    {
+      "id": 4,
+      "title": "External dependency latency",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider, operation) (rate(blitzpay_external_seconds_sum{application=\"$service\",environment=\"$environment\"}[5m])) / clamp_min(sum by (provider, operation) (rate(blitzpay_external_seconds_count{application=\"$service\",environment=\"$environment\"}[5m])), 0.001)",
+          "legendFormat": "{{provider}} {{operation}}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+    },
+    {
+      "id": 5,
+      "title": "Recent error traces",
+      "type": "traces",
+      "datasource": {"type": "tempo", "uid": "tempo"},
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "query": "{ resource.service.name = \"$service\" && status = error }"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+    }
+  ],
+  "schemaVersion": 40,
+  "tags": ["blitz-pay", "apm"],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "custom",
+        "query": "blitz-pay",
+        "current": {"text": "blitz-pay", "value": "blitz-pay"}
+      },
+      {
+        "name": "environment",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "query": {"query": "label_values(http_server_requests_seconds_count{application=\"$service\"}, environment)"},
+        "current": {"text": "prod", "value": "prod"}
+      }
+    ]
+  },
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "BlitzPay APM",
+  "uid": "blitz-pay-apm",
+  "version": 1
+}

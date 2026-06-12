@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.truelayer.outbound
 
+import com.elegant.software.blitzpay.config.ObservabilitySupport
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentGateway
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentRequested
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentResult
@@ -18,7 +19,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 import java.net.URI
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -38,7 +38,8 @@ import java.util.concurrent.TimeoutException
 @Component
 class PaymentService(
     private val trueLayerProperties: TrueLayerProperties,
-    private val trueLayerClient: TrueLayerClient
+    private val trueLayerClient: TrueLayerClient,
+    private val observability: ObservabilitySupport,
 ) : PaymentGateway {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -92,12 +93,20 @@ class PaymentService(
         )
 
         val started = System.nanoTime()
-        val paymentResponse: CompletableFuture<ApiResponse<CreatePaymentResponse?>?> = trueLayerClient
-            .payments()
-            .createPayment(createTrueLayerPaymentRequest)
-
         val apiResponse: ApiResponse<CreatePaymentResponse?>? = try {
-            paymentResponse.get(API_CALL_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
+            observability.observe(
+                name = "blitzpay.external",
+                contextualName = "truelayer create-payment",
+                lowCardinality = mapOf("provider" to "truelayer", "operation" to "create-payment"),
+                highCardinality = mapOf(
+                    "order.reference" to paymentRequest.orderId,
+                    "payment.request.reference" to paymentRequest.paymentRequestId?.toString(),
+                ),
+            ) {
+                trueLayerClient.payments()
+                    .createPayment(createTrueLayerPaymentRequest)
+                    .get(API_CALL_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
+            }
         } catch (ex: TimeoutException) {
             log.error(
                 "truelayer createPayment TIMEOUT paymentRequestId={} orderId={} timeoutMs={}",

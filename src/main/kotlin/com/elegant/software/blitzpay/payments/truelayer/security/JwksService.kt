@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.truelayer.support
 
+import com.elegant.software.blitzpay.config.propagateRequestId
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
@@ -8,8 +9,11 @@ import java.time.Duration
 
 @EnableConfigurationProperties(TlWebhookProperties::class)
 @Service
-class JwksService(private val props: TlWebhookProperties) {
-    private val client = WebClient.builder().build()
+class JwksService(
+    private val props: TlWebhookProperties,
+    webClientBuilder: WebClient.Builder,
+) {
+    private val client = webClientBuilder.propagateRequestId().build()
     @Volatile private var cached: String? = null
     @Volatile private var cachedAt: Long = 0
 

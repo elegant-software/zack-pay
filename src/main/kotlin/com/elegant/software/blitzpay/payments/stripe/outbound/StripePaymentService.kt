@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.stripe.internal
 
+import com.elegant.software.blitzpay.config.ObservabilitySupport
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.stripe.exception.StripeException
 import com.stripe.model.PaymentIntent
@@ -24,7 +25,10 @@ data class StripeCheckoutSessionResult(
 )
 
 @Service
-class StripePaymentService(private val stripeProperties: StripeProperties) {
+class StripePaymentService(
+    private val stripeProperties: StripeProperties,
+    private val observability: ObservabilitySupport,
+) {
     private val log = LoggerFactory.getLogger(StripePaymentService::class.java)
 
     fun createIntent(
@@ -66,7 +70,9 @@ class StripePaymentService(private val stripeProperties: StripeProperties) {
             .setStripeAccount(connectedAccountId)
             .build()
         try {
-            val intent = PaymentIntent.create(paramsBuilder.build(), requestOptions)
+            val intent = observe("create-intent", orderId, paymentRequestId) {
+                PaymentIntent.create(paramsBuilder.build(), requestOptions)
+            }
             log.info(
                 "stripe create_intent id={} amount={} currency={} merchantId={} connectedAccountId={} branchId={} orderId={} paymentRequestId={} productId={}",
                 intent.id, amount, currency.lowercase(), merchantId, connectedAccountId, branchId, orderId, paymentRequestId, productId,
@@ -147,7 +153,9 @@ class StripePaymentService(private val stripeProperties: StripeProperties) {
             .setStripeAccount(connectedAccountId)
             .build()
         try {
-            val session = Session.create(params, requestOptions)
+            val session = observe("create-checkout-session", orderId, paymentRequestId) {
+                Session.create(params, requestOptions)
+            }
             log.info(
                 "stripe pay_by_bank checkout_session id={} amount={} currency={} merchantId={} connectedAccountId={} branchId={} orderId={} paymentRequestId={} productId={}",
                 session.id, amount, currency.lowercase(), merchantId, connectedAccountId, branchId, orderId, paymentRequestId, productId,
@@ -165,4 +173,20 @@ class StripePaymentService(private val stripeProperties: StripeProperties) {
             throw ex
         }
     }
+
+    private fun <T> observe(
+        operation: String,
+        orderReference: String,
+        paymentRequestReference: UUID,
+        block: () -> T,
+    ): T = observability.observe(
+        name = "blitzpay.external",
+        contextualName = "stripe $operation",
+        lowCardinality = mapOf("provider" to "stripe", "operation" to operation),
+        highCardinality = mapOf(
+            "order.reference" to orderReference,
+            "payment.request.reference" to paymentRequestReference.toString(),
+        ),
+        block = block,
+    )
 }

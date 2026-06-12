@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.storage
 
+import com.elegant.software.blitzpay.config.ObservabilitySupport
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -46,6 +47,10 @@ class StorageConfig {
             .build()
 
     @Bean
-    fun storageService(s3Client: S3Client, s3Presigner: S3Presigner, props: StorageProperties): StorageService =
-        S3StorageService(s3Client, s3Presigner, props)
+    fun storageService(
+        s3Client: S3Client,
+        s3Presigner: S3Presigner,
+        props: StorageProperties,
+        observability: ObservabilitySupport,
+    ): StorageService = S3StorageService(s3Client, s3Presigner, props, observability)
 }

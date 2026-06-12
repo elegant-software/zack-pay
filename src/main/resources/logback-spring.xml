@@ -11,7 +11,8 @@
     (default/prod) - JSON to stdout, all MDC keys included.
 
   MDC keys populated by the app:
-    traceId          - per-request correlation id (see TraceIdWebFilter).
+    requestId        - per-request X-Request-Id correlation id.
+    traceId/spanId   - distributed tracing identifiers populated by Micrometer.
     paymentRequestId - payment request UUID on webhook / status / push paths.
     eventId          - TrueLayer event id on webhook handling.
     webhookId        - TrueLayer x-tl-webhook-id header.
@@ -69,7 +70,7 @@
     <springProfile name="local | contract-test">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
-                <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%X{traceId:-                                    }] %cyan(%logger{36}) - %msg%n%ex</pattern>
+                <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [request=%X{requestId:-} trace=%X{traceId:-} span=%X{spanId:-}] %cyan(%logger{36}) - %msg%n%ex</pattern>
             </encoder>
         </appender>
         <root level="INFO">

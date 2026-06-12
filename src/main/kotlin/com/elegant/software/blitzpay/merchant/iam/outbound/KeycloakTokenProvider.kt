@@ -1,6 +1,7 @@
 package com.elegant.software.blitzpay.merchant.iam.outbound
 
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
+import com.elegant.software.blitzpay.config.propagateRequestId
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
 import org.springframework.http.MediaType
@@ -12,11 +13,14 @@ import java.util.concurrent.atomic.AtomicReference
 
 @Component
 @Profile("!contract-test")
-class KeycloakTokenProvider(private val properties: KeycloakProperties) {
+class KeycloakTokenProvider(
+    private val properties: KeycloakProperties,
+    restClientBuilder: RestClient.Builder,
+) {
 
     private val log = LoggerFactory.getLogger(KeycloakTokenProvider::class.java)
     private val cached = AtomicReference<CachedToken?>()
-    private val tokenClient = RestClient.builder().baseUrl(properties.serverUrl).build()
+    private val tokenClient = restClientBuilder.propagateRequestId().baseUrl(properties.serverUrl).build()
 
     fun getToken(): String {
         val current = cached.get()

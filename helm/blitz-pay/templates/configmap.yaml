@@ -7,6 +7,15 @@ metadata:
 data:
   SPRING_PROFILES_ACTIVE: {{ .Values.config.springProfilesActive | quote }}
   OTLP_LOGS_ENDPOINT: {{ .Values.config.otlpLogsEndpoint | quote }}
+  MANAGEMENT_TRACING_EXPORT_OTLP_ENABLED: {{ .Values.config.tracingEnabled | quote }}
+  MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: {{ .Values.config.otlpTracesEndpoint | quote }}
+  OTEL_EXPORTER_OTLP_TRACES_TRANSPORT: {{ .Values.config.otlpTracesTransport | quote }}
+  OTEL_EXPORTER_OTLP_TRACES_TIMEOUT: {{ .Values.config.otlpTracesTimeout | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.config.otelServiceName | quote }}
+  OTEL_SERVICE_VERSION: {{ .Values.config.otelServiceVersion | default (.Values.image.tag | default .Chart.AppVersion) | quote }}
+  OTEL_DEPLOYMENT_ENVIRONMENT: {{ .Values.config.springProfilesActive | quote }}
+  OTEL_CLOUD_PLATFORM: {{ .Values.config.otelCloudPlatform | quote }}
   TRUELAYER_API_BASE: {{ .Values.config.truelayerApiBase | quote }}
   TRUELAYER_ENV: {{ .Values.config.truelayerEnv | quote }}
   TRUELAYER_HTTP_LOGS: {{ .Values.config.truelayerHttpLogs | quote }}

@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.voice.config
 
+import com.elegant.software.blitzpay.config.propagateRequestId
 import io.netty.channel.ChannelOption
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit
 class VoiceConfiguration {
 
     @Bean
-    fun whisperWebClient(properties: VoiceProperties): WebClient {
+    fun whisperWebClient(properties: VoiceProperties, webClientBuilder: WebClient.Builder): WebClient {
         val httpClient = HttpClient.create()
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, properties.requestTimeoutMs.toInt())
             .doOnConnected { conn ->
@@ -25,7 +26,8 @@ class VoiceConfiguration {
                     .addHandlerLast(WriteTimeoutHandler(properties.requestTimeoutMs, TimeUnit.MILLISECONDS))
             }
 
-        val builder = WebClient.builder()
+        val builder = webClientBuilder
+            .propagateRequestId()
             .baseUrl(properties.whisper.baseUrl)
             .clientConnector(ReactorClientHttpConnector(httpClient))
             .defaultHeader(HttpHeaders.ACCEPT, "application/json")
