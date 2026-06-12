@@ -1,8 +1,15 @@
 name: Manual release
 
+run-name: "Release ${{ inputs.new_version || '(version TBD)' }} from ${{ inputs.base_branch }}"
+
 on:
   workflow_dispatch:
     inputs:
+      new_version:
+        description: 'Version being released (e.g. v1.3.0). Used in job name only.'
+        required: false
+        type: string
+        default: ''
       release_boundary:
         description: 'Tag to diff from (e.g. v1.2.3). Leave blank to use latest tag.'
         required: false
@@ -23,6 +30,7 @@ concurrency:
 
 jobs:
   manual-release:
+    name: "Release ${{ inputs.new_version || '(version TBD)' }}"
     permissions:
       contents: write
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/manual-release.yml@main
