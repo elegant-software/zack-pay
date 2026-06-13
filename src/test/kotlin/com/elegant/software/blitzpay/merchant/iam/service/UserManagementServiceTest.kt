@@ -7,16 +7,17 @@ import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantUserAssignment
-import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupClient
 import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupNames
-import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupRepresentation
 import com.elegant.software.blitzpay.merchant.iam.repository.MerchantUserAssignmentRepository
 import com.elegant.software.blitzpay.merchant.iam.web.CreateAssignmentRequest
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.keycloak.admin.client.Keycloak
+import org.keycloak.admin.client.resource.GroupResource
+import org.keycloak.admin.client.resource.GroupsResource
 import org.keycloak.admin.client.resource.RealmResource
 import org.keycloak.admin.client.resource.UserResource
 import org.keycloak.admin.client.resource.UsersResource
@@ -37,7 +38,7 @@ class UserManagementServiceTest {
     private val realmResource = mock<RealmResource>()
     private val usersResource = mock<UsersResource>()
     private val userResource = mock<UserResource>()
-    private val groupClient = mock<KeycloakGroupClient>()
+    private val groupsResource = mock<GroupsResource>()
     private val assignmentRepository = mock<MerchantUserAssignmentRepository>()
     private val merchantRepository = mock<MerchantApplicationRepository>()
     private val branchRepository = mock<MerchantBranchRepository>()
@@ -46,7 +47,7 @@ class UserManagementServiceTest {
     )
 
     private val service = UserManagementService(
-        keycloak, properties, groupClient, assignmentRepository, merchantRepository, branchRepository
+        keycloak, properties, assignmentRepository, merchantRepository, branchRepository
     )
 
     private val userId = UUID.randomUUID()
@@ -57,12 +58,41 @@ class UserManagementServiceTest {
     private val merchantGroupId = "merchant-group-id"
     private val branchGroupId = "branch-group-id"
 
+    @BeforeEach
+    fun setUp() {
+        whenever(keycloak.realm(properties.realm)).thenReturn(realmResource)
+        whenever(realmResource.users()).thenReturn(usersResource)
+        whenever(realmResource.groups()).thenReturn(groupsResource)
+    }
+
+    private fun group(id: String, name: String, attributes: Map<String, List<String>> = emptyMap()) =
+        GroupRepresentation().apply { this.id = id; this.name = name; this.attributes = attributes }
+
+    private fun groupResource(parentId: String): GroupResource =
+        mock<GroupResource>().also { whenever(groupsResource.group(parentId)).thenReturn(it) }
+
+    private fun stubRootGroup() {
+        whenever(groupsResource.groups(KeycloakGroupNames.ROOT, true, 0, 10, false))
+            .thenReturn(listOf(group(rootGroupId, KeycloakGroupNames.ROOT)))
+    }
+
+    private fun stubMerchantGroup(merchantId: UUID) {
+        val rootResource = groupResource(rootGroupId)
+        whenever(rootResource.getSubGroups(KeycloakGroupNames.merchantGroup(merchantId), true, 0, 200, false))
+            .thenReturn(listOf(group(merchantGroupId, KeycloakGroupNames.merchantGroup(merchantId))))
+    }
+
+    private fun stubBranchGroup(merchantId: UUID, branchId: UUID) {
+        val merchantResource = groupResource(merchantGroupId)
+        whenever(merchantResource.getSubGroups(KeycloakGroupNames.branchGroup(branchId), true, 0, 200, false))
+            .thenReturn(listOf(group(branchGroupId, KeycloakGroupNames.branchGroup(branchId))))
+    }
+
     @Test
     fun `searchUsers delegates to Keycloak and maps results`() {
         val kcUser = UserRepresentation().apply {
             id = "kc-id"; firstName = "Alice"; lastName = "Smith"; email = "alice@example.com"; isEnabled = true
         }
-        stubRealmUsers()
         whenever(usersResource.search("alice", 0, 50)).thenReturn(listOf(kcUser))
         whenever(usersResource.get("kc-id")).thenReturn(userResource)
         whenever(userResource.groups()).thenReturn(listOf(
@@ -106,7 +136,6 @@ class UserManagementServiceTest {
 
     @Test
     fun `createAssignment for MERCHANT_MANAGER places user in merchant group and persists record`() {
-        stubRealmUsers()
         stubRootGroup()
         stubMerchantGroup(merchantId)
         whenever(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchantWithId(merchantId, "Test Merchant")))
@@ -124,7 +153,6 @@ class UserManagementServiceTest {
 
     @Test
     fun `createAssignment for MERCHANT_EMPLOYEE places user in branch group`() {
-        stubRealmUsers()
         stubRootGroup()
         stubMerchantGroup(merchantId)
         stubBranchGroup(merchantId, branchId)
@@ -169,11 +197,11 @@ class UserManagementServiceTest {
             id = assignmentId, keycloakUserId = userId, merchantApplicationId = merchantId,
             branchId = null, role = MerchantOperationsRole.MERCHANT_MANAGER
         )
-        stubRealmUsers()
         stubRootGroup()
         stubMerchantGroup(merchantId)
         whenever(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment))
         whenever(usersResource.get(userId.toString())).thenReturn(userResource)
+        whenever(assignmentRepository.findAllByKeycloakUserId(userId)).thenReturn(emptyList())
 
         service.revokeAssignment(userId, assignmentId)
 
@@ -192,28 +220,6 @@ class UserManagementServiceTest {
 
         assertThrows<IllegalArgumentException> { service.revokeAssignment(userId, assignmentId) }
         verify(userResource, never()).leaveGroup(any())
-    }
-
-    // --- helpers ---
-
-    private fun stubRealmUsers() {
-        whenever(keycloak.realm(properties.realm)).thenReturn(realmResource)
-        whenever(realmResource.users()).thenReturn(usersResource)
-    }
-
-    private fun stubRootGroup() {
-        whenever(groupClient.searchGroups(KeycloakGroupNames.ROOT, true))
-            .thenReturn(listOf(KeycloakGroupRepresentation(rootGroupId, KeycloakGroupNames.ROOT, "/${KeycloakGroupNames.ROOT}")))
-    }
-
-    private fun stubMerchantGroup(merchantId: UUID) {
-        whenever(groupClient.getChildren(rootGroupId, KeycloakGroupNames.merchantGroup(merchantId), true))
-            .thenReturn(listOf(KeycloakGroupRepresentation(merchantGroupId, KeycloakGroupNames.merchantGroup(merchantId), "")))
-    }
-
-    private fun stubBranchGroup(merchantId: UUID, branchId: UUID) {
-        whenever(groupClient.getChildren(merchantGroupId, KeycloakGroupNames.branchGroup(branchId), true))
-            .thenReturn(listOf(KeycloakGroupRepresentation(branchGroupId, KeycloakGroupNames.branchGroup(branchId), "")))
     }
 
     private fun merchantWithId(id: UUID, name: String): MerchantApplication =

@@ -3,7 +3,6 @@ package com.elegant.software.blitzpay.merchant.iam.service
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantUserAssignment
-import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupClient
 import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupNames
 import com.elegant.software.blitzpay.merchant.iam.repository.MerchantUserAssignmentRepository
 import com.elegant.software.blitzpay.merchant.iam.web.CreateAssignmentRequest
@@ -13,6 +12,7 @@ import com.elegant.software.blitzpay.merchant.iam.web.UserSearchResult
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
 import org.keycloak.admin.client.Keycloak
+import org.keycloak.admin.client.resource.GroupsResource
 import org.keycloak.representations.idm.GroupRepresentation
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
@@ -25,7 +25,6 @@ import java.util.UUID
 class UserManagementService(
     private val keycloak: Keycloak,
     private val keycloakProperties: KeycloakProperties,
-    private val groupClient: KeycloakGroupClient,
     private val assignmentRepository: MerchantUserAssignmentRepository,
     private val merchantRepository: MerchantApplicationRepository,
     private val branchRepository: MerchantBranchRepository,
@@ -142,7 +141,7 @@ class UserManagementService(
     }
 
     private fun resolveMerchantAppUsersGroupId(): String? =
-        groupClient.searchGroups(KeycloakGroupNames.MERCHANT_APP_USERS, true).firstOrNull()?.id.also {
+        groups().findByName(KeycloakGroupNames.MERCHANT_APP_USERS)?.id.also {
             if (it == null) log.warn("'{}' group not found in Keycloak", KeycloakGroupNames.MERCHANT_APP_USERS)
         }
 
@@ -152,28 +151,30 @@ class UserManagementService(
             MerchantOperationsRole.MERCHANT_MANAGER -> KeycloakGroupNames.MERCHANT_MANAGER
             MerchantOperationsRole.MERCHANT_EMPLOYEE -> KeycloakGroupNames.MERCHANT_EMPLOYEE
         }
-        return groupClient.getChildren(merchantAppGroupId, roleName, true).firstOrNull()?.id.also {
+        return groups().group(merchantAppGroupId).getSubGroups(roleName, true, 0, 200, false).firstOrNull()?.id.also {
             if (it == null) log.warn("role group '{}' not found under merchant-app-users", roleName)
         }
     }
 
     private fun resolveTargetGroupId(merchantId: UUID, branchId: UUID?): String {
-        val rootGroups = groupClient.searchGroups(KeycloakGroupNames.ROOT, true)
-        val rootId = rootGroups.firstOrNull()?.id
+        val rootId = groups().findByName(KeycloakGroupNames.ROOT)?.id
             ?: throw IllegalStateException("root merchants group not found in Keycloak")
 
         val merchantGroupName = KeycloakGroupNames.merchantGroup(merchantId)
-        val merchantGroups = groupClient.getChildren(rootId, merchantGroupName, true)
-        val merchantGroupId = merchantGroups.firstOrNull()?.id
+        val merchantGroupId = groups().group(rootId).getSubGroups(merchantGroupName, true, 0, 200, false).firstOrNull()?.id
             ?: throw IllegalStateException("merchant group not found: $merchantGroupName")
 
         if (branchId == null) return merchantGroupId
 
         val branchGroupName = KeycloakGroupNames.branchGroup(branchId)
-        val branchGroups = groupClient.getChildren(merchantGroupId, branchGroupName, true)
-        return branchGroups.firstOrNull()?.id
+        return groups().group(merchantGroupId).getSubGroups(branchGroupName, true, 0, 200, false).firstOrNull()?.id
             ?: throw IllegalStateException("branch group not found: $branchGroupName")
     }
+
+    private fun groups(): GroupsResource = keycloak.realm(keycloakProperties.realm).groups()
+
+    private fun GroupsResource.findByName(name: String): GroupRepresentation? =
+        groups(name, true, 0, 10, false).firstOrNull()
 
     private fun MerchantUserAssignment.toResponse(
         merchantName: String? = null,
