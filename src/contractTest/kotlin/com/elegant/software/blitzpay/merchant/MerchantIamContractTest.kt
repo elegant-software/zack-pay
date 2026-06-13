@@ -8,14 +8,12 @@ import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
 import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
 import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
-import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupClient
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.http.MediaType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
@@ -28,9 +26,6 @@ import kotlin.test.assertNotNull
 
 @Import(MerchantIamContractTest.TestConfig::class)
 class MerchantIamContractTest : ContractVerifierBase() {
-
-    @MockitoBean
-    private lateinit var keycloakGroupClient: KeycloakGroupClient
 
     @Autowired
     private lateinit var publishedEventSink: PublishedEventSink
