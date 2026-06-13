@@ -2,12 +2,14 @@ package com.elegant.software.blitzpay.merchant.iam.config
 
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 
 @Configuration
 @Profile("!contract-test")
+@EnableConfigurationProperties(KeycloakProperties::class)
 class KeycloakAdminClientConfig {
 
     @Bean
