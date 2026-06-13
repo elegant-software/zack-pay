@@ -5,6 +5,8 @@ spring:
     default: local
   main:
     web-application-type: servlet
+  reactor:
+    context-propagation: auto
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/quickpay_db}
     driver-class-name: org.postgresql.Driver
@@ -44,6 +46,9 @@ spring:
         protocol: STREAMABLE
 
 management:
+  observations:
+    annotations:
+      enabled: true
   metrics:
     tags:
       application: ${OTEL_SERVICE_NAME:${spring.application.name}}
@@ -52,6 +57,7 @@ management:
       percentiles-histogram:
         http.server.requests: true
         blitzpay.external: true
+        blitzpay.repository: true
   endpoints:
     web:
       exposure:

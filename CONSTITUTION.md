@@ -91,6 +91,7 @@ For technology-specific patterns and detailed best practices, refer to:
 | Liquibase (schema migrations, changeset conventions, FK deletion strategy) | [`reference/liquibase-best-practices.md`](reference/liquibase-best-practices.md) |
 | FK deletion strategy (RESTRICT default, no CASCADE, explicit service deletion) | [`reference/liquibase-best-practices.md#10-foreign-key-deletion-strategy`](reference/liquibase-best-practices.md#10-foreign-key-deletion-strategy) |
 | HTTP Interface clients (`@HttpExchange` + `@ImportHttpServices`, token filters, contract-test guard) | [`reference/api-calls-best-practice.md`](reference/api-calls-best-practice.md) |
+| Observability (Observation API, naming, tag cardinality, data policy, aspects) | [`reference/observability-conventions.md`](reference/observability-conventions.md) |
 | Docker (multi-stage builds, layer caching, `.dockerignore`) | [`reference/docker-best-practices.md`](reference/docker-best-practices.md) |
 | Kubernetes ingress troubleshooting (kind, nginx, TLS, NodePort) | [`reference/k8s-ingress-troubleshooting/`](reference/k8s-ingress-troubleshooting/) |
 | socat (install, run modes, debug `T` state, systemd, NodePort bridging) | [`reference/utils/socat-guide.md`](reference/utils/socat-guide.md) |
