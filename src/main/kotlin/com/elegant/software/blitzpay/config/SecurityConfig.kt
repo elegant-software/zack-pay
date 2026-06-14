@@ -26,6 +26,8 @@ class SecurityConfig {
                     .requestMatchers("/*/webhooks/**").permitAll()
                     // Stripe Connect OAuth return redirect — browser redirect, no token available
                     .requestMatchers("/stripe-connect/return").permitAll()
+                    // OAuth2 / MCP discovery endpoints — must be public per RFC 8615
+                    .requestMatchers("/.well-known/**").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { it.jwt(Customizer.withDefaults()) }
