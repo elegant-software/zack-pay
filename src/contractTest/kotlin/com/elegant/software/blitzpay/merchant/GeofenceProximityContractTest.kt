@@ -168,6 +168,11 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
         whenever(proximityEventRepository.existsByRegionIdAndEventTypeAndDeviceIdAndReceivedAtAfter(
             any(), any(), any(), any()
         )).thenReturn(true)
+        // With an authenticated request the controller uses user-subject-based dedup;
+        // both paths must indicate duplicate for the response to be recorded=false.
+        whenever(proximityEventRepository.existsByRegionIdAndEventTypeAndUserSubjectAndReceivedAtAfter(
+            any(), any(), any(), any()
+        )).thenReturn(true)
 
         webTestClient.post()
             .uri("/v1/proximity")
