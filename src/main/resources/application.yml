@@ -1,6 +1,11 @@
 spring:
   application:
     name: quickpay
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: "${KEYCLOAK_IAM_SERVER_URL:https://keycloak.elegantsoftware.de}/realms/${KEYCLOAK_IAM_REALM:blitzpay}"
   profiles:
     default: local
   main:
@@ -62,6 +67,7 @@ management:
     web:
       exposure:
         include: metrics,health,prometheus
+        exclude: env
   endpoint:
     metrics:
       enabled: true

@@ -283,6 +283,7 @@ abstract class ContractVerifierBase {
         }
         webTestClient = WebTestClient.bindToServer()
             .baseUrl("http://localhost:$port")
+            .defaultHeader("Authorization", "Bearer $fakeJwt")
             .build()
     }
 }

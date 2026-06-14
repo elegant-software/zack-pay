@@ -98,6 +98,7 @@ dependencies {
     // Shared platform (all Modulith modules)
     // Purpose: web/http, JSON, Modulith runtime, OpenAPI
     // ----------------------------
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.micrometer.tracing.opentelemetry)
     implementation(libs.aspectjweaver)

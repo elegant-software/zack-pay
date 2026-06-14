@@ -15,7 +15,10 @@ import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.context.annotation.Profile
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.web.reactive.function.client.WebClient
+import java.time.Instant
 
 @TestConfiguration
 @Profile("contract-test")
@@ -50,5 +53,18 @@ class ContractTestConfig {
             on { embeddables } doReturn emptySet()
         }
         return mock { on { getMetamodel() } doReturn metamodel }
+    }
+
+    // Accepts any bearer token so contract tests don't need a live Keycloak server.
+    @Bean
+    @Primary
+    fun mockJwtDecoder(): JwtDecoder = JwtDecoder { token ->
+        Jwt.withTokenValue(token)
+            .header("alg", "none")
+            .subject("contract-test-user")
+            .issuer("https://contract-test.local/realms/blitzpay")
+            .issuedAt(Instant.now())
+            .expiresAt(Instant.now().plusSeconds(3600))
+            .build()
     }
 }
