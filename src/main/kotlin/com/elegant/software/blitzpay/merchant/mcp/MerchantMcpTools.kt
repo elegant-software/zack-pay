@@ -34,7 +34,8 @@ class MerchantMcpTools(
     @McpTool(
         name = "merchant_api_guide",
         description = "Call this before starting any merchant, category, or product workflow. " +
-            "Returns tool-selection rules and the recommended operation order."
+            "Returns tool-selection rules and the recommended operation order.",
+        annotations = McpTool.McpAnnotations(title = "Merchant API Guide")
     )
     fun merchantApiGuide(): String = """
         TOOL SELECTION
@@ -83,14 +84,16 @@ class MerchantMcpTools(
     @McpTool(
         name = "merchant_list_active_verticals",
         description = "List valid merchant businessType codes and display names from the active merchant vertical catalog. " +
-            "Use this before merchant_upsert when businessType is unknown or needs validation."
+            "Use this before merchant_upsert when businessType is unknown or needs validation.",
+        annotations = McpTool.McpAnnotations(title = "List Active Verticals")
     )
     fun listActiveMerchantVerticals(): List<MerchantVerticalResponse> =
         merchantVerticalService.listActive()
 
     @McpTool(
         name = "merchant_id_by_name",
-        description = "Get merchant ID by merchant name"
+        description = "Get merchant ID by merchant name",
+        annotations = McpTool.McpAnnotations(title = "Merchant ID by Name")
     )
     fun getMerchantIdByName(merchantName: String): String {
         return merchantRegistrationService.findByName(merchantName)?.id?.toString()
@@ -103,7 +106,8 @@ class MerchantMcpTools(
             "Pass mobility = \"MOBILE\" for food trucks, street sellers, circuses, pop-up theatres, or any merchant that operates from variable locations. " +
             "Omit mobility (or pass \"BRICK_AND_MORTAR\") for fixed-location merchants. " +
             "Optionally uploads a logo via logoBase64 and logoContentType only; use a clear, high-quality merchant logo in JPEG, PNG, or WebP format. " +
-            "Returns full merchant details; use the returned applicationId as merchantId in subsequent branch and product calls."
+            "Returns full merchant details; use the returned applicationId as merchantId in subsequent branch and product calls.",
+        annotations = McpTool.McpAnnotations(title = "Merchant Upsert")
     )
     fun upsertMerchant(
         merchantName: String,

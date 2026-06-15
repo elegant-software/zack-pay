@@ -63,7 +63,7 @@ class MerchantProductController(private val merchantProductService: MerchantProd
     fun get(
         @PathVariable merchantId: UUID,
         @PathVariable productId: UUID,
-        @RequestParam("branchId") branchId: UUID,
+        @RequestParam("branchId", required = false) branchId: UUID?,
     ): ResponseEntity<ProductResponse> =
         ResponseEntity.ok(merchantProductService.get(merchantId, productId, branchId))
 

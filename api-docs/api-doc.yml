@@ -3098,6 +3098,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AppointmentResponse"
+  /{version}/merchants/{merchantId}/appearances/operational:
+    get:
+      tags:
+      - Appearances
+      summary: List active and upcoming appearances across all merchant branches
+      operationId: operational
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppearanceResponse"
   /{version}/merchants/{merchantId}/appearances/history:
     get:
       tags:
@@ -3431,6 +3453,18 @@ paths:
             application/json:
               schema:
                 type: object
+  /.well-known/oauth-authorization-server:
+    get:
+      tags:
+      - o-auth-authorization-server-metadata-controller
+      operationId: metadata
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
   /{version}/user-management/users/{userId}/assignments/{assignmentId}:
     delete:
       tags:
