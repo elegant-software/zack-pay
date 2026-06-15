@@ -19,7 +19,8 @@ class BranchMcpTools(
 
     @McpTool(
         name = "branch_id_by_name",
-        description = "Get branch ID by branch name and merchant ID"
+        description = "Get branch ID by branch name and merchant ID",
+        annotations = McpTool.McpAnnotations(title = "Branch ID by Name")
     )
     fun getBranchIdByName(merchantId: String, branchName: String): String {
         return merchantBranchService.findByNameIncludingInactive(UUID.fromString(merchantId), branchName)?.id?.toString()
@@ -30,7 +31,8 @@ class BranchMcpTools(
         name = "branch_id_by_name_or_create",
         description = "Get or create branch ID by branch name and merchant ID. Optional address, latitude, longitude, geofenceRadiusMeters, and googlePlaceId update the branch when provided. " +
             "GOOD: provide branch address when known. BEST: provide address plus latitude/longitude for the same branch. If coordinates are unknown, still provide the branch address when available. " +
-            "For MOBILE merchants the address is the depot or registered business address, not the operating location."
+            "For MOBILE merchants the address is the depot or registered business address, not the operating location.",
+        annotations = McpTool.McpAnnotations(title = "Branch: Get or Create")
     )
     fun getOrCreateBranchId(
         merchantId: String,
@@ -74,7 +76,8 @@ class BranchMcpTools(
             "GOOD: provide branch address when known. BEST: provide address plus latitude/longitude for the same branch. If coordinates are unknown, still provide the branch address when available. " +
             "For MOBILE merchants the address fields are the depot or registered business address, not the operating location. " +
             "Returns created, updated, skipped (within-batch duplicates), and failed items with their IDs. " +
-            "Max 200 branches per call."
+            "Max 200 branches per call.",
+        annotations = McpTool.McpAnnotations(title = "Branches: Bulk Upsert")
     )
     fun bulkUpsertBranches(
         merchantId: String,

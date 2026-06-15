@@ -20,7 +20,8 @@ class CategoryMcpTools(
 
     @McpTool(
         name = "category_id_by_name",
-        description = "Get product category ID by name for a given merchant"
+        description = "Get product category ID by name for a given merchant",
+        annotations = McpTool.McpAnnotations(title = "Category ID by Name")
     )
     fun getCategoryIdByName(merchantId: String, categoryName: String): String {
         return merchantProductCategoryService.findByName(UUID.fromString(merchantId), categoryName)?.id?.toString()
@@ -30,7 +31,8 @@ class CategoryMcpTools(
     @McpTool(
         name = "category_id_by_name_or_create",
         description = "Get or create a SINGLE product category by name. " +
-            "WARNING: if you need to create 2 or more categories, call categories_bulk_create instead — do NOT call this tool in a loop."
+            "WARNING: if you need to create 2 or more categories, call categories_bulk_create instead — do NOT call this tool in a loop.",
+        annotations = McpTool.McpAnnotations(title = "Category: Get or Create")
     )
     fun getOrCreateCategoryId(merchantId: String, categoryName: String): String {
         val mId = UUID.fromString(merchantId)
@@ -43,7 +45,8 @@ class CategoryMcpTools(
 
     @McpTool(
         name = "merchant_list_product_categories",
-        description = "List all product categories for a merchant"
+        description = "List all product categories for a merchant",
+        annotations = McpTool.McpAnnotations(title = "List Product Categories")
     )
     fun listProductCategories(merchantId: String): List<ProductCategoryResponse> =
         merchantProductCategoryService.list(UUID.fromString(merchantId))
@@ -53,7 +56,8 @@ class CategoryMcpTools(
         description = "PREFERRED tool when creating 2 or more categories — use this instead of calling category_id_by_name_or_create in a loop. " +
             "Creates multiple product categories for a merchant in a single call. " +
             "Returns created, skipped (already-existing or within-batch duplicates), and failed items with their IDs. " +
-            "Max 200 items per call."
+            "Max 200 items per call.",
+        annotations = McpTool.McpAnnotations(title = "Categories: Bulk Create")
     )
     fun bulkCreateCategories(
         merchantId: String,

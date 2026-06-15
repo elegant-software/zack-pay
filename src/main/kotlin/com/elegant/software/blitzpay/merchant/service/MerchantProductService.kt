@@ -104,11 +104,19 @@ class MerchantProductService(
     }
 
     @Transactional(readOnly = true)
-    fun get(merchantId: UUID, productId: UUID, merchantBranchId: UUID): ProductResponse {
+    fun get(merchantId: UUID, productId: UUID, merchantBranchId: UUID?): ProductResponse {
         requireMerchantExists(merchantId)
         enableTenantFilter(merchantId)
-        val product = productRepository.findByIdAndMerchantBranchId(productId, merchantBranchId)
-            .orElseThrow { NoSuchElementException("Product not found: $productId") }
+        val product = if (merchantBranchId != null) {
+            productRepository.findByIdAndMerchantBranchId(productId, merchantBranchId)
+                .orElseThrow { NoSuchElementException("Product not found: $productId") }
+        } else {
+            productRepository.findById(productId)
+                .orElseThrow { NoSuchElementException("Product not found: $productId") }
+                .also {
+                    if (it.merchantApplicationId != merchantId) throw NoSuchElementException("Product not found: $productId")
+                }
+        }
         return product.toResponse()
     }
 

@@ -78,8 +78,8 @@ class MerchantBranchService(
 
     fun get(merchantId: UUID, branchId: UUID): BranchResponse {
         requireMerchantExists(merchantId)
-        val branch = merchantBranchRepository.findByIdAndActiveTrue(branchId)
-            ?: throw NoSuchElementException("Branch not found: $branchId")
+        val branch = merchantBranchRepository.findById(branchId)
+            .orElseThrow { NoSuchElementException("Branch not found: $branchId") }
         if (branch.merchantApplicationId != merchantId) {
             throw NoSuchElementException("Branch not found: $branchId")
         }

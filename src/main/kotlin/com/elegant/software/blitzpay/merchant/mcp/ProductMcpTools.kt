@@ -35,7 +35,8 @@ class ProductMcpTools(
         description = "Update a product's name, description, price, and category for a merchant. " +
             "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly. " +
             "Optional product image upload uses imageBase64 and imageContentType only. " +
-            "Images must be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller."
+            "Images must be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller.",
+        annotations = McpTool.McpAnnotations(title = "Product Update")
     )
     fun updateProduct(
         merchantId: String,
@@ -80,7 +81,8 @@ class ProductMcpTools(
 
     @McpTool(
         name = "product_id_by_name",
-        description = "Get product ID by product name, merchant ID, and branch ID"
+        description = "Get product ID by product name, merchant ID, and branch ID",
+        annotations = McpTool.McpAnnotations(title = "Product ID by Name")
     )
     fun getProductIdByName(merchantId: String, branchId: String, productName: String): String {
         return merchantProductService.findByNameIncludingInactive(
@@ -96,7 +98,8 @@ class ProductMcpTools(
             "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly. " +
             "Optional product image upload uses imageBase64 and imageContentType only. " +
             "Images must be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller. " +
-            "WARNING: if you need to create or update 2 or more products, call products_bulk_upsert instead — do NOT call this tool in a loop."
+            "WARNING: if you need to create or update 2 or more products, call products_bulk_upsert instead — do NOT call this tool in a loop.",
+        annotations = McpTool.McpAnnotations(title = "Product: Get or Create")
     )
     fun getOrCreateProductId(
         merchantId: String,
@@ -169,7 +172,8 @@ class ProductMcpTools(
             "Returns created, updated, skipped (within-batch duplicates only), and failed items with their IDs. " +
             "Accepts categoryName per item (resolved or created automatically) or categoryId. " +
             "Re-running the same payload is safe — existing products are updated, not duplicated. " +
-            "Max 200 items per call. Images are not supported in bulk; use merchant_product_update after import with clear, high-quality, directly related JPEG/PNG/WebP images that are 5 MB or smaller."
+            "Max 200 items per call. Images are not supported in bulk; use merchant_product_update after import with clear, high-quality, directly related JPEG/PNG/WebP images that are 5 MB or smaller.",
+        annotations = McpTool.McpAnnotations(title = "Products: Bulk Upsert")
     )
     fun bulkUpsertProducts(
         merchantId: String,
