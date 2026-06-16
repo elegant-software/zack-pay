@@ -28,6 +28,8 @@ class SecurityConfig {
                     .requestMatchers("/stripe-connect/return").permitAll()
                     // OAuth2 / MCP discovery endpoints — must be public per RFC 8615
                     .requestMatchers("/.well-known/**").permitAll()
+                    // Swagger UI — WebSecurityCustomizer was removed in Spring Security 7; permit explicitly
+                    .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs", "/api-docs/**").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { it.jwt(Customizer.withDefaults()) }

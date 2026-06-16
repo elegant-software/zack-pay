@@ -96,6 +96,11 @@ springdoc:
   api-docs:
     path: /api-docs
   show-actuator: true
+  swagger-ui:
+    oauth:
+      client-id: ${SWAGGER_OAUTH2_CLIENT_ID:blitzpay-api}
+      use-pkce-with-authorization-code-grant: true
+      scopes: openid profile
 api:
   default-version: 1
   versions:

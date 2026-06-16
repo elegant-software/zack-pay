@@ -1,9 +1,16 @@
 package com.elegant.software.blitzpay.config
 
 import io.swagger.v3.oas.models.Components
+import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.Schema
+import io.swagger.v3.oas.models.security.OAuthFlow
+import io.swagger.v3.oas.models.security.OAuthFlows
+import io.swagger.v3.oas.models.security.Scopes
+import io.swagger.v3.oas.models.security.SecurityRequirement
+import io.swagger.v3.oas.models.security.SecurityScheme
 import org.springdoc.core.customizers.OpenApiCustomizer
 import org.springdoc.core.models.GroupedOpenApi
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
@@ -12,7 +19,46 @@ import org.springframework.http.MediaType
 class OpenApiConfig(
     private val apiVersionProperties: ApiVersionProperties,
     private val openApiGroupProperties: OpenApiGroupProperties,
+    @Value("\${keycloak.iam.server-url}") private val keycloakServerUrl: String,
+    @Value("\${keycloak.iam.realm}") private val keycloakRealm: String,
 ) {
+
+    @Bean
+    fun openApi(): OpenAPI {
+        val baseUrl = "$keycloakServerUrl/realms/$keycloakRealm/protocol/openid-connect"
+        return OpenAPI()
+            .components(
+                Components()
+                    .addSecuritySchemes(
+                        "bearerAuth",
+                        SecurityScheme()
+                            .type(SecurityScheme.Type.HTTP)
+                            .scheme("bearer")
+                            .bearerFormat("JWT")
+                            .description("Paste a Keycloak access token directly (no 'Bearer ' prefix)")
+                    )
+                    .addSecuritySchemes(
+                        "oauth2",
+                        SecurityScheme()
+                            .type(SecurityScheme.Type.OAUTH2)
+                            .flows(
+                                OAuthFlows().authorizationCode(
+                                    OAuthFlow()
+                                        .authorizationUrl("$baseUrl/auth")
+                                        .tokenUrl("$baseUrl/token")
+                                        .scopes(
+                                            Scopes()
+                                                .addString("openid", "OpenID Connect")
+                                                .addString("profile", "User profile")
+                                        )
+                                )
+                            )
+                    )
+            )
+            // OR: satisfying either scheme unlocks the padlock on every operation
+            .addSecurityItem(SecurityRequirement().addList("bearerAuth"))
+            .addSecurityItem(SecurityRequirement().addList("oauth2"))
+    }
 
     @Bean
     fun paymentsGroup(): GroupedOpenApi =
