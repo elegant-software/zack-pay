@@ -26,45 +26,45 @@ studer-jooq          = { id = "nu.studer.jooq", version.ref = "studer-jooq-plugi
 [versions]
 # Platform & Core
 skillsjars-plugin    = "0.0.2"
-kotlin               = "2.3.20"
-kotlin-jpa           = "2.3.20"
-spring-boot          = "4.0.4"
+kotlin               = "2.4.0"
+kotlin-jpa           = "2.4.0"
+spring-boot          = "4.1.0"
 spring-dependency-management = "1.1.7"
-spring-modulith      = "2.1.0-M3"
-spring-ai            = "2.0.0-M6"
+spring-modulith      = "2.1.0"
+spring-ai            = "2.0.0"
 
 # Modulith: invoice - ZUGFeRD/Factur-X invoice XML + Thymeleaf->PDF rendering
-mustang              = "2.22.0"
-flying-saucer        = "10.1.0"
+mustang              = "2.24.0"
+flying-saucer        = "10.3.0"
 
 # Modulith: payments - TrueLayer payment integration
 truelayer-java       = "17.5.1"
 truelayer-signing    = "0.2.6"
-nimbus-jose-jwt      = "10.8"
+nimbus-jose-jwt      = "10.9.1"
 
 # Shared platform - logging, documentation, testing
-logstash-logback     = "8.0"
-springdoc            = "3.0.2"
-bootui               = "0.3.0"
+logstash-logback     = "9.0"
+springdoc            = "3.0.3"
+bootui               = "1.5.1"
 mockito-kotlin       = "6.3.0"
 
 # Modulith: `merchant.iam` — Keycloak user/group management
 keycloak-admin-client = "26.0.9"
 
 # Modulith: `payments.stripe` + `payments.braintree` — mobile payment gateways
-stripe-java          = "32.1.0"
-braintree-java       = "3.48.0"
-aws-sdk              = "2.31.78"
+stripe-java          = "33.0.0"
+braintree-java       = "3.50.0"
+aws-sdk              = "2.46.11"
 
 # Optional runtime integrations
 dr-jskill            = "2026_02_19-a951a5e"
 # Contract stubs publishing
-spring-cloud-contract = "4.2.1"
-jooq                 = "3.19.30"
-studer-jooq-plugin   = "9.0"
+spring-cloud-contract = "5.0.3"
+jooq                 = "3.21.5"
+studer-jooq-plugin   = "10.2.1"
 
 # Security scanning / SBOM + Dependency-Track upload
-cyclonedx            = "3.2.0"
+cyclonedx            = "3.2.4"
 dependency-track     = "1.4.4"
 
 # -----------------------------------------------------------------------------

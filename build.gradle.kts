@@ -130,7 +130,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jooq")
 
     jooqGenerator("org.jooq:jooq-meta-extensions:${libs.versions.jooq.get()}")
-    jooqGenerator("org.slf4j:slf4j-simple:2.0.16")
+    jooqGenerator("org.slf4j:slf4j-simple:2.0.18")
 
     // ----------------------------
     // Tests (shared)

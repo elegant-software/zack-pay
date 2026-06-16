@@ -170,7 +170,7 @@ paths:
           format: uuid
       - name: branchId
         in: query
-        required: true
+        required: false
         schema:
           type: string
           format: uuid
@@ -3775,19 +3775,29 @@ components:
       type: object
       properties:
         newProductId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         newProductCategoryId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         newStartTime:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         newEmployeeId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         overrideReason:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - newProductCategoryId
       - newProductId
@@ -3808,15 +3818,21 @@ components:
           type: string
           format: uuid
         employeeName:
-          type: string
+          type:
+          - string
+          - "null"
         productId:
           type: string
           format: uuid
         productCategoryId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         shopperAccountId:
-          type: string
+          type:
+          - string
+          - "null"
         startTime:
           type: string
           format: date-time
@@ -3830,20 +3846,30 @@ components:
         contactName:
           type: string
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhone:
-          type: string
+          type:
+          - string
+          - "null"
         productName:
           type: string
         productPrice:
-          type: number
+          type:
+          - number
+          - "null"
         durationMinutes:
           type: integer
           format: int32
         note:
-          type: string
+          type:
+          - string
+          - "null"
         cancelledReason:
-          type: string
+          type:
+          - string
+          - "null"
         createdAt:
           type: string
           format: date-time
@@ -3899,22 +3925,32 @@ components:
         name:
           type: string
         description:
-          type: string
+          type:
+          - string
+          - "null"
         unitPrice:
           type: number
         imageUrl:
-          type: string
+          type:
+          - string
+          - "null"
         active:
           type: boolean
         status:
           type: string
         categoryId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         categoryName:
-          type: string
+          type:
+          - string
+          - "null"
         productCode:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int64
         createdAt:
           type: string
@@ -3937,7 +3973,9 @@ components:
         name:
           type: string
         estimatedDurationMinutes:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
       required:
       - name
@@ -3950,7 +3988,9 @@ components:
         name:
           type: string
         estimatedDurationMinutes:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         createdAt:
           type: string
@@ -3976,17 +4016,29 @@ components:
           type: integer
           format: int32
         googlePlaceId:
-          type: string
+          type:
+          - string
+          - "null"
         addressLine1:
-          type: string
+          type:
+          - string
+          - "null"
         addressLine2:
-          type: string
+          type:
+          - string
+          - "null"
         city:
-          type: string
+          type:
+          - string
+          - "null"
         postalCode:
-          type: string
+          type:
+          - string
+          - "null"
         country:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - geofenceRadiusMeters
       - latitude
@@ -4007,29 +4059,51 @@ components:
           type: integer
           format: int32
         googlePlaceId:
-          type: string
+          type:
+          - string
+          - "null"
         addressLine1:
-          type: string
+          type:
+          - string
+          - "null"
         addressLine2:
-          type: string
+          type:
+          - string
+          - "null"
         city:
-          type: string
+          type:
+          - string
+          - "null"
         postalCode:
-          type: string
+          type:
+          - string
+          - "null"
         country:
-          type: string
+          type:
+          - string
+          - "null"
         placeFormattedAddress:
-          type: string
+          type:
+          - string
+          - "null"
         placeRating:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         placeReviewCount:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         placeEnrichmentStatus:
-          type: string
+          type:
+          - string
+          - "null"
         placeEnrichedAt:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
       required:
       - geofenceRadiusMeters
@@ -4040,7 +4114,9 @@ components:
       type: object
       properties:
         name:
-          type: string
+          type:
+          - string
+          - "null"
           minLength: 1
       required:
       - name
@@ -4078,34 +4154,60 @@ components:
         active:
           type: boolean
         addressLine1:
-          type: string
+          type:
+          - string
+          - "null"
         addressLine2:
-          type: string
+          type:
+          - string
+          - "null"
         city:
-          type: string
+          type:
+          - string
+          - "null"
         postalCode:
-          type: string
+          type:
+          - string
+          - "null"
         country:
-          type: string
+          type:
+          - string
+          - "null"
         contactFullName:
-          type: string
+          type:
+          - string
+          - "null"
         website:
-          type: string
+          type:
+          - string
+          - "null"
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhoneNumber:
-          type: string
+          type:
+          - string
+          - "null"
         latitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         longitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         geofenceRadiusMeters:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         googlePlaceId:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - active
       - name
@@ -4125,49 +4227,87 @@ components:
         active:
           type: boolean
         addressLine1:
-          type: string
+          type:
+          - string
+          - "null"
         addressLine2:
-          type: string
+          type:
+          - string
+          - "null"
         city:
-          type: string
+          type:
+          - string
+          - "null"
         postalCode:
-          type: string
+          type:
+          - string
+          - "null"
         country:
-          type: string
+          type:
+          - string
+          - "null"
         contactFullName:
-          type: string
+          type:
+          - string
+          - "null"
         website:
-          type: string
+          type:
+          - string
+          - "null"
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhoneNumber:
-          type: string
+          type:
+          - string
+          - "null"
         latitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         longitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         geofenceRadiusMeters:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         googlePlaceId:
-          type: string
+          type:
+          - string
+          - "null"
         placeFormattedAddress:
-          type: string
+          type:
+          - string
+          - "null"
         placeRating:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         placeReviewCount:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         placeEnrichmentStatus:
-          type: string
+          type:
+          - string
+          - "null"
         placeEnrichedAt:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         imageUrl:
-          type: string
+          type:
+          - string
+          - "null"
         status:
           type: string
         createdAt:
@@ -4196,19 +4336,29 @@ components:
       type: object
       properties:
         newProductId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         newProductCategoryId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         newStartTime:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         newEmployeeId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         reason:
-          type: string
+          type:
+          - string
+          - "null"
           minLength: 1
       required:
       - newProductCategoryId
@@ -4219,88 +4369,150 @@ components:
       type: object
       properties:
         addressLine1:
-          type: string
+          type:
+          - string
+          - "null"
         addressLine2:
-          type: string
+          type:
+          - string
+          - "null"
         city:
-          type: string
+          type:
+          - string
+          - "null"
         postalCode:
-          type: string
+          type:
+          - string
+          - "null"
         country:
-          type: string
+          type:
+          - string
+          - "null"
     MerchantContactInfo:
       type: object
       properties:
         website:
-          type: string
+          type:
+          - string
+          - "null"
         email:
-          type: string
+          type:
+          - string
+          - "null"
         phoneNumber:
-          type: string
+          type:
+          - string
+          - "null"
     MerchantLocationInfo:
       type: object
       properties:
         latitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         longitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         geofenceRadiusMeters:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         googlePlaceId:
-          type: string
+          type:
+          - string
+          - "null"
         placeFormattedAddress:
-          type: string
+          type:
+          - string
+          - "null"
         placeRating:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         placeReviewCount:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         placeEnrichmentStatus:
-          type: string
+          type:
+          - string
+          - "null"
         placeEnrichedAt:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
     UpdateMerchantRequest:
       type: object
       properties:
         merchantName:
-          type: string
+          type:
+          - string
+          - "null"
         businessType:
-          type: string
+          type:
+          - string
+          - "null"
         merchantStatus:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - ACTIVE
           - INACTIVE
         contactInfo:
-          $ref: "#/components/schemas/MerchantContactInfo"
+          oneOf:
+          - $ref: "#/components/schemas/MerchantContactInfo"
+          - type: "null"
         address:
-          $ref: "#/components/schemas/MerchantAddress"
+          oneOf:
+          - $ref: "#/components/schemas/MerchantAddress"
+          - type: "null"
         location:
-          $ref: "#/components/schemas/MerchantLocationInfo"
+          oneOf:
+          - $ref: "#/components/schemas/MerchantLocationInfo"
+          - type: "null"
         offerings:
-          type: array
+          type:
+          - array
+          - "null"
           items:
             type: string
           uniqueItems: true
         legalBusinessName:
-          type: string
+          type:
+          - string
+          - "null"
         primaryBusinessAddress:
-          type: string
+          type:
+          - string
+          - "null"
         website:
-          type: string
+          type:
+          - string
+          - "null"
         contactFullName:
-          type: string
+          type:
+          - string
+          - "null"
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhoneNumber:
-          type: string
+          type:
+          - string
+          - "null"
         status:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - DRAFT
           - SUBMITTED
@@ -4314,7 +4526,9 @@ components:
           - ACTION_REQUIRED
           - REJECTED
         merchantMobility:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - BRICK_AND_MORTAR
           - MOBILE
@@ -4346,7 +4560,9 @@ components:
         primaryBusinessAddress:
           type: string
         website:
-          type: string
+          type:
+          - string
+          - "null"
         contactFullName:
           type: string
         contactEmail:
@@ -4368,21 +4584,29 @@ components:
           - ACTION_REQUIRED
           - REJECTED
         submittedAt:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         lastUpdatedAt:
           type: string
           format: date-time
         logoStorageKey:
-          type: string
+          type:
+          - string
+          - "null"
         logoUrl:
-          type: string
+          type:
+          - string
+          - "null"
         contactInfo:
           $ref: "#/components/schemas/MerchantContactInfo"
         address:
           $ref: "#/components/schemas/MerchantAddress"
         location:
-          $ref: "#/components/schemas/MerchantLocationInfo"
+          oneOf:
+          - $ref: "#/components/schemas/MerchantLocationInfo"
+          - type: "null"
         offerings:
           type: array
           items:
@@ -4454,13 +4678,17 @@ components:
           - ACTION_REQUIRED
           - REJECTED
         submittedAt:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         lastUpdatedAt:
           type: string
           format: date-time
         logoStorageKey:
-          type: string
+          type:
+          - string
+          - "null"
         offerings:
           type: array
           items:
@@ -4482,7 +4710,9 @@ components:
         transcript:
           type: string
         language:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - transcript
     CreateAssignmentRequest:
@@ -4492,7 +4722,9 @@ components:
           type: string
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         role:
           type: string
@@ -4500,7 +4732,9 @@ components:
           - MERCHANT_MANAGER
           - MERCHANT_EMPLOYEE
         employeeId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
       required:
       - merchantId
@@ -4517,17 +4751,23 @@ components:
         merchantName:
           type: string
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         branchName:
-          type: string
+          type:
+          - string
+          - "null"
         role:
           type: string
           enum:
           - MERCHANT_MANAGER
           - MERCHANT_EMPLOYEE
         employeeId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
       required:
       - id
@@ -4538,11 +4778,15 @@ components:
       type: object
       properties:
         expoPushToken:
-          type: string
+          type:
+          - string
+          - "null"
           minLength: 1
           pattern: "^ExponentPushToken\\[[^\\]]+\\]$"
         platform:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - expoPushToken
     ShopperDeviceResponse:
@@ -4560,29 +4804,47 @@ components:
       type: object
       properties:
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         productId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         productCategoryId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         startTime:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         employeeId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         contactName:
-          type: string
+          type:
+          - string
+          - "null"
           minLength: 1
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhone:
-          type: string
+          type:
+          - string
+          - "null"
         note:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - branchId
       - contactName
@@ -4593,19 +4855,29 @@ components:
       type: object
       properties:
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         productCategoryId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         employeeId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         from:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         to:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
       required:
       - branchId
@@ -4655,7 +4927,9 @@ components:
         status:
           type: string
         message:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - paymentRequestId
       - status
@@ -4688,7 +4962,9 @@ components:
       type: object
       properties:
         regionId:
-          type: string
+          type:
+          - string
+          - "null"
         event:
           type: string
         location:
@@ -4696,7 +4972,9 @@ components:
         timestamp:
           type: string
         deviceId:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - event
       - location
@@ -4722,24 +5000,42 @@ components:
         name:
           type: string
         distanceMeters:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         addressLine1:
-          type: string
+          type:
+          - string
+          - "null"
         addressLine2:
-          type: string
+          type:
+          - string
+          - "null"
         city:
-          type: string
+          type:
+          - string
+          - "null"
         postalCode:
-          type: string
+          type:
+          - string
+          - "null"
         country:
-          type: string
+          type:
+          - string
+          - "null"
         contactFullName:
-          type: string
+          type:
+          - string
+          - "null"
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhoneNumber:
-          type: string
+          type:
+          - string
+          - "null"
         activePspCodes:
           type: array
           items:
@@ -4758,7 +5054,9 @@ components:
         name:
           type: string
         logoUrl:
-          type: string
+          type:
+          - string
+          - "null"
         activePspCodes:
           type: array
           items:
@@ -4784,7 +5082,9 @@ components:
         action:
           type: string
         merchant:
-          $ref: "#/components/schemas/MerchantContext"
+          oneOf:
+          - $ref: "#/components/schemas/MerchantContext"
+          - type: "null"
       required:
       - action
       - recorded
@@ -4804,25 +5104,39 @@ components:
       type: object
       properties:
         amount:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         currency:
-          type: string
+          type:
+          - string
+          - "null"
         orderId:
           type: string
         merchantId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         productId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         successUrl:
-          type: string
+          type:
+          - string
+          - "null"
         cancelUrl:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - orderId
     CreatePayByBankCheckoutSessionResponse:
@@ -4846,23 +5160,35 @@ components:
       type: object
       properties:
         amount:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         currency:
-          type: string
+          type:
+          - string
+          - "null"
         orderId:
           type: string
         merchantId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         productId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         paymentMethodType:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - orderId
     CreateIntentResponse:
@@ -4889,7 +5215,9 @@ components:
       type: object
       properties:
         paymentRequestId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         orderId:
           type: string
@@ -4901,11 +5229,15 @@ components:
         userDisplayName:
           type: string
         userEmail:
-          type: string
+          type:
+          - string
+          - "null"
         redirectReturnUri:
           type: string
         payerRef:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - amountMinorUnits
       - currency
@@ -4916,33 +5248,51 @@ components:
       type: object
       properties:
         merchantId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
     CheckoutRequest:
       type: object
       properties:
         nonce:
-          type: string
+          type:
+          - string
+          - "null"
         amount:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         currency:
-          type: string
+          type:
+          - string
+          - "null"
         orderId:
           type: string
         invoiceId:
-          type: string
+          type:
+          - string
+          - "null"
         merchantId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         productId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
       required:
       - orderId
@@ -4963,12 +5313,16 @@ components:
         orderId:
           type: string
         invoiceId:
-          type: string
+          type:
+          - string
+          - "null"
         merchantId:
           type: string
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
       required:
       - amount
@@ -4986,7 +5340,9 @@ components:
         message:
           type: string
         code:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - message
       - status
@@ -5006,7 +5362,9 @@ components:
       type: object
       properties:
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         orderType:
           type: string
@@ -5016,20 +5374,26 @@ components:
         usesDeferredPayment:
           type: boolean
         customerLocation:
-          $ref: "#/components/schemas/OrderCustomerLocationRequest"
+          oneOf:
+          - $ref: "#/components/schemas/OrderCustomerLocationRequest"
+          - type: "null"
         items:
           type: array
           items:
             $ref: "#/components/schemas/CreateOrderItemRequest"
         paymentMethod:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - TRUELAYER
           - QRPAY
           - BRAINTREE
           - STRIPE
         checkoutPaymentMethod:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - BANK_ACCOUNT
           - CARD
@@ -5096,7 +5460,9 @@ components:
           type: string
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         orderType:
           type: string
@@ -5128,12 +5494,16 @@ components:
         paymentRetryAllowed:
           type: boolean
         paymentSource:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - APP_PAYMENT
           - MANUAL_SETTLEMENT
         checkoutPaymentMethod:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - BANK_ACCOUNT
           - CARD
@@ -5148,15 +5518,23 @@ components:
           type: string
           format: date-time
         lastPaymentRequestId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         lastPaymentProvider:
-          type: string
+          type:
+          - string
+          - "null"
         paidAt:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         paymentReference:
-          $ref: "#/components/schemas/PaymentReferenceResponse"
+          oneOf:
+          - $ref: "#/components/schemas/PaymentReferenceResponse"
+          - type: "null"
       required:
       - createdAt
       - createdById
@@ -5197,20 +5575,32 @@ components:
       type: object
       properties:
         merchantName:
-          type: string
+          type:
+          - string
+          - "null"
         contactInfo:
-          $ref: "#/components/schemas/MerchantContactInfo"
+          oneOf:
+          - $ref: "#/components/schemas/MerchantContactInfo"
+          - type: "null"
         address:
-          $ref: "#/components/schemas/MerchantAddress"
+          oneOf:
+          - $ref: "#/components/schemas/MerchantAddress"
+          - type: "null"
         location:
-          $ref: "#/components/schemas/MerchantLocationInfo"
+          oneOf:
+          - $ref: "#/components/schemas/MerchantLocationInfo"
+          - type: "null"
         offerings:
-          type: array
+          type:
+          - array
+          - "null"
           items:
             type: string
           uniqueItems: true
         legalBusinessName:
-          type: string
+          type:
+          - string
+          - "null"
         businessType:
           type: string
         registrationNumber:
@@ -5218,13 +5608,21 @@ components:
         operatingCountry:
           type: string
         primaryBusinessAddress:
-          type: string
+          type:
+          - string
+          - "null"
         contactFullName:
-          type: string
+          type:
+          - string
+          - "null"
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhoneNumber:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - businessType
       - operatingCountry
@@ -5233,16 +5631,22 @@ components:
       type: object
       properties:
         returnUrl:
-          type: string
+          type:
+          - string
+          - "null"
         refreshUrl:
-          type: string
+          type:
+          - string
+          - "null"
     CreateProductCategoryRequest:
       type: object
       properties:
         name:
           type: string
         estimatedDurationMinutes:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
       required:
       - name
@@ -5250,7 +5654,9 @@ components:
       type: object
       properties:
         name:
-          type: string
+          type:
+          - string
+          - "null"
           minLength: 1
       required:
       - name
@@ -5258,7 +5664,9 @@ components:
       type: object
       properties:
         productCategoryId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
       required:
       - productCategoryId
@@ -5275,7 +5683,9 @@ components:
           type: string
           format: uuid
         categoryName:
-          type: string
+          type:
+          - string
+          - "null"
         createdAt:
           type: string
           format: date-time
@@ -5288,14 +5698,20 @@ components:
       type: object
       properties:
         dayOfWeek:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
           maximum: 7
           minimum: 1
         startTime:
-          type: string
+          type:
+          - string
+          - "null"
         endTime:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - dayOfWeek
       - endTime
@@ -5338,15 +5754,23 @@ components:
       type: object
       properties:
         date:
-          type: string
+          type:
+          - string
+          - "null"
           format: date
         type:
-          type: string
+          type:
+          - string
+          - "null"
           minLength: 1
         startTime:
-          type: string
+          type:
+          - string
+          - "null"
         endTime:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - date
       - type
@@ -5368,9 +5792,13 @@ components:
         type:
           type: string
         startTime:
-          type: string
+          type:
+          - string
+          - "null"
         endTime:
-          type: string
+          type:
+          - string
+          - "null"
         createdAt:
           type: string
           format: date-time
@@ -5385,7 +5813,9 @@ components:
       type: object
       properties:
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
       required:
       - branchId
@@ -5415,48 +5845,80 @@ components:
         name:
           type: string
         addressLine1:
-          type: string
+          type:
+          - string
+          - "null"
         addressLine2:
-          type: string
+          type:
+          - string
+          - "null"
         city:
-          type: string
+          type:
+          - string
+          - "null"
         postalCode:
-          type: string
+          type:
+          - string
+          - "null"
         country:
-          type: string
+          type:
+          - string
+          - "null"
         contactFullName:
-          type: string
+          type:
+          - string
+          - "null"
         website:
-          type: string
+          type:
+          - string
+          - "null"
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhoneNumber:
-          type: string
+          type:
+          - string
+          - "null"
         latitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         longitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         geofenceRadiusMeters:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         googlePlaceId:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - name
     BranchOpeningWindowRequest:
       type: object
       properties:
         dayOfWeek:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
           maximum: 7
           minimum: 1
         startTime:
-          type: string
+          type:
+          - string
+          - "null"
         endTime:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - dayOfWeek
       - endTime
@@ -5495,15 +5957,23 @@ components:
       type: object
       properties:
         date:
-          type: string
+          type:
+          - string
+          - "null"
           format: date
         type:
-          type: string
+          type:
+          - string
+          - "null"
           minLength: 1
         startTime:
-          type: string
+          type:
+          - string
+          - "null"
         endTime:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - date
       - type
@@ -5522,9 +5992,13 @@ components:
         type:
           type: string
         startTime:
-          type: string
+          type:
+          - string
+          - "null"
         endTime:
-          type: string
+          type:
+          - string
+          - "null"
         createdAt:
           type: string
           format: date-time
@@ -5578,10 +6052,14 @@ components:
           type: number
           format: double
         liveLatitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         liveLongitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         effectiveLatitude:
           type: number
@@ -5601,7 +6079,9 @@ components:
           type: string
           format: date-time
         cancelledAt:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         updatedAt:
           type: string
@@ -5632,29 +6112,47 @@ components:
       type: object
       properties:
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         productId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         productCategoryId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         startTime:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         employeeId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         contactName:
-          type: string
+          type:
+          - string
+          - "null"
           minLength: 1
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhone:
-          type: string
+          type:
+          - string
+          - "null"
         note:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - branchId
       - contactName
@@ -5686,20 +6184,28 @@ components:
       type: object
       properties:
         q:
-          type: string
+          type:
+          - string
+          - "null"
         businessTypes:
-          type: array
+          type:
+          - array
+          - "null"
           items:
             type: string
         merchantMobilities:
-          type: array
+          type:
+          - array
+          - "null"
           items:
             type: string
             enum:
             - BRICK_AND_MORTAR
             - MOBILE
         statuses:
-          type: array
+          type:
+          - array
+          - "null"
           items:
             type: string
         page:
@@ -5749,9 +6255,13 @@ components:
         merchantCode:
           type: string
         city:
-          type: string
+          type:
+          - string
+          - "null"
         country:
-          type: string
+          type:
+          - string
+          - "null"
         businessType:
           type: string
         merchantMobility:
@@ -5780,7 +6290,9 @@ components:
           type: string
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         orderType:
           type: string
@@ -5790,7 +6302,9 @@ components:
         usesDeferredPayment:
           type: boolean
         customerLocation:
-          $ref: "#/components/schemas/OrderCustomerLocationRequest"
+          oneOf:
+          - $ref: "#/components/schemas/OrderCustomerLocationRequest"
+          - type: "null"
         items:
           type: array
           items:
@@ -5809,7 +6323,9 @@ components:
           type: string
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         orderType:
           type: string
@@ -5839,7 +6355,9 @@ components:
         paymentRetryAllowed:
           type: boolean
         checkoutPaymentMethod:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - BANK_ACCOUNT
           - CARD
@@ -5879,7 +6397,9 @@ components:
       type: object
       properties:
         note:
-          type: string
+          type:
+          - string
+          - "null"
     BankAccountData:
       type: object
       properties:
@@ -5915,11 +6435,17 @@ components:
         currency:
           type: string
         bankAccount:
-          $ref: "#/components/schemas/BankAccountData"
+          oneOf:
+          - $ref: "#/components/schemas/BankAccountData"
+          - type: "null"
         footerText:
-          type: string
+          type:
+          - string
+          - "null"
         logoBase64:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - buyer
       - currency
@@ -5958,7 +6484,9 @@ components:
         country:
           type: string
         vatId:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - city
       - country
@@ -5969,12 +6497,18 @@ components:
       type: object
       properties:
         orderId:
-          type: string
+          type:
+          - string
+          - "null"
         expoPushToken:
-          type: string
+          type:
+          - string
+          - "null"
           pattern: "^ExponentPushToken\\[[^\\]]+\\]$"
         platform:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - IOS
           - ANDROID
@@ -5992,7 +6526,9 @@ components:
         expoPushToken:
           type: string
         platform:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - IOS
           - ANDROID
@@ -6012,50 +6548,80 @@ components:
       type: object
       properties:
         note:
-          type: string
+          type:
+          - string
+          - "null"
         clearNote:
-          type: boolean
+          type:
+          - boolean
+          - "null"
         contactName:
-          type: string
+          type:
+          - string
+          - "null"
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         clearContactEmail:
-          type: boolean
+          type:
+          - boolean
+          - "null"
         contactPhone:
-          type: string
+          type:
+          - string
+          - "null"
         clearContactPhone:
-          type: boolean
+          type:
+          - boolean
+          - "null"
     UpdateAppointmentPolicyRequest:
       type: object
       properties:
         bookingIntervalMinutes:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         bookingLeadTimeMinutes:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
           minimum: 0
         bookingHorizonDays:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         reminderLeadTimeMinutes:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
           minimum: 0
     AppointmentPolicyResponse:
       type: object
       properties:
         bookingIntervalMinutes:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         bookingLeadTimeMinutes:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         bookingHorizonDays:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
         reminderLeadTimeMinutes:
-          type: integer
+          type:
+          - integer
+          - "null"
           format: int32
     MerchantItemPriceOverrideRequest:
       type: object
@@ -6069,11 +6635,15 @@ components:
       type: object
       properties:
         id:
-          type: string
+          type:
+          - string
+          - "null"
         merchantName:
           type: string
         branchName:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - merchantName
     UserSearchResult:
@@ -6084,7 +6654,9 @@ components:
         displayName:
           type: string
         email:
-          type: string
+          type:
+          - string
+          - "null"
         enabled:
           type: boolean
         groups:
@@ -6151,16 +6723,26 @@ components:
         paymentMethod:
           type: string
         paymentMethodDetail:
-          type: string
+          type:
+          - string
+          - "null"
         fundsAvailableAt:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
         providerPaymentReference:
-          type: string
+          type:
+          - string
+          - "null"
         providerChargeReference:
-          type: string
+          type:
+          - string
+          - "null"
         providerDashboardUrl:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - currency
       - grossAmountMinor
@@ -6336,7 +6918,9 @@ components:
         to:
           type: string
         merchantId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         revenue:
           $ref: "#/components/schemas/RevenueKpi"
@@ -6349,9 +6933,13 @@ components:
           items:
             $ref: "#/components/schemas/PaymentMethodFrequency"
         merchantCounts:
-          $ref: "#/components/schemas/MerchantCountKpi"
+          oneOf:
+          - $ref: "#/components/schemas/MerchantCountKpi"
+          - type: "null"
         branchCounts:
-          $ref: "#/components/schemas/BranchCountKpi"
+          oneOf:
+          - $ref: "#/components/schemas/BranchCountKpi"
+          - type: "null"
       required:
       - appointments
       - from
@@ -6393,7 +6981,9 @@ components:
           type: string
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         from:
           type: string
@@ -6440,7 +7030,9 @@ components:
         terminal:
           type: boolean
         lastEventAt:
-          type: string
+          type:
+          - string
+          - "null"
           format: date-time
       required:
       - paymentRequestId
@@ -6455,7 +7047,9 @@ components:
           type: string
           format: uuid
         branchId:
-          type: string
+          type:
+          - string
+          - "null"
           format: uuid
         orderType:
           type: string
@@ -6480,12 +7074,16 @@ components:
         paymentRetryAllowed:
           type: boolean
         paymentSource:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - APP_PAYMENT
           - MANUAL_SETTLEMENT
         checkoutPaymentMethod:
-          type: string
+          type:
+          - string
+          - "null"
           enum:
           - BANK_ACCOUNT
           - CARD
@@ -6572,28 +7170,48 @@ components:
         name:
           type: string
         distanceMeters:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         latitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         longitude:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         addressLine1:
-          type: string
+          type:
+          - string
+          - "null"
         city:
-          type: string
+          type:
+          - string
+          - "null"
         postalCode:
-          type: string
+          type:
+          - string
+          - "null"
         country:
-          type: string
+          type:
+          - string
+          - "null"
         contactFullName:
-          type: string
+          type:
+          - string
+          - "null"
         contactEmail:
-          type: string
+          type:
+          - string
+          - "null"
         contactPhoneNumber:
-          type: string
+          type:
+          - string
+          - "null"
       required:
       - branchId
       - name
@@ -6615,7 +7233,9 @@ components:
           type: integer
           format: int32
         googlePlaceId:
-          type: string
+          type:
+          - string
+          - "null"
         distanceMeters:
           type: number
           format: double
@@ -6662,7 +7282,9 @@ components:
           type: integer
           format: int32
         distanceMeters:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
       required:
       - displayName
@@ -6698,7 +7320,9 @@ components:
         branchName:
           type: string
         name:
-          type: string
+          type:
+          - string
+          - "null"
         effectiveLatitude:
           type: number
           format: double
@@ -6706,7 +7330,9 @@ components:
           type: number
           format: double
         distanceMeters:
-          type: number
+          type:
+          - number
+          - "null"
           format: double
         startTime:
           type: string
