@@ -1,6 +1,7 @@
-package com.elegant.software.blitzpay.payments.push.internal
+package com.elegant.software.blitzpay.payments.push.listener
 
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusChanged
+import com.elegant.software.blitzpay.order.api.PaymentStatusChanged
+import com.elegant.software.blitzpay.payments.push.service.PushDispatcher
 import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.stereotype.Component
 

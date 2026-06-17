@@ -1,8 +1,8 @@
 package com.elegant.software.blitzpay.merchant.web
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployee
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeBranchAssignment
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeServiceAssignment
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployee
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployeeBranchAssignment
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployeeServiceAssignment
 import com.elegant.software.blitzpay.merchant.service.MerchantEmployeeService
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid

@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.merchant.domain
+package com.elegant.software.blitzpay.merchant.persistence.model
 
 import jakarta.persistence.AttributeOverride
 import jakarta.persistence.AttributeOverrides

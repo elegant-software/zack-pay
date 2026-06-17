@@ -2,7 +2,7 @@ package com.elegant.software.blitzpay.merchant.web
 
 import com.elegant.software.blitzpay.merchant.api.ProximityEventRequest
 import com.elegant.software.blitzpay.merchant.api.ProximityResponse
-import com.elegant.software.blitzpay.merchant.application.ProximityService
+import com.elegant.software.blitzpay.merchant.service.ProximityService
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag

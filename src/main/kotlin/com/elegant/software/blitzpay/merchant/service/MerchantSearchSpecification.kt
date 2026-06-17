@@ -1,13 +1,13 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchRequest
-import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
-import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantProduct
-import com.elegant.software.blitzpay.merchant.domain.PostalAddress
+import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
+import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
 import jakarta.persistence.criteria.Predicate
 import org.springframework.data.jpa.domain.Specification
 import java.util.UUID

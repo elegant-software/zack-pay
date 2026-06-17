@@ -2,9 +2,9 @@ package com.elegant.software.blitzpay.payments.stripe
 
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
 import com.elegant.software.blitzpay.merchant.api.MerchantCredentialResolver
-import com.elegant.software.blitzpay.payments.stripe.internal.StripeCheckoutSessionResult
-import com.elegant.software.blitzpay.payments.stripe.internal.StripeIntentResult
-import com.elegant.software.blitzpay.payments.stripe.internal.StripePaymentService
+import com.elegant.software.blitzpay.payments.stripe.outbound.StripeCheckoutSessionResult
+import com.elegant.software.blitzpay.payments.stripe.outbound.StripeIntentResult
+import com.elegant.software.blitzpay.payments.stripe.outbound.StripePaymentService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

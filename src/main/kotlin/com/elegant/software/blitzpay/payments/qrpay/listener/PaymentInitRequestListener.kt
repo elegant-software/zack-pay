@@ -1,6 +1,6 @@
 @file:ApplicationModule(displayName = "outbound")
 
-package com.elegant.software.blitzpay.payments.qrpay
+package com.elegant.software.blitzpay.payments.qrpay.listener
 
 import TlWebhookEnvelope
 import com.elegant.software.blitzpay.order.api.OrderPaymentInitiationRequested

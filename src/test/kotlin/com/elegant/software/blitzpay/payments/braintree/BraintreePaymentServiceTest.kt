@@ -2,8 +2,8 @@ package com.elegant.software.blitzpay.payments.braintree
 
 import com.elegant.software.blitzpay.config.ObservabilitySupport
 import com.elegant.software.blitzpay.merchant.api.BraintreeCredentials
-import com.elegant.software.blitzpay.payments.braintree.internal.BraintreeGatewayFactory
-import com.elegant.software.blitzpay.payments.braintree.internal.BraintreePaymentService
+import com.elegant.software.blitzpay.payments.braintree.outbound.BraintreeGatewayFactory
+import com.elegant.software.blitzpay.payments.braintree.outbound.BraintreePaymentService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

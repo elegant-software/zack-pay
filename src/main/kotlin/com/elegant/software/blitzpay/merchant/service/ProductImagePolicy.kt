@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 object ProductImagePolicy {
     const val MaxBytes: Long = 5L * 1024L * 1024L

@@ -1,13 +1,13 @@
 package com.elegant.software.blitzpay.merchant.support
 
-import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.Person
-import com.elegant.software.blitzpay.merchant.domain.PersonRole
-import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
-import com.elegant.software.blitzpay.merchant.domain.SupportingMaterial
-import com.elegant.software.blitzpay.merchant.domain.SupportingMaterialType
+import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.Person
+import com.elegant.software.blitzpay.merchant.persistence.model.PersonRole
+import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
+import com.elegant.software.blitzpay.merchant.persistence.model.SupportingMaterial
+import com.elegant.software.blitzpay.merchant.persistence.model.SupportingMaterialType
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.json.JsonMapper

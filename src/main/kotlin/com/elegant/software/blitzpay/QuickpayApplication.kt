@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments
+package com.elegant.software.blitzpay
 
 import com.elegant.software.blitzpay.config.ApiVersionProperties
 import com.elegant.software.blitzpay.config.CorsProperties

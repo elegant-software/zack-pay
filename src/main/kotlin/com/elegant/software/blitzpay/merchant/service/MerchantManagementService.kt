@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
 import com.elegant.software.blitzpay.merchant.api.MerchantAddress
@@ -6,17 +6,17 @@ import com.elegant.software.blitzpay.merchant.api.MerchantContactInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantLocationInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantNameUpdated
 import com.elegant.software.blitzpay.merchant.api.UpdateMerchantRequest
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantLocation
-import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
-import com.elegant.software.blitzpay.merchant.domain.PostalAddress
-import com.elegant.software.blitzpay.merchant.domain.MerchantOfferingAssignment
-import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingRepository
-import com.elegant.software.blitzpay.merchant.repository.MonitoringRecordRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
+import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOfferingAssignment
+import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MonitoringRecordRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher

@@ -1,9 +1,8 @@
 package com.elegant.software.blitzpay.appointments.service
 
 import com.elegant.software.blitzpay.appointments.persistence.AppointmentEntity
-import com.elegant.software.blitzpay.merchant.scheduling.DateWindowType
-import com.elegant.software.blitzpay.merchant.scheduling.EmployeeSchedule
-import com.elegant.software.blitzpay.merchant.scheduling.SchedulingContext
+import com.elegant.software.blitzpay.appointments.api.DateWindowType
+import com.elegant.software.blitzpay.appointments.api.SchedulingContext
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDate
@@ -190,8 +189,8 @@ class BookableTimeService {
 
     private fun effectiveWindows(
         date: LocalDate,
-        recurringWindows: List<com.elegant.software.blitzpay.merchant.scheduling.WeeklyWindow>,
-        exceptions: List<com.elegant.software.blitzpay.merchant.scheduling.DateWindow>,
+        recurringWindows: List<com.elegant.software.blitzpay.appointments.api.WeeklyWindow>,
+        exceptions: List<com.elegant.software.blitzpay.appointments.api.DateWindow>,
     ): List<Pair<LocalTime, LocalTime>> {
         if (exceptions.isEmpty()) {
             return recurringWindows.map { it.startTime to it.endTime }

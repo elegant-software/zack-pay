@@ -1,14 +1,14 @@
 package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.appointments.api.AppointmentQueryService
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployee
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeBranchAssignment
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeServiceAssignment
-import com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployee
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployeeBranchAssignment
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployeeServiceAssignment
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus
 import com.elegant.software.blitzpay.merchant.persistence.repository.*
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

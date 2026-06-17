@@ -1,7 +1,7 @@
 package com.elegant.software.blitzpay.merchant.support
 
-import com.elegant.software.blitzpay.merchant.application.MerchantAuditEvent
-import com.elegant.software.blitzpay.merchant.application.MerchantAuditTrail
+import com.elegant.software.blitzpay.merchant.service.MerchantAuditEvent
+import com.elegant.software.blitzpay.merchant.service.MerchantAuditTrail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 

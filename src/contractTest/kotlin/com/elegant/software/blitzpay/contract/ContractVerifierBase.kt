@@ -1,28 +1,29 @@
 package com.elegant.software.blitzpay.contract
 
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.iam.repository.MerchantUserAssignmentRepository
 import com.elegant.software.blitzpay.merchant.iam.service.UserManagementService
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
-import com.elegant.software.blitzpay.order.repository.OrderItemRepository
-import com.elegant.software.blitzpay.order.repository.OrderRepository
-import com.elegant.software.blitzpay.order.repository.PaymentAttemptRepository
-import com.elegant.software.blitzpay.payments.QuickpayApplication
-import com.elegant.software.blitzpay.merchant.application.MerchantProductCategoryService
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingRepository
-import com.elegant.software.blitzpay.merchant.domain.MerchantOffering
-import com.elegant.software.blitzpay.merchant.repository.MerchantVerticalRepository
-import com.elegant.software.blitzpay.merchant.repository.MonitoringRecordRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchAppearanceRepository
-import com.elegant.software.blitzpay.merchant.repository.ProximityEventRepository
+import com.elegant.software.blitzpay.order.api.PaymentRequestResolver
+import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
+import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
+import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
+import com.elegant.software.blitzpay.QuickpayApplication
+import com.elegant.software.blitzpay.merchant.service.MerchantProductCategoryService
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOffering
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantVerticalRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MonitoringRecordRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchAppearanceRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.ProximityEventRepository
 import com.elegant.software.blitzpay.appointments.persistence.AppointmentRepository
 import com.elegant.software.blitzpay.invoice.persistence.OrderInvoiceRepository
 import com.elegant.software.blitzpay.shopper.persistence.ShopperProfileRepository
@@ -34,15 +35,15 @@ import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmp
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeBranchAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeServiceAssignmentRepository
-import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistrationRepository
-import com.elegant.software.blitzpay.payments.push.persistence.PaymentStatusRepository
-import com.elegant.software.blitzpay.payments.push.persistence.ProcessedWebhookEventRepository
-import com.elegant.software.blitzpay.payments.push.persistence.PushDeliveryAttemptRepository
+import com.elegant.software.blitzpay.payments.push.persistence.model.DeviceRegistrationRepository
+import com.elegant.software.blitzpay.payments.push.persistence.model.PaymentStatusRepository
+import com.elegant.software.blitzpay.payments.push.persistence.model.ProcessedWebhookEventRepository
+import com.elegant.software.blitzpay.payments.push.persistence.model.PushDeliveryAttemptRepository
 import com.elegant.software.blitzpay.payments.push.persistence.model.ShopperDeviceRegistrationRepository
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
-import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantStripeProviderAccountRepository
-import com.elegant.software.blitzpay.merchant.repository.PaymentServiceProviderRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProviderAccountRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantStripeProviderAccountRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.PaymentServiceProviderRepository
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusUpdateGateway
 import com.elegant.software.blitzpay.storage.StorageService
@@ -53,7 +54,7 @@ import org.springframework.context.annotation.Import
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentRequested
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentResult
 import com.elegant.software.blitzpay.payments.truelayer.outbound.PaymentService
-import com.elegant.software.blitzpay.payments.truelayer.support.JwksService
+import com.elegant.software.blitzpay.payments.truelayer.security.JwksService
 import com.truelayer.java.TrueLayerClient
 import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.any
@@ -164,6 +165,9 @@ abstract class ContractVerifierBase {
 
     @MockitoBean
     protected lateinit var orderGateway: OrderGateway
+
+    @MockitoBean
+    protected lateinit var paymentRequestResolver: PaymentRequestResolver
 
     @MockitoBean
     protected lateinit var orderRepository: OrderRepository

@@ -1,7 +1,7 @@
 package com.elegant.software.blitzpay.merchant.web
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeAvailability
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeAvailabilityException
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployeeAvailability
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployeeAvailabilityException
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeAvailabilityExceptionRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeAvailabilityRepository
 import io.swagger.v3.oas.annotations.tags.Tag

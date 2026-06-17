@@ -1,12 +1,11 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.BraintreeCredentials
 import com.elegant.software.blitzpay.merchant.api.MerchantCredentialResolver
 import com.elegant.software.blitzpay.merchant.api.StripeCredentials
-import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
-import com.elegant.software.blitzpay.payments.braintree.config.BraintreeProperties
-import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProviderAccountRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.UUID
@@ -15,18 +14,22 @@ import java.util.UUID
 class MerchantCredentialResolverImpl(
     private val providerAccountRepository: MerchantProviderAccountRepository,
     private val merchantProductRepository: MerchantProductRepository,
-    private val stripeProperties: StripeProperties,
-    private val braintreeProperties: BraintreeProperties,
+    @Value("\${stripe.secret-key:}") private val stripeSecretKey: String,
+    @Value("\${stripe.publishable-key:}") private val stripePublishableKey: String,
+    @Value("\${braintree.merchant-id:}") private val btMerchantId: String,
+    @Value("\${braintree.public-key:}") private val btPublicKey: String,
+    @Value("\${braintree.private-key:}") private val btPrivateKey: String,
+    @Value("\${braintree.environment:sandbox}") private val btEnvironment: String,
 ) : MerchantCredentialResolver {
 
     override fun resolveStripe(merchantId: UUID, branchId: UUID?): StripeCredentials? {
         if (!providerAccountRepository.existsByMerchantApplicationIdAndPspCodeAndEnabledTrue(merchantId, "STRIPE")) {
             return null
         }
-        if (stripeProperties.secretKey.isNotBlank() && stripeProperties.publishableKey.isNotBlank()) {
+        if (stripeSecretKey.isNotBlank() && stripePublishableKey.isNotBlank()) {
             return StripeCredentials(
-                secretKey = stripeProperties.secretKey,
-                publishableKey = stripeProperties.publishableKey
+                secretKey = stripeSecretKey,
+                publishableKey = stripePublishableKey,
             )
         }
         return null
@@ -36,15 +39,12 @@ class MerchantCredentialResolverImpl(
         if (!providerAccountRepository.existsByMerchantApplicationIdAndPspCodeAndEnabledTrue(merchantId, "PAYPAL")) {
             return null
         }
-        if (braintreeProperties.merchantId.isNotBlank() &&
-            braintreeProperties.publicKey.isNotBlank() &&
-            braintreeProperties.privateKey.isNotBlank()
-        ) {
+        if (btMerchantId.isNotBlank() && btPublicKey.isNotBlank() && btPrivateKey.isNotBlank()) {
             return BraintreeCredentials(
-                merchantId = braintreeProperties.merchantId,
-                publicKey = braintreeProperties.publicKey,
-                privateKey = braintreeProperties.privateKey,
-                environment = braintreeProperties.environment,
+                merchantId = btMerchantId,
+                publicKey = btPublicKey,
+                privateKey = btPrivateKey,
+                environment = btEnvironment,
             )
         }
         return null

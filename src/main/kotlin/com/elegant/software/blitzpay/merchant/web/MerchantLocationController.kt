@@ -3,7 +3,7 @@ package com.elegant.software.blitzpay.merchant.web
 import com.elegant.software.blitzpay.merchant.api.MerchantLocationResponse
 import com.elegant.software.blitzpay.merchant.api.NearbyMerchantsResponse
 import com.elegant.software.blitzpay.merchant.api.SetMerchantLocationRequest
-import com.elegant.software.blitzpay.merchant.application.MerchantLocationService
+import com.elegant.software.blitzpay.merchant.service.MerchantLocationService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.slf4j.LoggerFactory

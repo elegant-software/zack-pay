@@ -4,7 +4,7 @@ import com.elegant.software.blitzpay.config.ObservabilitySupport
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentGateway
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentRequested
 import com.elegant.software.blitzpay.payments.truelayer.api.PaymentResult
-import com.elegant.software.blitzpay.payments.truelayer.support.TrueLayerProperties
+import com.elegant.software.blitzpay.payments.truelayer.config.TrueLayerProperties
 import com.truelayer.java.TrueLayerClient
 import com.truelayer.java.entities.CurrencyCode
 import com.truelayer.java.entities.User

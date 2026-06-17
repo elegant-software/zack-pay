@@ -1,6 +1,6 @@
-package com.elegant.software.blitzpay.payments.push.persistence
+package com.elegant.software.blitzpay.payments.push.persistence.model
 
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusCode
+import com.elegant.software.blitzpay.order.api.PaymentStatusCode
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType

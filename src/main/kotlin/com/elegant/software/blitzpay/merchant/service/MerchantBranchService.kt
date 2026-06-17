@@ -1,17 +1,17 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.BranchCreated
 import com.elegant.software.blitzpay.merchant.api.BranchNameUpdated
 import com.elegant.software.blitzpay.merchant.api.BranchResponse
 import com.elegant.software.blitzpay.merchant.api.CreateBranchRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateBranchRequest
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
-import com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantLocation
-import com.elegant.software.blitzpay.merchant.domain.PostalAddress
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
+import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
 import com.elegant.software.blitzpay.merchant.config.GeofenceProperties
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service

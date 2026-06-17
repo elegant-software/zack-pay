@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.order
 
-import com.elegant.software.blitzpay.payments.QuickpayApplication
+import com.elegant.software.blitzpay.QuickpayApplication
 import org.junit.jupiter.api.Test
 import org.springframework.modulith.core.ApplicationModules
 

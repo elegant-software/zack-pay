@@ -1,8 +1,8 @@
-package com.elegant.software.blitzpay.payments.push.internal
+package com.elegant.software.blitzpay.payments.push.service
 
 import com.elegant.software.blitzpay.config.LogContext
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusChanged
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusCode
+import com.elegant.software.blitzpay.order.api.PaymentStatusChanged
+import com.elegant.software.blitzpay.order.api.PaymentStatusCode
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusUpdateGateway
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher

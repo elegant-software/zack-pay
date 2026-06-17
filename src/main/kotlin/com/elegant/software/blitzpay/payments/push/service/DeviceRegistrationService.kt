@@ -1,10 +1,10 @@
-package com.elegant.software.blitzpay.payments.push.internal
+package com.elegant.software.blitzpay.payments.push.service
 
-import com.elegant.software.blitzpay.order.repository.OrderRepository
-import com.elegant.software.blitzpay.payments.push.api.DeviceRegistrationRequest
-import com.elegant.software.blitzpay.payments.push.api.DeviceRegistrationResponse
-import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistrationEntity
-import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistrationRepository
+import com.elegant.software.blitzpay.order.api.PaymentRequestResolver
+import com.elegant.software.blitzpay.payments.push.web.DeviceRegistrationRequest
+import com.elegant.software.blitzpay.payments.push.web.DeviceRegistrationResponse
+import com.elegant.software.blitzpay.payments.push.persistence.model.DeviceRegistrationEntity
+import com.elegant.software.blitzpay.payments.push.persistence.model.DeviceRegistrationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -15,7 +15,7 @@ data class RegistrationOutcome(val response: DeviceRegistrationResponse, val cre
 @Service
 class DeviceRegistrationService(
     private val deviceRepository: DeviceRegistrationRepository,
-    private val orderRepository: OrderRepository,
+    private val paymentRequestResolver: PaymentRequestResolver,
 ) {
     @Transactional
     fun register(request: DeviceRegistrationRequest): RegistrationOutcome {
@@ -23,16 +23,15 @@ class DeviceRegistrationService(
             ?: throw IllegalArgumentException("orderId must not be blank")
         val token = requireNotNull(request.expoPushToken)
 
-        val order = orderRepository.findByOrderId(orderId)
+        val paymentRequestId = paymentRequestResolver.findLastPaymentRequestId(orderId)
             ?: throw OrderNotFoundException(orderId)
 
-        val paymentRequestId = order.lastPaymentRequestId
         val existing = deviceRepository.findByExpoPushToken(token)
         return if (existing == null) {
             val entity = DeviceRegistrationEntity(
                 id = UUID.randomUUID(),
                 paymentRequestId = paymentRequestId,
-                orderId = order.orderId,
+                orderId = orderId,
                 expoPushToken = token,
                 platform = request.platform,
             )
@@ -40,7 +39,7 @@ class DeviceRegistrationService(
             RegistrationOutcome(saved.toResponse(), created = true)
         } else {
             existing.paymentRequestId = paymentRequestId
-            existing.orderId = order.orderId
+            existing.orderId = orderId
             existing.platform = request.platform ?: existing.platform
             existing.lastSeenAt = Instant.now()
             existing.invalid = false

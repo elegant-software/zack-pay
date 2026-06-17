@@ -1,13 +1,13 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.BranchTerminalInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
-import com.elegant.software.blitzpay.merchant.domain.MerchantProviderAccount
-import com.elegant.software.blitzpay.merchant.domain.MerchantStripeProviderAccount
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantStripeProviderAccountRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProviderAccount
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantStripeProviderAccount
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProviderAccountRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantStripeProviderAccountRepository
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service

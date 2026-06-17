@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.voice.internal
+package com.elegant.software.blitzpay.voice.service
 
 open class VoiceException(
     val reason: String,

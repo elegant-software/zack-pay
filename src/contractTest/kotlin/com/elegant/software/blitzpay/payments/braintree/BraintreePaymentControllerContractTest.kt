@@ -3,8 +3,8 @@ package com.elegant.software.blitzpay.payments.braintree
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
 import com.elegant.software.blitzpay.merchant.api.BraintreeCredentials
 import com.elegant.software.blitzpay.merchant.api.MerchantCredentialResolver
-import com.elegant.software.blitzpay.payments.braintree.internal.BraintreeCheckoutResult
-import com.elegant.software.blitzpay.payments.braintree.internal.BraintreePaymentService
+import com.elegant.software.blitzpay.payments.braintree.outbound.BraintreeCheckoutResult
+import com.elegant.software.blitzpay.payments.braintree.outbound.BraintreePaymentService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

@@ -1,29 +1,22 @@
-package com.elegant.software.blitzpay.order.application
+package com.elegant.software.blitzpay.order.service
 
+import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
+import com.elegant.software.blitzpay.merchant.api.BranchLocationInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
 import com.elegant.software.blitzpay.merchant.api.OrderableMerchantProduct
-import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
-import com.elegant.software.blitzpay.merchant.domain.MerchantOfferingAssignment
-import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
-import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.order.OrderFixtureLoader
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.CreateOrderItemRequest
 import com.elegant.software.blitzpay.order.api.OrderCustomerLocationRequest
 import com.elegant.software.blitzpay.order.api.PaymentMethod
-import com.elegant.software.blitzpay.order.domain.Order
-import com.elegant.software.blitzpay.order.domain.OrderItem
-import com.elegant.software.blitzpay.order.domain.OrderStatus
-import com.elegant.software.blitzpay.order.domain.OrderType
-import com.elegant.software.blitzpay.order.repository.OrderItemRepository
-import com.elegant.software.blitzpay.order.repository.OrderRepository
-import com.elegant.software.blitzpay.order.repository.PaymentAttemptRepository
+import com.elegant.software.blitzpay.order.persistence.model.Order
+import com.elegant.software.blitzpay.order.persistence.model.OrderItem
+import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
+import com.elegant.software.blitzpay.order.persistence.model.OrderType
+import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
+import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
+import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.inOrder
@@ -41,56 +34,25 @@ import kotlin.test.assertFailsWith
 
 class OrderServiceTest {
     private val merchantGateway = mock<MerchantGateway>()
-    private val merchantApplicationRepository = mock<MerchantApplicationRepository>()
-    private val merchantBranchRepository = mock<MerchantBranchRepository>()
-    private val merchantOfferingAssignmentRepository = mock<MerchantOfferingAssignmentRepository>()
     private val orderRepository = mock<OrderRepository>()
     private val orderItemRepository = mock<OrderItemRepository>()
     private val paymentAttemptRepository = mock<PaymentAttemptRepository>()
     private val shopperProfileGateway = mock<com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway>()
     private val service = OrderService(
-        merchantGateway, merchantApplicationRepository, merchantBranchRepository, merchantOfferingAssignmentRepository,
-        orderRepository, orderItemRepository, paymentAttemptRepository, shopperProfileGateway,
+        merchantGateway, orderRepository, orderItemRepository, paymentAttemptRepository, shopperProfileGateway,
     )
 
     private val merchantId = UUID.fromString("11111111-1111-1111-1111-111111111111")
     private val branchId = UUID.fromString("33333333-3333-3333-3333-333333333333")
-    private val merchant = MerchantApplication(
-        id = merchantId,
-        applicationReference = "BLTZ-ORDER",
-        businessProfile = BusinessProfile(
-            legalBusinessName = "Order Merchant",
-            businessType = "RETAIL",
-            registrationNumber = "DE-ORDER",
-            operatingCountry = "DE",
-            primaryBusinessAddress = "Branch Street 1"
-        ),
-        primaryContact = PrimaryContact("Owner", "owner@example.com", "+49123")
-    )
-    private val branch = MerchantBranch(
-        id = branchId,
+    private val activeBranchInfo = ActiveBranchInfo(
+        branchId = branchId,
         merchantApplicationId = merchantId,
-        name = "Main Branch",
-        address = com.elegant.software.blitzpay.merchant.domain.PostalAddress(
-            addressLine1 = "Branch Street 1",
-            city = "Berlin",
-            postalCode = "10115",
-            country = "DE",
-        ),
-    ).also {
-        it.location = com.elegant.software.blitzpay.merchant.domain.MerchantLocation(
-            latitude = 52.52,
-            longitude = 13.405,
-            geofenceRadiusMeters = 250
-        )
-    }
+        location = BranchLocationInfo(latitude = 52.52, longitude = 13.405, geofenceRadiusMeters = 250.0),
+    )
 
     private fun stubActiveMerchantContext(vararg offerings: String) {
-        whenever(merchantApplicationRepository.findById(merchantId)).thenReturn(Optional.of(merchant))
-        whenever(merchantBranchRepository.findById(branchId)).thenReturn(Optional.of(branch))
-        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(merchantId)).thenReturn(
-            offerings.map { MerchantOfferingAssignment(merchantId, it) }
-        )
+        whenever(merchantGateway.requireActiveBranch(merchantId, branchId)).thenReturn(activeBranchInfo)
+        whenever(merchantGateway.getEnabledOfferings(merchantId)).thenReturn(offerings.toSet())
     }
 
     @Test
@@ -243,26 +205,15 @@ class OrderServiceTest {
     @Test
     fun `createShopperOrder rejects order when merchant is inactive`() {
         val request = OrderFixtureLoader.createOrderRequest()
-        val inactiveMerchant = MerchantApplication(
-            id = merchantId,
-            applicationReference = "BLTZ-INACTIVE",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Inactive Merchant",
-                businessType = "RETAIL",
-                registrationNumber = "DE-INACTIVE",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Branch Street 1"
-            ),
-            primaryContact = PrimaryContact("Owner", "owner@example.com", "+49123")
-        ).also { it.merchantStatus = MerchantOperationalStatus.INACTIVE }
-        whenever(merchantApplicationRepository.findById(merchantId)).thenReturn(Optional.of(inactiveMerchant))
-        whenever(merchantBranchRepository.findById(branchId)).thenReturn(Optional.of(branch))
         whenever(merchantGateway.findOrderableProducts(any())).thenReturn(
             listOf(
                 OrderableMerchantProduct(request.items[0].productId, merchantId, branchId, "Coffee", "Medium roast", BigDecimal("12.50"), true),
                 OrderableMerchantProduct(request.items[1].productId, merchantId, branchId, "Bagel", "Sesame", BigDecimal("4.00"), true),
             )
         )
+        whenever(merchantGateway.getEnabledOfferings(merchantId)).thenReturn(setOf("PRE_ORDER"))
+        whenever(merchantGateway.requireActiveBranch(merchantId, branchId))
+            .thenThrow(IllegalStateException("Merchant is inactive: $merchantId"))
 
         assertFailsWith<OrderCreationConflictException> {
             service.createShopperOrder(request, "shopper-abc")
@@ -272,26 +223,15 @@ class OrderServiceTest {
     @Test
     fun `createShopperOrder rejects order when branch is inactive`() {
         val request = OrderFixtureLoader.createOrderRequest()
-        val inactiveBranch = MerchantBranch(
-            id = branchId,
-            merchantApplicationId = merchantId,
-            name = "Inactive Branch",
-            active = false,
-            address = com.elegant.software.blitzpay.merchant.domain.PostalAddress(
-                addressLine1 = "Branch Street 1",
-                city = "Berlin",
-                postalCode = "10115",
-                country = "DE",
-            ),
-        )
-        whenever(merchantApplicationRepository.findById(merchantId)).thenReturn(Optional.of(merchant))
-        whenever(merchantBranchRepository.findById(branchId)).thenReturn(Optional.of(inactiveBranch))
         whenever(merchantGateway.findOrderableProducts(any())).thenReturn(
             listOf(
                 OrderableMerchantProduct(request.items[0].productId, merchantId, branchId, "Coffee", "Medium roast", BigDecimal("12.50"), true),
                 OrderableMerchantProduct(request.items[1].productId, merchantId, branchId, "Bagel", "Sesame", BigDecimal("4.00"), true),
             )
         )
+        whenever(merchantGateway.getEnabledOfferings(merchantId)).thenReturn(setOf("PRE_ORDER"))
+        whenever(merchantGateway.requireActiveBranch(merchantId, branchId))
+            .thenThrow(IllegalStateException("Branch is inactive: $branchId"))
 
         assertFailsWith<OrderCreationConflictException> {
             service.createShopperOrder(request, "shopper-abc")

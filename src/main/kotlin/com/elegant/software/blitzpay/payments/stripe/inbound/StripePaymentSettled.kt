@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.stripe.internal
+package com.elegant.software.blitzpay.payments.stripe.inbound
 
 import java.time.Instant
 import java.util.UUID

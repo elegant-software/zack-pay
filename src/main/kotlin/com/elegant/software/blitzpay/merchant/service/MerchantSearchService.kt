@@ -1,9 +1,9 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchRequest
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchResponse
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchResultItem
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service

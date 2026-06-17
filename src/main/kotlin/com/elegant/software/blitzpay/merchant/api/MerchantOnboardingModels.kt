@@ -1,10 +1,10 @@
 package com.elegant.software.blitzpay.merchant.api
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
-import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
-import com.elegant.software.blitzpay.merchant.domain.PersonRole
-import com.elegant.software.blitzpay.merchant.domain.SupportingMaterialType
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.PersonRole
+import com.elegant.software.blitzpay.merchant.persistence.model.SupportingMaterialType
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID

@@ -9,11 +9,11 @@ import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.OrderSummaryResponse
 import com.elegant.software.blitzpay.order.api.PaymentSource
 import com.elegant.software.blitzpay.order.api.QrCodeResponse
-import com.elegant.software.blitzpay.order.application.OrderMutationConflictException
-import com.elegant.software.blitzpay.order.application.OrderService
-import com.elegant.software.blitzpay.order.domain.CreatorType
-import com.elegant.software.blitzpay.order.domain.OrderStatus
-import com.elegant.software.blitzpay.order.domain.OrderType
+import com.elegant.software.blitzpay.order.service.OrderMutationConflictException
+import com.elegant.software.blitzpay.order.service.OrderService
+import com.elegant.software.blitzpay.order.persistence.model.CreatorType
+import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
+import com.elegant.software.blitzpay.order.persistence.model.OrderType
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq

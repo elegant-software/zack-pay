@@ -8,9 +8,8 @@ import com.elegant.software.blitzpay.appointments.persistence.AppointmentContact
 import com.elegant.software.blitzpay.appointments.persistence.AppointmentEntity
 import com.elegant.software.blitzpay.appointments.persistence.AppointmentRepository
 import com.elegant.software.blitzpay.appointments.persistence.AppointmentStatus
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeServiceAssignmentRepository
-import com.elegant.software.blitzpay.merchant.scheduling.AppointmentSchedulingService
+import com.elegant.software.blitzpay.appointments.api.AppointmentSchedulingService
+import com.elegant.software.blitzpay.appointments.api.EmployeeGateway
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -23,8 +22,7 @@ import java.util.UUID
 @Service
 class AppointmentService(
     private val appointmentRepo: AppointmentRepository,
-    private val employeeRepo: MerchantEmployeeRepository,
-    private val serviceAssignmentRepo: MerchantEmployeeServiceAssignmentRepository,
+    private val employeeGateway: EmployeeGateway,
     private val schedulingService: AppointmentSchedulingService,
     private val bookableTimeService: BookableTimeService,
     private val eventPublisher: ApplicationEventPublisher,
@@ -60,9 +58,7 @@ class AppointmentService(
                 bookableTimeService.diagnose(context, cmd.productCategoryId, resolvedEmployeeId, cmd.startTime, existingAppointments, now)
             )
 
-        // Acquire employee-level lock before inserting
-        employeeRepo.findByIdForUpdate(resolvedEmployeeId)
-            ?: throw NoSuchElementException("Employee $resolvedEmployeeId not found")
+        employeeGateway.lockEmployee(resolvedEmployeeId)
 
         // Re-check overlap under lock
         val overlap = appointmentRepo.findOverlappingBooked(resolvedEmployeeId, slot.startTime, slot.endTime)
@@ -234,7 +230,7 @@ class AppointmentService(
                 bookableTimeService.diagnose(context, cmd.newProductCategoryId, targetEmployeeId, cmd.newStartTime, existingAppointments, now)
             )
 
-        employeeRepo.findByIdForUpdate(targetEmployeeId)
+        employeeGateway.lockEmployee(targetEmployeeId)
 
         val overlap = appointmentRepo.findOverlappingBooked(targetEmployeeId, slot.startTime, slot.endTime)
             .filter { it.id != appointmentId }
@@ -323,7 +319,7 @@ class AppointmentService(
     fun findByEmployee(employeeId: UUID, from: Instant, to: Instant): List<AppointmentEntity> =
         appointmentRepo.findAllByEmployeeIdAndStatusAndStartTimeBetween(employeeId, AppointmentStatus.BOOKED, from, to)
 
-    private fun resolveEmployee(cmd: BookAppointmentCommand, context: com.elegant.software.blitzpay.merchant.scheduling.SchedulingContext, tz: ZoneId): UUID {
+    private fun resolveEmployee(cmd: BookAppointmentCommand, context: com.elegant.software.blitzpay.appointments.api.SchedulingContext, tz: ZoneId): UUID {
         if (cmd.employeeId != null) return cmd.employeeId
 
         val from = cmd.startTime.atZone(tz).toLocalDate()
@@ -345,7 +341,7 @@ class AppointmentService(
     }
 
     private fun resolveEmployeeName(employeeId: UUID): String =
-        employeeRepo.findById(employeeId).map { it.name }.orElse("Unknown")
+        employeeGateway.findNameById(employeeId) ?: "Unknown"
 }
 
 data class BookAppointmentCommand(

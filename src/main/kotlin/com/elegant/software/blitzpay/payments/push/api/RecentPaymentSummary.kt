@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.push.api
 
+import com.elegant.software.blitzpay.order.api.PaymentStatusCode
 import java.time.Instant
 import java.util.UUID
 

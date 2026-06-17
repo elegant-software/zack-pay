@@ -1,14 +1,15 @@
-package com.elegant.software.blitzpay.order.application
+package com.elegant.software.blitzpay.order.service
 
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
-import com.elegant.software.blitzpay.order.domain.CreatorType
-import com.elegant.software.blitzpay.order.domain.OrderStatus
-import com.elegant.software.blitzpay.order.domain.PaymentAttempt
-import com.elegant.software.blitzpay.order.repository.OrderRepository
-import com.elegant.software.blitzpay.order.repository.PaymentAttemptRepository
+import com.elegant.software.blitzpay.order.api.PaymentRequestResolver
+import com.elegant.software.blitzpay.order.persistence.model.CreatorType
+import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
+import com.elegant.software.blitzpay.order.persistence.model.PaymentAttempt
+import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
+import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,7 +21,7 @@ import java.util.UUID
 class PaymentAttemptService(
     private val orderRepository: OrderRepository,
     private val paymentAttemptRepository: PaymentAttemptRepository,
-) : OrderGateway {
+) : OrderGateway, PaymentRequestResolver {
     private val log = LoggerFactory.getLogger(PaymentAttemptService::class.java)
 
     override fun assertPayable(orderId: String): OrderPaymentSummary {
@@ -89,6 +90,10 @@ class PaymentAttemptService(
         val order = orderRepository.findByOrderId(orderId) ?: return false
         return order.creatorType == CreatorType.SHOPPER && order.createdById == shopperId
     }
+
+    @Transactional(readOnly = true)
+    override fun findLastPaymentRequestId(orderId: String): UUID? =
+        orderRepository.findByOrderId(orderId)?.lastPaymentRequestId
 
     private fun checkoutPaymentMethodForProvider(provider: String): CheckoutPaymentMethod? =
         when (provider) {

@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.merchant.domain
+package com.elegant.software.blitzpay.merchant.persistence.model
 
 /**
  * Canonical lifecycle for merchant onboarding.

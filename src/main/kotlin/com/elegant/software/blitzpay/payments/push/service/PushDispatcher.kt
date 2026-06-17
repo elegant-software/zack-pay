@@ -1,11 +1,11 @@
-package com.elegant.software.blitzpay.payments.push.internal
+package com.elegant.software.blitzpay.payments.push.service
 
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusChanged
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusCode
-import com.elegant.software.blitzpay.payments.push.persistence.DeliveryOutcome
-import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistrationRepository
-import com.elegant.software.blitzpay.payments.push.persistence.PushDeliveryAttemptEntity
-import com.elegant.software.blitzpay.payments.push.persistence.PushDeliveryAttemptRepository
+import com.elegant.software.blitzpay.order.api.PaymentStatusChanged
+import com.elegant.software.blitzpay.order.api.PaymentStatusCode
+import com.elegant.software.blitzpay.payments.push.persistence.model.DeliveryOutcome
+import com.elegant.software.blitzpay.payments.push.persistence.model.DeviceRegistrationRepository
+import com.elegant.software.blitzpay.payments.push.persistence.model.PushDeliveryAttemptEntity
+import com.elegant.software.blitzpay.payments.push.persistence.model.PushDeliveryAttemptRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Instant

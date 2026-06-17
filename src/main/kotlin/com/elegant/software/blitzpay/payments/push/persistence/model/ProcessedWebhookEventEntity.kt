@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.push.persistence
+package com.elegant.software.blitzpay.payments.push.persistence.model
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

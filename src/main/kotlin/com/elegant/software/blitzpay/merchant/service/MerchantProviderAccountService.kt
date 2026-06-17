@@ -1,10 +1,10 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.ProviderAccountResponse
-import com.elegant.software.blitzpay.merchant.domain.MerchantProviderAccount
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
-import com.elegant.software.blitzpay.merchant.repository.PaymentServiceProviderRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProviderAccount
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProviderAccountRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.PaymentServiceProviderRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant

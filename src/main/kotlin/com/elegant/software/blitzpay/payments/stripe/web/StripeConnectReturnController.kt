@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.stripe.internal
+package com.elegant.software.blitzpay.payments.stripe.web
 
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import org.springframework.http.HttpStatus

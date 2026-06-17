@@ -9,8 +9,7 @@ import com.elegant.software.blitzpay.merchant.iam.web.CreateAssignmentRequest
 import com.elegant.software.blitzpay.merchant.iam.web.MerchantUserAssignmentResponse
 import com.elegant.software.blitzpay.merchant.iam.web.UserGroupMembership
 import com.elegant.software.blitzpay.merchant.iam.web.UserSearchResult
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.api.MerchantLookupGateway
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.resource.GroupsResource
 import org.keycloak.representations.idm.GroupRepresentation
@@ -26,8 +25,7 @@ class UserManagementService(
     private val keycloak: Keycloak,
     private val keycloakProperties: KeycloakProperties,
     private val assignmentRepository: MerchantUserAssignmentRepository,
-    private val merchantRepository: MerchantApplicationRepository,
-    private val branchRepository: MerchantBranchRepository,
+    private val merchantLookup: MerchantLookupGateway,
 ) {
     private val log = LoggerFactory.getLogger(UserManagementService::class.java)
 
@@ -52,14 +50,11 @@ class UserManagementService(
 
     @Transactional
     fun createAssignment(userId: UUID, request: CreateAssignmentRequest): MerchantUserAssignmentResponse {
-        val merchant = merchantRepository.findById(request.merchantId).orElseThrow {
-            IllegalArgumentException("merchant not found: ${request.merchantId}")
-        }
+        val merchant = merchantLookup.requireMerchant(request.merchantId)
 
         if (request.branchId != null) {
-            val branch = branchRepository.findById(request.branchId).orElseThrow {
-                IllegalArgumentException("branch not found: ${request.branchId}")
-            }
+            val branch = merchantLookup.findBranch(request.branchId)
+                ?: throw IllegalArgumentException("branch not found: ${request.branchId}")
             require(branch.merchantApplicationId == request.merchantId) {
                 "branch ${request.branchId} does not belong to merchant ${request.merchantId}"
             }
@@ -102,8 +97,8 @@ class UserManagementService(
         )
 
         return assignment.toResponse(
-            merchantName = merchant.merchantName,
-            branchName = request.branchId?.let { branchRepository.findById(it).orElse(null)?.name },
+            merchantName = merchant.name,
+            branchName = request.branchId?.let { merchantLookup.findBranch(it)?.name },
         )
     }
 
@@ -181,9 +176,9 @@ class UserManagementService(
         branchName: String? = null,
     ): MerchantUserAssignmentResponse {
         val resolvedMerchantName = merchantName
-            ?: merchantRepository.findById(merchantApplicationId).orElse(null)?.merchantName
+            ?: merchantLookup.findMerchant(merchantApplicationId)?.name
             ?: merchantApplicationId.toString()
-        val resolvedBranchName = branchName ?: branchId?.let { branchRepository.findById(it).orElse(null)?.name }
+        val resolvedBranchName = branchName ?: branchId?.let { merchantLookup.findBranch(it)?.name }
         return MerchantUserAssignmentResponse(
             id = id,
             merchantId = merchantApplicationId,
@@ -203,10 +198,10 @@ class UserManagementService(
 
         if (merchantId == null && branchId == null) return null
 
-        val branch = branchId?.let { branchRepository.findById(it).orElse(null) }
+        val branch = branchId?.let { merchantLookup.findBranch(it) }
         val resolvedMerchantId = merchantId ?: branch?.merchantApplicationId
         val merchantName = group.firstAttribute(KeycloakGroupNames.ATTR_MERCHANT_NAME)
-            ?: resolvedMerchantId?.let { merchantRepository.findById(it).orElse(null)?.merchantName }
+            ?: resolvedMerchantId?.let { merchantLookup.findMerchant(it)?.name }
             ?: return null
         val branchName = group.firstAttribute(KeycloakGroupNames.ATTR_BRANCH_NAME) ?: branch?.name
 

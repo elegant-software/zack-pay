@@ -1,6 +1,7 @@
-package com.elegant.software.blitzpay.payments.truelayer.support
+package com.elegant.software.blitzpay.payments.truelayer.security
 
 import com.elegant.software.blitzpay.config.propagateRequestId
+import com.elegant.software.blitzpay.payments.truelayer.config.TlWebhookProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service

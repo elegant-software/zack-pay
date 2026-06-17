@@ -6,10 +6,10 @@ import com.elegant.software.blitzpay.order.api.CreateOrderRequest
 import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.OrderSummaryResponse
 import com.elegant.software.blitzpay.order.api.UpdateOrderItemRequest
-import com.elegant.software.blitzpay.order.application.OrderCreationConflictException
-import com.elegant.software.blitzpay.order.application.OrderMutationConflictException
-import com.elegant.software.blitzpay.order.application.OrderService
-import com.elegant.software.blitzpay.order.application.UnauthenticatedException
+import com.elegant.software.blitzpay.order.service.OrderCreationConflictException
+import com.elegant.software.blitzpay.order.service.OrderMutationConflictException
+import com.elegant.software.blitzpay.order.service.OrderService
+import com.elegant.software.blitzpay.order.service.UnauthenticatedException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.slf4j.LoggerFactory

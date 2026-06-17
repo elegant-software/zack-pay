@@ -6,6 +6,6 @@ import org.springframework.modulith.PackageInfo
 @PackageInfo
 @ApplicationModule(
     displayName = "order",
-    allowedDependencies = ["merchant :: MerchantGateway", "payments.push :: push-api", "appointments :: appointments-api", "shopper :: ShopperProfileGateway"]
+    allowedDependencies = ["merchant :: MerchantGateway", "appointments :: appointments-api", "shopper :: ShopperProfileGateway", "config"]
 )
 class ModuleMetadata

@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import java.util.UUID
 

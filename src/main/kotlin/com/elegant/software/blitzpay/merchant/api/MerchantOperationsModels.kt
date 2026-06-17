@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.api
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import java.util.UUID
 
 data class MerchantContactInfo(

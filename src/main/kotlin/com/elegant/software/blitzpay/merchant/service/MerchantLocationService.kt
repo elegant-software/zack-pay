@@ -1,14 +1,14 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantLocationResponse
 import com.elegant.software.blitzpay.merchant.api.NearbyBranchResponse
 import com.elegant.software.blitzpay.merchant.api.NearbyMerchantResponse
 import com.elegant.software.blitzpay.merchant.api.NearbyMerchantsResponse
 import com.elegant.software.blitzpay.merchant.api.SetMerchantLocationRequest
-import com.elegant.software.blitzpay.merchant.domain.MerchantLocation
-import com.elegant.software.blitzpay.merchant.domain.PostalAddress
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
+import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -26,7 +26,7 @@ class MerchantLocationService(
 ) {
     private val log = LoggerFactory.getLogger(MerchantLocationService::class.java)
     private data class BranchDistance(
-        val branch: com.elegant.software.blitzpay.merchant.domain.MerchantBranch,
+        val branch: com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch,
         val distanceMeters: Double?,
     )
 

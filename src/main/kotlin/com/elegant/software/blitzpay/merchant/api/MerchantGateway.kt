@@ -1,18 +1,12 @@
 package com.elegant.software.blitzpay.merchant.api
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
-import com.elegant.software.blitzpay.merchant.domain.ReviewOutcome
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.ReviewOutcome
 import org.springframework.modulith.NamedInterface
 import java.time.Instant
 import java.util.UUID
 
-/**
- * Public API for the merchant onboarding module, exposed to other Spring Modulith modules.
- *
- * This interface provides a stable boundary for onboarding lifecycle operations
- * without exposing merchant application internals directly across module lines.
- */
 @NamedInterface("MerchantGateway")
 interface MerchantGateway {
     fun submit(applicationId: UUID, submittedAt: Instant = Instant.now()): MerchantSummary
@@ -44,6 +38,10 @@ interface MerchantGateway {
     ): MerchantSummary
 
     fun findOrderableProducts(productIds: Collection<UUID>): List<OrderableMerchantProduct>
+
+    fun requireActiveBranch(merchantId: UUID, branchId: UUID): ActiveBranchInfo
+
+    fun getEnabledOfferings(merchantId: UUID): Set<String>
 }
 
 data class MerchantSummary(
@@ -58,4 +56,16 @@ data class MerchantSummary(
     val lastUpdatedAt: Instant,
     val logoStorageKey: String? = null,
     val offerings: Set<String> = emptySet(),
+)
+
+data class ActiveBranchInfo(
+    val branchId: UUID,
+    val merchantApplicationId: UUID,
+    val location: BranchLocationInfo?,
+)
+
+data class BranchLocationInfo(
+    val latitude: Double,
+    val longitude: Double,
+    val geofenceRadiusMeters: Double,
 )

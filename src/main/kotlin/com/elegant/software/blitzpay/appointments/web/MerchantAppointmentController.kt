@@ -7,7 +7,7 @@ import com.elegant.software.blitzpay.appointments.service.CompletedBy
 import com.elegant.software.blitzpay.appointments.service.Nullable
 import com.elegant.software.blitzpay.appointments.service.RescheduleCommand
 import com.elegant.software.blitzpay.appointments.service.UpdateDetailsCommand
-import com.elegant.software.blitzpay.merchant.scheduling.AppointmentSchedulingService
+import com.elegant.software.blitzpay.appointments.api.AppointmentSchedulingService
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank

@@ -3,9 +3,9 @@ package com.elegant.software.blitzpay.support
 import com.elegant.software.blitzpay.appointments.api.AppointmentQueryService
 import com.elegant.software.blitzpay.order.api.PaymentSettlementGateway
 import com.elegant.software.blitzpay.payments.push.config.ExpoPushProperties
-import com.elegant.software.blitzpay.payments.push.internal.ExpoMessage
-import com.elegant.software.blitzpay.payments.push.internal.ExpoPushClient
-import com.elegant.software.blitzpay.payments.push.internal.ExpoTicket
+import com.elegant.software.blitzpay.payments.push.service.ExpoMessage
+import com.elegant.software.blitzpay.payments.push.service.ExpoPushClient
+import com.elegant.software.blitzpay.payments.push.service.ExpoTicket
 import jakarta.persistence.EntityManagerFactory
 import jakarta.persistence.metamodel.Metamodel
 import org.jooq.DSLContext

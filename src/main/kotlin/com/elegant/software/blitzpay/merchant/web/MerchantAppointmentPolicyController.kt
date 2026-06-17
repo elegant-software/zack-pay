@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.web
 
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max

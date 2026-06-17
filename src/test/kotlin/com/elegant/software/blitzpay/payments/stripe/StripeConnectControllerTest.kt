@@ -1,9 +1,9 @@
 package com.elegant.software.blitzpay.payments.stripe
 
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
-import com.elegant.software.blitzpay.payments.stripe.internal.ConnectPaymentFlow
-import com.elegant.software.blitzpay.payments.stripe.internal.StripeConnectController
-import com.elegant.software.blitzpay.payments.stripe.internal.StripeConnectService
+import com.elegant.software.blitzpay.payments.stripe.web.ConnectPaymentFlow
+import com.elegant.software.blitzpay.payments.stripe.web.StripeConnectController
+import com.elegant.software.blitzpay.payments.stripe.web.StripeConnectService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever

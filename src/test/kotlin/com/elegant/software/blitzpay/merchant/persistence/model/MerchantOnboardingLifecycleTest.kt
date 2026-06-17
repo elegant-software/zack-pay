@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.merchant.domain
+package com.elegant.software.blitzpay.merchant.persistence.model
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertContains

@@ -2,7 +2,7 @@ package com.elegant.software.blitzpay.merchant.web
 
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchRequest
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchResponse
-import com.elegant.software.blitzpay.merchant.application.MerchantSearchService
+import com.elegant.software.blitzpay.merchant.service.MerchantSearchService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.PostMapping

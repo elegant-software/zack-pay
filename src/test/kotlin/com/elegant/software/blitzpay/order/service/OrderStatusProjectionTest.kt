@@ -1,14 +1,14 @@
-package com.elegant.software.blitzpay.order.application
+package com.elegant.software.blitzpay.order.service
 
 import com.elegant.software.blitzpay.order.OrderFixtureLoader
-import com.elegant.software.blitzpay.order.domain.CreatorType
-import com.elegant.software.blitzpay.order.domain.Order
-import com.elegant.software.blitzpay.order.domain.OrderStatus
-import com.elegant.software.blitzpay.order.domain.PaymentAttempt
-import com.elegant.software.blitzpay.order.repository.OrderItemRepository
-import com.elegant.software.blitzpay.order.repository.OrderRepository
-import com.elegant.software.blitzpay.order.repository.PaymentAttemptRepository
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusCode
+import com.elegant.software.blitzpay.order.persistence.model.CreatorType
+import com.elegant.software.blitzpay.order.persistence.model.Order
+import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
+import com.elegant.software.blitzpay.order.persistence.model.PaymentAttempt
+import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
+import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
+import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
+import com.elegant.software.blitzpay.order.api.PaymentStatusCode
 import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

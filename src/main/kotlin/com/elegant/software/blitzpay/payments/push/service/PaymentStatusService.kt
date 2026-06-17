@@ -1,10 +1,10 @@
-package com.elegant.software.blitzpay.payments.push.internal
+package com.elegant.software.blitzpay.payments.push.service
 
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusCode
+import com.elegant.software.blitzpay.order.api.PaymentStatusCode
 import com.elegant.software.blitzpay.payments.push.api.RecentPaymentSummary
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusResponse
-import com.elegant.software.blitzpay.payments.push.persistence.PaymentStatusEntity
-import com.elegant.software.blitzpay.payments.push.persistence.PaymentStatusRepository
+import com.elegant.software.blitzpay.payments.push.persistence.model.PaymentStatusEntity
+import com.elegant.software.blitzpay.payments.push.persistence.model.PaymentStatusRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

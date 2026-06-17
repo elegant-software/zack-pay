@@ -1,13 +1,13 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantActivated
 import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
-import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.support.MerchantObservabilitySupport
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher

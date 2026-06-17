@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.push.internal
+package com.elegant.software.blitzpay.payments.push.service
 
 import com.elegant.software.blitzpay.payments.push.config.ExpoPushProperties
 import org.slf4j.LoggerFactory

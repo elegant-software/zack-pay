@@ -1,12 +1,12 @@
 package com.elegant.software.blitzpay.payments.push
 
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
-import com.elegant.software.blitzpay.payments.push.api.DeviceRegistrationRequest
-import com.elegant.software.blitzpay.payments.push.api.DeviceRegistrationResponse
-import com.elegant.software.blitzpay.payments.push.internal.DeviceRegistrationService
-import com.elegant.software.blitzpay.payments.push.internal.OrderNotFoundException
-import com.elegant.software.blitzpay.payments.push.internal.RegistrationOutcome
-import com.elegant.software.blitzpay.payments.push.persistence.DevicePlatform
+import com.elegant.software.blitzpay.payments.push.web.DeviceRegistrationRequest
+import com.elegant.software.blitzpay.payments.push.web.DeviceRegistrationResponse
+import com.elegant.software.blitzpay.payments.push.service.DeviceRegistrationService
+import com.elegant.software.blitzpay.payments.push.service.OrderNotFoundException
+import com.elegant.software.blitzpay.payments.push.service.RegistrationOutcome
+import com.elegant.software.blitzpay.payments.push.persistence.model.DevicePlatform
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doThrow

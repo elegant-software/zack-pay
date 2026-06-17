@@ -1,5 +1,6 @@
-package com.elegant.software.blitzpay.payments.truelayer.support
+package com.elegant.software.blitzpay.payments.truelayer.security
 
+import com.elegant.software.blitzpay.payments.truelayer.config.TrueLayerProperties
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet
