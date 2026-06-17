@@ -1,6 +1,6 @@
-package com.elegant.software.blitzpay.order.repository
+package com.elegant.software.blitzpay.order.persistence.repository
 
-import com.elegant.software.blitzpay.order.domain.PaymentSettlement
+import com.elegant.software.blitzpay.order.persistence.model.PaymentSettlement
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.context.annotation.Profile
 import java.util.UUID

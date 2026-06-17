@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.order.domain
+package com.elegant.software.blitzpay.order.persistence.model
 
 import com.elegant.software.blitzpay.merchant.api.OrderableMerchantProduct
 import jakarta.persistence.Column

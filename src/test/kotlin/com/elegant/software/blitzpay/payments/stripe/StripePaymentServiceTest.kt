@@ -2,7 +2,7 @@ package com.elegant.software.blitzpay.payments.stripe
 
 import com.elegant.software.blitzpay.config.ObservabilitySupport
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
-import com.elegant.software.blitzpay.payments.stripe.internal.StripePaymentService
+import com.elegant.software.blitzpay.payments.stripe.outbound.StripePaymentService
 import io.micrometer.observation.ObservationRegistry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

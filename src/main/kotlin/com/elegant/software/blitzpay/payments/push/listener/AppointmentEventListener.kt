@@ -5,8 +5,8 @@ import com.elegant.software.blitzpay.appointments.api.AppointmentCancelled
 import com.elegant.software.blitzpay.appointments.api.AppointmentReminderDue
 import com.elegant.software.blitzpay.appointments.api.AppointmentRescheduled
 import com.elegant.software.blitzpay.payments.push.persistence.model.ShopperDeviceRegistrationRepository
-import com.elegant.software.blitzpay.payments.push.internal.ExpoMessage
-import com.elegant.software.blitzpay.payments.push.internal.ExpoPushClient
+import com.elegant.software.blitzpay.payments.push.service.ExpoMessage
+import com.elegant.software.blitzpay.payments.push.service.ExpoPushClient
 import org.slf4j.LoggerFactory
 import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.stereotype.Component

@@ -1,15 +1,15 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.BranchCreated
 import com.elegant.software.blitzpay.merchant.api.BranchNameUpdated
 import com.elegant.software.blitzpay.merchant.api.CreateBranchRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateBranchRequest
-import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
-import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
+import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -158,15 +158,15 @@ class MerchantBranchServiceTest {
             merchantApplicationId = merchantId,
             name = "Main Branch",
             active = true,
-            status = com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus.ACTIVE,
-            address = com.elegant.software.blitzpay.merchant.domain.PostalAddress(
+            status = com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus.ACTIVE,
+            address = com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress(
                 addressLine1 = "Old Street 1",
                 city = "Berlin",
                 postalCode = "10115",
                 country = "DE",
             ),
         ).also {
-            it.location = com.elegant.software.blitzpay.merchant.domain.MerchantLocation(
+            it.location = com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation(
                 latitude = 52.52,
                 longitude = 13.405,
                 geofenceRadiusMeters = 150
@@ -194,7 +194,7 @@ class MerchantBranchServiceTest {
         val branchCaptor = argumentCaptor<MerchantBranch>()
         verify(branchRepository).save(branchCaptor.capture())
         assertEquals(true, branchCaptor.firstValue.active)
-        assertEquals(com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus.ACTIVE, branchCaptor.firstValue.status)
+        assertEquals(com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus.ACTIVE, branchCaptor.firstValue.status)
     }
 
     @Test
@@ -203,14 +203,14 @@ class MerchantBranchServiceTest {
         val branch = MerchantBranch(
             merchantApplicationId = merchantId,
             name = "Bremen Mitte",
-            address = com.elegant.software.blitzpay.merchant.domain.PostalAddress(
+            address = com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress(
                 addressLine1 = "Old Strasse 1",
                 city = "Bremen",
                 postalCode = "28195",
                 country = "DE",
             ),
         ).also {
-            it.location = com.elegant.software.blitzpay.merchant.domain.MerchantLocation(
+            it.location = com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation(
                 latitude = 53.0758,
                 longitude = 8.8072,
                 geofenceRadiusMeters = 250
@@ -260,14 +260,14 @@ class MerchantBranchServiceTest {
         val branch = MerchantBranch(
             merchantApplicationId = merchantId,
             name = "Same Name",
-            address = com.elegant.software.blitzpay.merchant.domain.PostalAddress(
+            address = com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress(
                 addressLine1 = "Same Street 1",
                 city = "Hamburg",
                 postalCode = "20095",
                 country = "DE",
             ),
         ).also {
-            it.location = com.elegant.software.blitzpay.merchant.domain.MerchantLocation(
+            it.location = com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation(
                 latitude = 53.5511,
                 longitude = 9.9937,
                 geofenceRadiusMeters = 200

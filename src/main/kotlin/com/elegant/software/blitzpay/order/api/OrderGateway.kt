@@ -15,6 +15,8 @@ interface OrderGateway {
     ): OrderPaymentSummary
 
     fun isShopperOrder(orderId: String, shopperId: String): Boolean
+
+    fun findLastPaymentRequestId(orderId: String): UUID?
 }
 
 data class OrderPaymentSummary(

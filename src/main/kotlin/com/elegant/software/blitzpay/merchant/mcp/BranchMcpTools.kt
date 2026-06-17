@@ -5,7 +5,7 @@ import com.elegant.software.blitzpay.merchant.api.BulkBranchInput
 import com.elegant.software.blitzpay.merchant.api.BulkBranchUpsertResult
 import com.elegant.software.blitzpay.merchant.api.BulkFailedItem
 import com.elegant.software.blitzpay.merchant.api.BulkSkippedItem
-import com.elegant.software.blitzpay.merchant.application.MerchantBranchService
+import com.elegant.software.blitzpay.merchant.service.MerchantBranchService
 import org.springframework.ai.mcp.annotation.McpTool
 import org.springframework.stereotype.Component
 import java.util.LinkedHashSet

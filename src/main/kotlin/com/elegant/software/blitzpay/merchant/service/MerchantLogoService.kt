@@ -1,8 +1,8 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantLogoUploadResponse
 import com.elegant.software.blitzpay.merchant.api.MerchantSummary
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import org.springframework.stereotype.Service
 import java.util.UUID

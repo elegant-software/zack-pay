@@ -1,11 +1,12 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.ReviewOutcome
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.ReviewOutcome
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import com.elegant.software.blitzpay.merchant.support.MerchantObservabilitySupport
 import com.elegant.software.blitzpay.merchant.support.MerchantTestFixtureLoader
 import org.junit.jupiter.api.Test
@@ -26,6 +27,7 @@ class MerchantOnboardingServiceTest {
     private val repository = mock<MerchantApplicationRepository>()
     private val merchantProductRepository = mock<MerchantProductRepository>()
     private val merchantBranchRepository = mock<MerchantBranchRepository>()
+    private val merchantOfferingAssignmentRepository = mock<MerchantOfferingAssignmentRepository>()
     private val auditTrail = mock<MerchantAuditTrail>()
     private val observabilitySupport = mock<MerchantObservabilitySupport>()
     private val validator = MerchantApplicationValidator()
@@ -33,6 +35,7 @@ class MerchantOnboardingServiceTest {
         repository,
         merchantProductRepository,
         merchantBranchRepository,
+        merchantOfferingAssignmentRepository,
         validator,
         auditTrail,
         observabilitySupport

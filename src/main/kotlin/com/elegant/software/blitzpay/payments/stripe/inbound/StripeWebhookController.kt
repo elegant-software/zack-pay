@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.stripe.internal
+package com.elegant.software.blitzpay.payments.stripe.inbound
 
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway

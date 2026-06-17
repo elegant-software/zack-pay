@@ -1,8 +1,8 @@
 package com.elegant.software.blitzpay.merchant.service
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranchOpeningException
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeAvailabilityException
-import com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranchOpeningException
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployeeAvailabilityException
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchOpeningExceptionRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchOpeningHoursRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeAvailabilityExceptionRepository
@@ -10,19 +10,19 @@ import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmp
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeBranchAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeServiceAssignmentRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
-import com.elegant.software.blitzpay.merchant.scheduling.AppointmentSchedulingService
-import com.elegant.software.blitzpay.merchant.scheduling.BookableProductInfo
-import com.elegant.software.blitzpay.merchant.scheduling.DateWindow
-import com.elegant.software.blitzpay.merchant.scheduling.DateWindowType
-import com.elegant.software.blitzpay.merchant.scheduling.EmployeeSchedule
-import com.elegant.software.blitzpay.merchant.scheduling.ProductCategoryInfo
-import com.elegant.software.blitzpay.merchant.scheduling.SchedulingContext
-import com.elegant.software.blitzpay.merchant.scheduling.WeeklyWindow
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
+import com.elegant.software.blitzpay.appointments.api.AppointmentSchedulingService
+import com.elegant.software.blitzpay.appointments.api.BookableProductInfo
+import com.elegant.software.blitzpay.appointments.api.DateWindow
+import com.elegant.software.blitzpay.appointments.api.DateWindowType
+import com.elegant.software.blitzpay.appointments.api.EmployeeSchedule
+import com.elegant.software.blitzpay.appointments.api.ProductCategoryInfo
+import com.elegant.software.blitzpay.appointments.api.SchedulingContext
+import com.elegant.software.blitzpay.appointments.api.WeeklyWindow
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -70,10 +70,10 @@ class AppointmentSchedulingServiceImpl(
         val merchant = merchantRepo.findById(branch.merchantApplicationId)
             .orElseThrow { NoSuchElementException("Merchant not found for branch $branchId") }
 
-        check(merchant.merchantStatus == com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus.ACTIVE) {
+        check(merchant.merchantStatus == com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus.ACTIVE) {
             "Merchant is not active"
         }
-        check(branch.status == com.elegant.software.blitzpay.merchant.domain.MerchantEntityStatus.ACTIVE) {
+        check(branch.status == com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus.ACTIVE) {
             "Branch is not active"
         }
 

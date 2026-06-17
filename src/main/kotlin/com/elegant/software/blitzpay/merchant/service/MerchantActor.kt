@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 data class MerchantActor(
     val actorId: String,

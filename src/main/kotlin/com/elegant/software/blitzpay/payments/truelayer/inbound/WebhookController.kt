@@ -5,8 +5,8 @@ package com.elegant.software.blitzpay.payments.truelayer.inbound
 import TlWebhookEnvelope
 
 import com.elegant.software.blitzpay.config.LogContext
-import com.elegant.software.blitzpay.payments.truelayer.support.JwksService
-import com.elegant.software.blitzpay.payments.truelayer.support.TlWebhookProperties
+import com.elegant.software.blitzpay.payments.truelayer.security.JwksService
+import com.elegant.software.blitzpay.payments.truelayer.config.TlWebhookProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.truelayer.signing.Verifier

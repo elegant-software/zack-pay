@@ -1,8 +1,8 @@
-package com.elegant.software.blitzpay.order.repository
+package com.elegant.software.blitzpay.order.persistence.repository
 
-import com.elegant.software.blitzpay.order.domain.CreatorType
-import com.elegant.software.blitzpay.order.domain.Order
-import com.elegant.software.blitzpay.order.domain.OrderStatus
+import com.elegant.software.blitzpay.order.persistence.model.CreatorType
+import com.elegant.software.blitzpay.order.persistence.model.Order
+import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.Instant
 import java.util.UUID

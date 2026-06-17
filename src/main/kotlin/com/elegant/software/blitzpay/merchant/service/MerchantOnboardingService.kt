@@ -1,14 +1,18 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
+import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
+import com.elegant.software.blitzpay.merchant.api.BranchLocationInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
 import com.elegant.software.blitzpay.merchant.api.MerchantSummary
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.MonitoringRecord
-import com.elegant.software.blitzpay.merchant.domain.ReviewOutcome
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MonitoringRecord
+import com.elegant.software.blitzpay.merchant.persistence.model.ReviewOutcome
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import com.elegant.software.blitzpay.merchant.support.MerchantObservabilitySupport
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,6 +25,7 @@ class MerchantOnboardingService(
     private val merchantApplicationRepository: MerchantApplicationRepository,
     private val merchantProductRepository: MerchantProductRepository,
     private val merchantBranchRepository: MerchantBranchRepository,
+    private val merchantOfferingAssignmentRepository: MerchantOfferingAssignmentRepository,
     private val merchantApplicationValidator: MerchantApplicationValidator,
     private val merchantAuditTrail: MerchantAuditTrail,
     private val merchantObservabilitySupport: MerchantObservabilitySupport
@@ -126,6 +131,36 @@ class MerchantOnboardingService(
                 )
             }
         }
+
+    @Transactional(readOnly = true)
+    override fun requireActiveBranch(merchantId: UUID, branchId: UUID): ActiveBranchInfo {
+        val merchant = merchantApplicationRepository.findById(merchantId)
+            .orElseThrow { NoSuchElementException("Merchant not found: $merchantId") }
+        if (merchant.merchantStatus != MerchantOperationalStatus.ACTIVE) {
+            throw IllegalStateException("Merchant is inactive: $merchantId")
+        }
+        val branch = merchantBranchRepository.findById(branchId)
+            .orElseThrow { NoSuchElementException("Branch not found: $branchId") }
+        if (branch.merchantApplicationId != merchantId) {
+            throw IllegalStateException("Branch does not belong to merchant: $branchId")
+        }
+        if (!branch.active) {
+            throw IllegalStateException("Branch is inactive: $branchId")
+        }
+        return ActiveBranchInfo(
+            branchId = branch.id,
+            merchantApplicationId = branch.merchantApplicationId,
+            location = branch.location?.let {
+                BranchLocationInfo(it.latitude, it.longitude, it.geofenceRadiusMeters.toDouble())
+            },
+        )
+    }
+
+    @Transactional(readOnly = true)
+    override fun getEnabledOfferings(merchantId: UUID): Set<String> =
+        merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(merchantId)
+            .map { it.offeringCode }
+            .toSet()
 
     private fun getApplication(applicationId: UUID): MerchantApplication =
         merchantApplicationRepository.findById(applicationId)

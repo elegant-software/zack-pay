@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.braintree.internal
+package com.elegant.software.blitzpay.payments.braintree.outbound
 
 import com.braintreegateway.BraintreeGateway
 import com.braintreegateway.Environment

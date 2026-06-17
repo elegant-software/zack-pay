@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.config.GoogleMapsProperties
 import com.fasterxml.jackson.databind.JsonNode

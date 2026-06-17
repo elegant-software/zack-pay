@@ -1,6 +1,6 @@
-package com.elegant.software.blitzpay.payments.push.api
+package com.elegant.software.blitzpay.payments.push.web
 
-import com.elegant.software.blitzpay.payments.push.persistence.DevicePlatform
+import com.elegant.software.blitzpay.payments.push.persistence.model.DevicePlatform
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import java.util.UUID

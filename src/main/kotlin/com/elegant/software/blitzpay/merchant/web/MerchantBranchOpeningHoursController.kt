@@ -1,7 +1,7 @@
 package com.elegant.software.blitzpay.merchant.web
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranchOpeningException
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranchOpeningHours
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranchOpeningException
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranchOpeningHours
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchOpeningExceptionRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchOpeningHoursRepository
 import io.swagger.v3.oas.annotations.tags.Tag

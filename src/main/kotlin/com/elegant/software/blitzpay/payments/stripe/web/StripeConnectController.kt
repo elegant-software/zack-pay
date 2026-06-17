@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.stripe.internal
+package com.elegant.software.blitzpay.payments.stripe.web
 
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.stripe.exception.StripeException

@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.persistence.repository
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployee
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployee
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query

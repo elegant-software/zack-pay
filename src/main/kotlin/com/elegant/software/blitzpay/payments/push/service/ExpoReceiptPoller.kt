@@ -1,8 +1,8 @@
-package com.elegant.software.blitzpay.payments.push.internal
+package com.elegant.software.blitzpay.payments.push.service
 
 import com.elegant.software.blitzpay.payments.push.config.ExpoPushProperties
-import com.elegant.software.blitzpay.payments.push.persistence.DeliveryOutcome
-import com.elegant.software.blitzpay.payments.push.persistence.PushDeliveryAttemptRepository
+import com.elegant.software.blitzpay.payments.push.persistence.model.DeliveryOutcome
+import com.elegant.software.blitzpay.payments.push.persistence.model.PushDeliveryAttemptRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.scheduling.annotation.Scheduled

@@ -5,11 +5,11 @@ import com.elegant.software.blitzpay.order.api.PaymentSettlementGateway
 import com.elegant.software.blitzpay.order.api.PaymentSettlementRefreshCandidate
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
-import com.elegant.software.blitzpay.payments.stripe.internal.StripePaymentSettled
-import com.elegant.software.blitzpay.payments.stripe.internal.StripeSettlementClient
-import com.elegant.software.blitzpay.payments.stripe.internal.StripeSettlementEnrichmentListener
-import com.elegant.software.blitzpay.payments.stripe.internal.StripeSettlementRefreshService
-import com.elegant.software.blitzpay.payments.stripe.internal.stripeDashboardPaymentUrl
+import com.elegant.software.blitzpay.payments.stripe.inbound.StripePaymentSettled
+import com.elegant.software.blitzpay.payments.stripe.inbound.StripeSettlementClient
+import com.elegant.software.blitzpay.payments.stripe.inbound.StripeSettlementEnrichmentListener
+import com.elegant.software.blitzpay.payments.stripe.inbound.StripeSettlementRefreshService
+import com.elegant.software.blitzpay.payments.stripe.inbound.stripeDashboardPaymentUrl
 import com.stripe.model.BalanceTransaction
 import com.stripe.model.Charge
 import org.junit.jupiter.api.Test

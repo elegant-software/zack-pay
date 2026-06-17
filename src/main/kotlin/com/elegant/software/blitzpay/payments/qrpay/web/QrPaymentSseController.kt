@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.qrpay
+package com.elegant.software.blitzpay.payments.qrpay.web
 
 import com.elegant.software.blitzpay.payments.support.PaymentUpdateBus
 import org.slf4j.LoggerFactory

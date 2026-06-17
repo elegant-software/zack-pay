@@ -1,5 +1,7 @@
-package com.elegant.software.blitzpay.payments.braintree.internal
+package com.elegant.software.blitzpay.payments.braintree.web
 
+import com.elegant.software.blitzpay.payments.braintree.outbound.BraintreeCheckoutResult
+import com.elegant.software.blitzpay.payments.braintree.outbound.BraintreePaymentService
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.merchant.api.MerchantCredentialResolver
 import com.elegant.software.blitzpay.order.api.OrderGateway

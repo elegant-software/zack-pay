@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.mcp
 
-import com.elegant.software.blitzpay.merchant.application.MerchantVerticalService
+import com.elegant.software.blitzpay.merchant.service.MerchantVerticalService
 import io.modelcontextprotocol.spec.McpSchema.CompleteRequest
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult
 import io.modelcontextprotocol.spec.McpSchema.PromptMessage

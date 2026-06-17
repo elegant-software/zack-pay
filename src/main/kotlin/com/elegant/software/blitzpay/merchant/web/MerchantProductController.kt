@@ -3,8 +3,8 @@ package com.elegant.software.blitzpay.merchant.web
 import com.elegant.software.blitzpay.merchant.api.CreateProductRequest
 import com.elegant.software.blitzpay.merchant.api.ProductResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
-import com.elegant.software.blitzpay.merchant.application.MerchantProductService
-import com.elegant.software.blitzpay.merchant.application.ProductImageUpload
+import com.elegant.software.blitzpay.merchant.service.MerchantProductService
+import com.elegant.software.blitzpay.merchant.service.ProductImageUpload
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus

@@ -5,7 +5,7 @@ import com.elegant.software.blitzpay.merchant.api.AppearanceHistoryStatus
 import com.elegant.software.blitzpay.merchant.api.AppearanceResponse
 import com.elegant.software.blitzpay.merchant.api.CreateAppearanceRequest
 import com.elegant.software.blitzpay.merchant.api.CurrentlyHappeningResponse
-import com.elegant.software.blitzpay.merchant.application.MerchantAppearanceService
+import com.elegant.software.blitzpay.merchant.service.MerchantAppearanceService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.format.annotation.DateTimeFormat

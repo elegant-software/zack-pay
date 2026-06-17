@@ -1,7 +1,7 @@
 package com.elegant.software.blitzpay.order
 
 import com.elegant.software.blitzpay.order.api.CreateOrderRequest
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusChanged
+import com.elegant.software.blitzpay.order.api.PaymentStatusChanged
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.json.JsonMapper

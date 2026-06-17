@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.voice.internal
+package com.elegant.software.blitzpay.voice.service
 
 interface SpeechTranscriptionClient {
     fun transcribe(submission: VoiceAudioSubmission): VoiceTranscription

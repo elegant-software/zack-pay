@@ -1,6 +1,7 @@
-package com.elegant.software.blitzpay.payments.push.api
+package com.elegant.software.blitzpay.payments.push.web
 
-import com.elegant.software.blitzpay.payments.push.internal.PaymentStatusService
+import com.elegant.software.blitzpay.payments.push.api.PaymentStatusResponse
+import com.elegant.software.blitzpay.payments.push.service.PaymentStatusService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus

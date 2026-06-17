@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.api
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
 import java.time.Instant
 import java.util.UUID
 

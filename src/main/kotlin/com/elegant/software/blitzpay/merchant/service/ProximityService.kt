@@ -1,17 +1,17 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.BranchContext
 import com.elegant.software.blitzpay.merchant.api.MerchantContext
 import com.elegant.software.blitzpay.merchant.api.ProximityEventRequest
 import com.elegant.software.blitzpay.merchant.api.ProximityResponse
 import com.elegant.software.blitzpay.merchant.config.GeofenceProperties
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.ProximityEvent
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProviderAccountRepository
-import com.elegant.software.blitzpay.merchant.repository.ProximityEventRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.ProximityEvent
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProviderAccountRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.ProximityEventRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -203,7 +203,7 @@ class ProximityService(
             )
         }
 
-        val matchingMerchant = merchantApplicationRepository.findAllByStatus(com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus.ACTIVE)
+        val matchingMerchant = merchantApplicationRepository.findAllByStatus(com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus.ACTIVE)
             .asSequence()
             .filter { it.location != null }
             .map { merchant ->

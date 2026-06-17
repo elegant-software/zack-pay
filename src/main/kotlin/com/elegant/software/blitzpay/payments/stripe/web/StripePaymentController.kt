@@ -1,10 +1,11 @@
-package com.elegant.software.blitzpay.payments.stripe.internal
+package com.elegant.software.blitzpay.payments.stripe.web
 
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.merchant.api.MerchantCredentialResolver
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
+import com.elegant.software.blitzpay.payments.stripe.outbound.StripePaymentService
 import com.stripe.exception.StripeException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content

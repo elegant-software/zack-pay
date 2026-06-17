@@ -1,15 +1,14 @@
-package com.elegant.software.blitzpay.order.application
+package com.elegant.software.blitzpay.order.service
 
 import com.elegant.software.blitzpay.appointments.api.AppointmentCompleted
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
-import com.elegant.software.blitzpay.order.domain.CreatorType
-import com.elegant.software.blitzpay.order.domain.Order
-import com.elegant.software.blitzpay.order.domain.OrderItem
-import com.elegant.software.blitzpay.order.domain.OrderType
-import com.elegant.software.blitzpay.order.domain.unitPriceMinor
-import com.elegant.software.blitzpay.order.repository.OrderItemRepository
-import com.elegant.software.blitzpay.order.repository.OrderRepository
+import com.elegant.software.blitzpay.order.persistence.model.CreatorType
+import com.elegant.software.blitzpay.order.persistence.model.Order
+import com.elegant.software.blitzpay.order.persistence.model.OrderItem
+import com.elegant.software.blitzpay.order.persistence.model.OrderType
+import com.elegant.software.blitzpay.order.persistence.model.unitPriceMinor
+import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
+import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
 import org.slf4j.LoggerFactory
 import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.stereotype.Component
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Component
 @Component
 class AppointmentOrderCreationListener(
     private val merchantGateway: MerchantGateway,
-    private val merchantOfferingAssignmentRepository: MerchantOfferingAssignmentRepository,
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
 ) {
@@ -25,10 +23,7 @@ class AppointmentOrderCreationListener(
 
     @ApplicationModuleListener
     fun on(event: AppointmentCompleted) {
-        val enabled = merchantOfferingAssignmentRepository
-            .findAllByMerchantApplicationId(event.merchantId)
-            .map { it.offeringCode }
-            .toSet()
+        val enabled = merchantGateway.getEnabledOfferings(event.merchantId)
 
         if ("PRE_ORDER" !in enabled || "DEFERRED_PAYMENT" !in enabled) {
             log.warn(

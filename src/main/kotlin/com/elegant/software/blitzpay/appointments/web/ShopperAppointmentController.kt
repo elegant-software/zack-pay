@@ -7,7 +7,7 @@ import com.elegant.software.blitzpay.appointments.service.BookAppointmentCommand
 import com.elegant.software.blitzpay.appointments.service.BookableTimeService
 import com.elegant.software.blitzpay.appointments.service.CancelledBy
 import com.elegant.software.blitzpay.appointments.service.RescheduleCommand
-import com.elegant.software.blitzpay.merchant.scheduling.AppointmentSchedulingService
+import com.elegant.software.blitzpay.appointments.api.AppointmentSchedulingService
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory

@@ -1,7 +1,7 @@
-package com.elegant.software.blitzpay.payments.push.api
+package com.elegant.software.blitzpay.payments.push.web
 
-import com.elegant.software.blitzpay.payments.push.internal.DeviceRegistrationService
-import com.elegant.software.blitzpay.payments.push.internal.OrderNotFoundException
+import com.elegant.software.blitzpay.payments.push.service.DeviceRegistrationService
+import com.elegant.software.blitzpay.payments.push.service.OrderNotFoundException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid

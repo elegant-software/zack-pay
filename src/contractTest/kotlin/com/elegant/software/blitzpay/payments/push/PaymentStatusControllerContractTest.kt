@@ -1,9 +1,9 @@
 package com.elegant.software.blitzpay.payments.push
 
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusCode
+import com.elegant.software.blitzpay.order.api.PaymentStatusCode
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusResponse
-import com.elegant.software.blitzpay.payments.push.internal.PaymentStatusService
+import com.elegant.software.blitzpay.payments.push.service.PaymentStatusService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
 import org.springframework.test.context.bean.override.mockito.MockitoBean

@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.ActiveAppearanceItem
 import com.elegant.software.blitzpay.merchant.api.AppearanceHistoryPageResponse
@@ -7,11 +7,11 @@ import com.elegant.software.blitzpay.merchant.api.AppearanceResponse
 import com.elegant.software.blitzpay.merchant.api.AppearanceStatus
 import com.elegant.software.blitzpay.merchant.api.CreateAppearanceRequest
 import com.elegant.software.blitzpay.merchant.api.CurrentlyHappeningResponse
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranchAppearance
-import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchAppearanceRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranchAppearance
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchAppearanceRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort

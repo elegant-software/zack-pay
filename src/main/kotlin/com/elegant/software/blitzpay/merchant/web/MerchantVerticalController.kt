@@ -1,7 +1,7 @@
 package com.elegant.software.blitzpay.merchant.web
 
 import com.elegant.software.blitzpay.merchant.api.MerchantVerticalResponse
-import com.elegant.software.blitzpay.merchant.application.MerchantVerticalService
+import com.elegant.software.blitzpay.merchant.service.MerchantVerticalService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity

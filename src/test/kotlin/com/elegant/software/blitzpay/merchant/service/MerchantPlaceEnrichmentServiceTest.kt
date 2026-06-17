@@ -1,9 +1,9 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.config.GoogleMapsProperties
-import com.elegant.software.blitzpay.merchant.domain.MerchantLocation
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import kotlin.test.assertEquals

@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.qrpay
+package com.elegant.software.blitzpay.payments.qrpay.web
 
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.order.api.OrderGateway

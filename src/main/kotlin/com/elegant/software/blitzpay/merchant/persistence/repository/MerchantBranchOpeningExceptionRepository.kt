@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.persistence.repository
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranchOpeningException
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranchOpeningException
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 import java.util.UUID

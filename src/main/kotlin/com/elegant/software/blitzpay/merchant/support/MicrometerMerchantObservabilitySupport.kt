@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.support
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component

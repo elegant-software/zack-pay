@@ -1,8 +1,8 @@
-package com.elegant.software.blitzpay.payments.push.internal
+package com.elegant.software.blitzpay.payments.push.service
 
 import com.elegant.software.blitzpay.payments.push.api.PaymentVoiceContextGateway
 import com.elegant.software.blitzpay.payments.push.api.RecentPaymentSummary
-import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistrationRepository
+import com.elegant.software.blitzpay.payments.push.persistence.model.DeviceRegistrationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID

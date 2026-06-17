@@ -1,10 +1,10 @@
 package com.elegant.software.blitzpay.order.api
 
-import com.elegant.software.blitzpay.order.domain.CreatorType
-import com.elegant.software.blitzpay.order.domain.Order
-import com.elegant.software.blitzpay.order.domain.OrderItem
-import com.elegant.software.blitzpay.order.domain.OrderStatus
-import com.elegant.software.blitzpay.order.domain.OrderType
+import com.elegant.software.blitzpay.order.persistence.model.CreatorType
+import com.elegant.software.blitzpay.order.persistence.model.Order
+import com.elegant.software.blitzpay.order.persistence.model.OrderItem
+import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
+import com.elegant.software.blitzpay.order.persistence.model.OrderType
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.time.Instant
 import java.util.UUID

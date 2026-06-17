@@ -1,6 +1,6 @@
-package com.elegant.software.blitzpay.merchant.repository
+package com.elegant.software.blitzpay.merchant.persistence.repository
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantVertical
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantVertical
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface MerchantVerticalRepository : JpaRepository<MerchantVertical, String> {

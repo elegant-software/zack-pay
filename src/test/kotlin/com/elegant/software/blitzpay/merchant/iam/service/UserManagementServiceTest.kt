@@ -1,17 +1,14 @@
 package com.elegant.software.blitzpay.merchant.iam.service
 
-import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
-import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
+import com.elegant.software.blitzpay.merchant.api.BranchReference
+import com.elegant.software.blitzpay.merchant.api.MerchantLookupGateway
+import com.elegant.software.blitzpay.merchant.api.MerchantReference
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantUserAssignment
 import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupNames
 import com.elegant.software.blitzpay.merchant.iam.repository.MerchantUserAssignmentRepository
 import com.elegant.software.blitzpay.merchant.iam.web.CreateAssignmentRequest
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -40,14 +37,13 @@ class UserManagementServiceTest {
     private val userResource = mock<UserResource>()
     private val groupsResource = mock<GroupsResource>()
     private val assignmentRepository = mock<MerchantUserAssignmentRepository>()
-    private val merchantRepository = mock<MerchantApplicationRepository>()
-    private val branchRepository = mock<MerchantBranchRepository>()
+    private val merchantLookup = mock<MerchantLookupGateway>()
     private val properties = KeycloakProperties(
         serverUrl = "http://keycloak", realm = "test", adminClientId = "admin", adminClientSecret = "secret"
     )
 
     private val service = UserManagementService(
-        keycloak, properties, assignmentRepository, merchantRepository, branchRepository
+        keycloak, properties, assignmentRepository, merchantLookup
     )
 
     private val userId = UUID.randomUUID()
@@ -138,7 +134,7 @@ class UserManagementServiceTest {
     fun `createAssignment for MERCHANT_MANAGER places user in merchant group and persists record`() {
         stubRootGroup()
         stubMerchantGroup(merchantId)
-        whenever(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchantWithId(merchantId, "Test Merchant")))
+        whenever(merchantLookup.requireMerchant(merchantId)).thenReturn(MerchantReference(merchantId, "Test Merchant"))
         whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantApplicationIdAndBranchId(userId, merchantId, null)).thenReturn(false)
         whenever(assignmentRepository.save(any<MerchantUserAssignment>())).thenAnswer { it.arguments[0] as MerchantUserAssignment }
         whenever(usersResource.get(userId.toString())).thenReturn(userResource)
@@ -156,8 +152,8 @@ class UserManagementServiceTest {
         stubRootGroup()
         stubMerchantGroup(merchantId)
         stubBranchGroup(merchantId, branchId)
-        whenever(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchantWithId(merchantId, "Test Merchant")))
-        whenever(branchRepository.findById(branchId)).thenReturn(Optional.of(branchWithId(branchId, merchantId, "Branch A")))
+        whenever(merchantLookup.requireMerchant(merchantId)).thenReturn(MerchantReference(merchantId, "Test Merchant"))
+        whenever(merchantLookup.findBranch(branchId)).thenReturn(BranchReference(branchId, merchantId, "Branch A"))
         whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantApplicationIdAndBranchId(userId, merchantId, branchId)).thenReturn(false)
         whenever(assignmentRepository.save(any<MerchantUserAssignment>())).thenAnswer { it.arguments[0] as MerchantUserAssignment }
         whenever(usersResource.get(userId.toString())).thenReturn(userResource)
@@ -171,7 +167,7 @@ class UserManagementServiceTest {
 
     @Test
     fun `createAssignment rejects MERCHANT_EMPLOYEE without branchId`() {
-        whenever(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchantWithId(merchantId, "M")))
+        whenever(merchantLookup.requireMerchant(merchantId)).thenReturn(MerchantReference(merchantId, "M"))
         whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantApplicationIdAndBranchId(any(), any(), any())).thenReturn(false)
 
         val request = CreateAssignmentRequest(merchantId = merchantId, branchId = null, role = MerchantOperationsRole.MERCHANT_EMPLOYEE, employeeId = null)
@@ -182,7 +178,7 @@ class UserManagementServiceTest {
 
     @Test
     fun `createAssignment rejects duplicate assignment`() {
-        whenever(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchantWithId(merchantId, "M")))
+        whenever(merchantLookup.requireMerchant(merchantId)).thenReturn(MerchantReference(merchantId, "M"))
         whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantApplicationIdAndBranchId(userId, merchantId, null)).thenReturn(true)
 
         val request = CreateAssignmentRequest(merchantId = merchantId, branchId = null, role = MerchantOperationsRole.MERCHANT_MANAGER, employeeId = null)
@@ -222,19 +218,4 @@ class UserManagementServiceTest {
         verify(userResource, never()).leaveGroup(any())
     }
 
-    private fun merchantWithId(id: UUID, name: String): MerchantApplication =
-        MerchantApplication(
-            id = id,
-            applicationReference = "REF-$id",
-            merchantName = name,
-            businessProfile = BusinessProfile(
-                legalBusinessName = name, businessType = "RETAIL",
-                registrationNumber = "REG-$id", operatingCountry = "DE",
-                primaryBusinessAddress = "Test Street"
-            ),
-            primaryContact = PrimaryContact(fullName = "Test", email = "test@test.com", phoneNumber = "0000"),
-        )
-
-    private fun branchWithId(id: UUID, merchantApplicationId: UUID, name: String): MerchantBranch =
-        MerchantBranch(id = id, merchantApplicationId = merchantApplicationId, name = name)
 }

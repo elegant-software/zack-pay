@@ -1,11 +1,11 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantActivated
 import com.elegant.software.blitzpay.merchant.api.MerchantBusinessProfileRequest
 import com.elegant.software.blitzpay.merchant.api.MerchantPrimaryContactRequest
 import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.support.MerchantObservabilitySupport
 import com.elegant.software.blitzpay.merchant.support.MerchantTestFixtureLoader
 import org.junit.jupiter.api.Test
@@ -51,7 +51,7 @@ class MerchantRegistrationServiceTest {
         whenever(merchantVerticalService.validate(any())).thenAnswer { }
         whenever(repository.existsByBusinessProfileRegistrationNumberAndStatusIn(any(), any()))
             .thenReturn(false)
-        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.domain.MerchantApplication>())).thenAnswer { it.arguments[0] }
+        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication>())).thenAnswer { it.arguments[0] }
 
         val result = service.register(validRequest)
 
@@ -64,7 +64,7 @@ class MerchantRegistrationServiceTest {
     fun `registerDraft creates a DRAFT merchant when no duplicate exists`() {
         whenever(repository.existsByBusinessProfileRegistrationNumberAndStatusIn(any(), any()))
             .thenReturn(false)
-        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.domain.MerchantApplication>())).thenAnswer { it.arguments[0] }
+        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication>())).thenAnswer { it.arguments[0] }
 
         val result = service.registerDraft(validRequest)
 
@@ -88,7 +88,7 @@ class MerchantRegistrationServiceTest {
     fun `register records audit event on success`() {
         whenever(repository.existsByBusinessProfileRegistrationNumberAndStatusIn(any(), any()))
             .thenReturn(false)
-        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.domain.MerchantApplication>())).thenAnswer { it.arguments[0] }
+        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication>())).thenAnswer { it.arguments[0] }
 
         service.register(validRequest)
 
@@ -102,7 +102,7 @@ class MerchantRegistrationServiceTest {
     fun `register publishes MerchantActivated event`() {
         whenever(repository.existsByBusinessProfileRegistrationNumberAndStatusIn(any(), any()))
             .thenReturn(false)
-        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.domain.MerchantApplication>())).thenAnswer { it.arguments[0] }
+        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication>())).thenAnswer { it.arguments[0] }
 
         service.register(validRequest)
 
@@ -115,7 +115,7 @@ class MerchantRegistrationServiceTest {
     fun `registerDraft does not publish MerchantActivated event`() {
         whenever(repository.existsByBusinessProfileRegistrationNumberAndStatusIn(any(), any()))
             .thenReturn(false)
-        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.domain.MerchantApplication>())).thenAnswer { it.arguments[0] }
+        whenever(repository.save(any<com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication>())).thenAnswer { it.arguments[0] }
 
         service.registerDraft(validRequest)
 

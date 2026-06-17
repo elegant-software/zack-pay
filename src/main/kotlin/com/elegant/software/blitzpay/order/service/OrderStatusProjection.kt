@@ -1,21 +1,20 @@
-package com.elegant.software.blitzpay.order.application
+package com.elegant.software.blitzpay.order.service
 
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
 import com.elegant.software.blitzpay.order.api.OrderPaid
-import com.elegant.software.blitzpay.order.domain.CreatorType
-import com.elegant.software.blitzpay.order.domain.OrderStatus
-import com.elegant.software.blitzpay.order.repository.OrderItemRepository
-import com.elegant.software.blitzpay.order.repository.OrderRepository
-import com.elegant.software.blitzpay.order.repository.PaymentAttemptRepository
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusChanged
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusCode
+import com.elegant.software.blitzpay.order.persistence.model.CreatorType
+import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
+import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
+import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
+import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
+import com.elegant.software.blitzpay.order.api.PaymentStatusChanged
+import com.elegant.software.blitzpay.order.api.PaymentStatusCode
 import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
 
 @Component
 class OrderStatusProjection(

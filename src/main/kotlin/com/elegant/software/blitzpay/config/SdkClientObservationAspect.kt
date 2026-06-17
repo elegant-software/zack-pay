@@ -17,9 +17,9 @@ class SdkClientObservationAspect(
     private val registry: ObservationRegistry,
 ) {
     @Around(
-        "execution(* com.elegant.software.blitzpay.payments.stripe.internal.StripeConnectService.*(..)) || " +
-            "execution(* com.elegant.software.blitzpay.payments.stripe.internal.StripeSettlementClientImpl.*(..)) || " +
-            "execution(* com.elegant.software.blitzpay.payments.stripe.internal.StripeTerminalController.*(..))"
+        "execution(* com.elegant.software.blitzpay.payments.stripe.web.StripeConnectService.*(..)) || " +
+            "execution(* com.elegant.software.blitzpay.payments.stripe.inbound.StripeSettlementClientImpl.*(..)) || " +
+            "execution(* com.elegant.software.blitzpay.payments.stripe.web.StripeTerminalController.*(..))"
     )
     fun observeStripe(joinPoint: ProceedingJoinPoint): Any? = observe("stripe", joinPoint)
 

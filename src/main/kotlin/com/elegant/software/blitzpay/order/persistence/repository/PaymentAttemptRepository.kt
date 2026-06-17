@@ -1,6 +1,6 @@
-package com.elegant.software.blitzpay.order.repository
+package com.elegant.software.blitzpay.order.persistence.repository
 
-import com.elegant.software.blitzpay.order.domain.PaymentAttempt
+import com.elegant.software.blitzpay.order.persistence.model.PaymentAttempt
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 

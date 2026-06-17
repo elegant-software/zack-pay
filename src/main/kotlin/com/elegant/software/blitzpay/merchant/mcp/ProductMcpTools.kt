@@ -8,10 +8,10 @@ import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.CreateProductRequest
 import com.elegant.software.blitzpay.merchant.api.ProductResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
-import com.elegant.software.blitzpay.merchant.application.MerchantProductCategoryService
-import com.elegant.software.blitzpay.merchant.application.MerchantProductService
-import com.elegant.software.blitzpay.merchant.application.ProductImagePolicy
-import com.elegant.software.blitzpay.merchant.application.ProductImageUpload
+import com.elegant.software.blitzpay.merchant.service.MerchantProductCategoryService
+import com.elegant.software.blitzpay.merchant.service.MerchantProductService
+import com.elegant.software.blitzpay.merchant.service.ProductImagePolicy
+import com.elegant.software.blitzpay.merchant.service.ProductImageUpload
 import org.springframework.ai.mcp.annotation.McpTool
 import org.springframework.stereotype.Component
 import java.awt.image.BufferedImage

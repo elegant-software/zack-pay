@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.persistence.repository
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantEmployeeBranchAssignment
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEmployeeBranchAssignment
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 

@@ -1,12 +1,12 @@
 package com.elegant.software.blitzpay.merchant
 
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
-import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranchAppearance
-import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
-import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
+import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranchAppearance
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
+import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantUserAssignment
 import org.junit.jupiter.api.BeforeEach

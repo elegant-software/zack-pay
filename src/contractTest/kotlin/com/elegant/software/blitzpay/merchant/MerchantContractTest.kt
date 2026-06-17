@@ -1,12 +1,12 @@
 package com.elegant.software.blitzpay.merchant
 
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
-import com.elegant.software.blitzpay.merchant.domain.BusinessProfile
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.domain.MerchantProduct
-import com.elegant.software.blitzpay.merchant.domain.PostalAddress
-import com.elegant.software.blitzpay.merchant.domain.PrimaryContact
+import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
+import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
+import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
 import com.elegant.software.blitzpay.storage.PresignedUpload
 import jakarta.persistence.Query
 import org.hibernate.Filter
@@ -276,7 +276,7 @@ class MerchantContractTest : ContractVerifierBase() {
         )
         whenever(merchantBranchRepository.findById(branchId)).thenReturn(
             Optional.of(
-                com.elegant.software.blitzpay.merchant.domain.MerchantBranch(
+                com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch(
                     id = branchId,
                     merchantApplicationId = merchantId,
                     name = "Old Branch",
@@ -287,7 +287,7 @@ class MerchantContractTest : ContractVerifierBase() {
                         country = "DE",
                     ),
                 ).also {
-                    it.location = com.elegant.software.blitzpay.merchant.domain.MerchantLocation(
+                    it.location = com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation(
                         latitude = 52.52,
                         longitude = 13.405,
                         geofenceRadiusMeters = 200
@@ -295,7 +295,7 @@ class MerchantContractTest : ContractVerifierBase() {
                 }
             )
         )
-        whenever(merchantBranchRepository.saveAndFlush(any<com.elegant.software.blitzpay.merchant.domain.MerchantBranch>()))
+        whenever(merchantBranchRepository.saveAndFlush(any<com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch>()))
             .thenAnswer { it.arguments[0] }
 
         webTestClient.put()
@@ -336,14 +336,14 @@ class MerchantContractTest : ContractVerifierBase() {
         whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
         whenever(merchantBranchRepository.findById(branchId)).thenReturn(
             Optional.of(
-                com.elegant.software.blitzpay.merchant.domain.MerchantBranch(
+                com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch(
                     id = branchId,
                     merchantApplicationId = merchantId,
                     name = "Image Branch"
                 )
             )
         )
-        whenever(merchantBranchRepository.save(any<com.elegant.software.blitzpay.merchant.domain.MerchantBranch>()))
+        whenever(merchantBranchRepository.save(any<com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch>()))
             .thenAnswer { it.arguments[0] }
 
         webTestClient.put()
@@ -366,7 +366,7 @@ class MerchantContractTest : ContractVerifierBase() {
         whenever(merchantBranchRepository.existsByMerchantApplicationIdAndIdAndActiveTrue(merchantId, branchId)).thenReturn(true)
         whenever(merchantProductCategoryRepository.existsByIdAndMerchantApplicationId(categoryId, merchantId)).thenReturn(true)
         whenever(merchantProductCategoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)).thenReturn(
-            com.elegant.software.blitzpay.merchant.domain.MerchantProductCategory(
+            com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory(
                 id = categoryId,
                 merchantApplicationId = merchantId,
                 name = "Drinks"
@@ -413,7 +413,7 @@ class MerchantContractTest : ContractVerifierBase() {
         whenever(nativeQuery.setParameter(any<String>(), any())).thenReturn(nativeQuery)
         whenever(nativeQuery.singleResult).thenReturn(merchantId.toString())
         whenever(merchantProductCategoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)).thenReturn(
-            com.elegant.software.blitzpay.merchant.domain.MerchantProductCategory(
+            com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory(
                 id = categoryId,
                 merchantApplicationId = merchantId,
                 name = "Drinks"

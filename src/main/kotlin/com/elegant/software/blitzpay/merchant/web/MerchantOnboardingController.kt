@@ -12,10 +12,10 @@ import com.elegant.software.blitzpay.merchant.api.MerchantPrimaryContactRequest
 import com.elegant.software.blitzpay.merchant.api.MerchantSummary
 import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateMerchantRequest
-import com.elegant.software.blitzpay.merchant.application.MerchantLogoService
-import com.elegant.software.blitzpay.merchant.application.MerchantManagementService
-import com.elegant.software.blitzpay.merchant.application.MerchantRegistrationService
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.service.MerchantLogoService
+import com.elegant.software.blitzpay.merchant.service.MerchantManagementService
+import com.elegant.software.blitzpay.merchant.service.MerchantRegistrationService
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus

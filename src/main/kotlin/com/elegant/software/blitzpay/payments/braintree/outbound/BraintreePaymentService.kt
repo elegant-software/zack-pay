@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.braintree.internal
+package com.elegant.software.blitzpay.payments.braintree.outbound
 
 import com.braintreegateway.ClientTokenRequest
 import com.braintreegateway.TransactionRequest

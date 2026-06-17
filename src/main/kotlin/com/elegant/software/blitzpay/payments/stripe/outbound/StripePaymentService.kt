@@ -1,4 +1,4 @@
-package com.elegant.software.blitzpay.payments.stripe.internal
+package com.elegant.software.blitzpay.payments.stripe.outbound
 
 import com.elegant.software.blitzpay.config.ObservabilitySupport
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties

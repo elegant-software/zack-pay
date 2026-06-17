@@ -1,7 +1,7 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantVerticalResponse
-import com.elegant.software.blitzpay.merchant.repository.MerchantVerticalRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantVerticalRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

@@ -1,12 +1,12 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryRequest
-import com.elegant.software.blitzpay.merchant.domain.MerchantProductCategory
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock

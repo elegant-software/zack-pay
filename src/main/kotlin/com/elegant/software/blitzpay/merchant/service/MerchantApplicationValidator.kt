@@ -1,8 +1,8 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantApplication
-import com.elegant.software.blitzpay.merchant.domain.PersonRole
-import com.elegant.software.blitzpay.merchant.domain.SupportingMaterialType
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.PersonRole
+import com.elegant.software.blitzpay.merchant.persistence.model.SupportingMaterialType
 import org.springframework.stereotype.Component
 
 @Component

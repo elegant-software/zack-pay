@@ -1,14 +1,9 @@
-package com.elegant.software.blitzpay.order.application
+package com.elegant.software.blitzpay.order.service
 
 import com.elegant.software.blitzpay.config.LogContext
+import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
-import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
 import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
-import com.elegant.software.blitzpay.merchant.domain.MerchantLocation
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.order.api.AddOrderItemRequest
 import com.elegant.software.blitzpay.order.api.BuyerContactRequest
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
@@ -24,14 +19,14 @@ import com.elegant.software.blitzpay.order.api.UpdateOrderItemRequest
 import com.elegant.software.blitzpay.order.api.toMerchantResponse
 import com.elegant.software.blitzpay.order.api.toResponse
 import com.elegant.software.blitzpay.order.api.toSummaryResponse
-import com.elegant.software.blitzpay.order.domain.CreatorType
-import com.elegant.software.blitzpay.order.domain.Order
-import com.elegant.software.blitzpay.order.domain.OrderItem
-import com.elegant.software.blitzpay.order.domain.OrderStatus
-import com.elegant.software.blitzpay.order.domain.unitPriceMinor
-import com.elegant.software.blitzpay.order.repository.OrderItemRepository
-import com.elegant.software.blitzpay.order.repository.OrderRepository
-import com.elegant.software.blitzpay.order.repository.PaymentAttemptRepository
+import com.elegant.software.blitzpay.order.persistence.model.CreatorType
+import com.elegant.software.blitzpay.order.persistence.model.Order
+import com.elegant.software.blitzpay.order.persistence.model.OrderItem
+import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
+import com.elegant.software.blitzpay.order.persistence.model.unitPriceMinor
+import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
+import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
+import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -48,9 +43,6 @@ import java.util.UUID
 @Transactional
 class OrderService(
     private val merchantGateway: MerchantGateway,
-    private val merchantApplicationRepository: MerchantApplicationRepository,
-    private val merchantBranchRepository: MerchantBranchRepository,
-    private val merchantOfferingAssignmentRepository: MerchantOfferingAssignmentRepository,
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentAttemptRepository: PaymentAttemptRepository,
@@ -207,7 +199,7 @@ class OrderService(
         requireOrderItem(order.id, itemId)
         val allItems = orderItemRepository.findAllByOrderIdFk(order.id)
         return if (allItems.size <= 1) {
-            order.status = com.elegant.software.blitzpay.order.domain.OrderStatus.CANCELLED
+            order.status = com.elegant.software.blitzpay.order.persistence.model.OrderStatus.CANCELLED
             order.updatedAt = java.time.Instant.now()
             orderRepository.save(order)
             order.toResponse(allItems)
@@ -222,7 +214,7 @@ class OrderService(
 
     fun cancelOrder(orderId: String, actorId: String): OrderResponse {
         val order = requireMutableOrder(orderId)
-        order.status = com.elegant.software.blitzpay.order.domain.OrderStatus.CANCELLED
+        order.status = com.elegant.software.blitzpay.order.persistence.model.OrderStatus.CANCELLED
         order.updatedAt = java.time.Instant.now()
         orderRepository.save(order)
         val items = orderItemRepository.findAllByOrderIdFk(order.id)
@@ -248,10 +240,10 @@ class OrderService(
     fun manualSettle(orderId: String, request: SettleOrderRequest, merchantUserId: String): OrderResponse {
         val order = orderRepository.findByOrderId(orderId)
             ?: throw NoSuchElementException("Order not found: $orderId")
-        if (order.status == com.elegant.software.blitzpay.order.domain.OrderStatus.PAID) {
+        if (order.status == com.elegant.software.blitzpay.order.persistence.model.OrderStatus.PAID) {
             throw OrderMutationConflictException("Order is already paid: $orderId")
         }
-        if (order.status == com.elegant.software.blitzpay.order.domain.OrderStatus.CANCELLED) {
+        if (order.status == com.elegant.software.blitzpay.order.persistence.model.OrderStatus.CANCELLED) {
             throw OrderMutationConflictException("Order is cancelled and cannot be settled: $orderId")
         }
         order.manualSettle(request.note, merchantUserId)
@@ -268,10 +260,10 @@ class OrderService(
         return order.toResponse(items)
     }
 
-    private fun requireMutableOrder(orderId: String): com.elegant.software.blitzpay.order.domain.Order {
+    private fun requireMutableOrder(orderId: String): com.elegant.software.blitzpay.order.persistence.model.Order {
         val order = orderRepository.findByOrderId(orderId)
             ?: throw NoSuchElementException("Order not found: $orderId")
-        if (order.status != com.elegant.software.blitzpay.order.domain.OrderStatus.CREATED) {
+        if (order.status != com.elegant.software.blitzpay.order.persistence.model.OrderStatus.CREATED) {
             throw OrderMutationConflictException(
                 "Order cannot be mutated in status: ${order.status}"
             )
@@ -279,7 +271,7 @@ class OrderService(
         return order
     }
 
-    private fun requireOrderItem(orderIdFk: UUID, itemId: UUID): com.elegant.software.blitzpay.order.domain.OrderItem {
+    private fun requireOrderItem(orderIdFk: UUID, itemId: UUID): com.elegant.software.blitzpay.order.persistence.model.OrderItem {
         val items = orderItemRepository.findAllByOrderIdFk(orderIdFk)
         return items.firstOrNull { it.id == itemId }
             ?: throw NoSuchElementException("Order item not found: $itemId")
@@ -331,30 +323,18 @@ class OrderService(
         if (wrongBranch.isNotEmpty()) throw OrderCreationConflictException("Products do not belong to branch: ${wrongBranch.joinToString(",")}")
     }
 
-    private fun requireActiveBranch(merchantId: UUID, branchId: UUID): MerchantBranch {
-        val merchant = merchantApplicationRepository.findById(merchantId)
-            .orElseThrow { NoSuchElementException("Merchant not found: $merchantId") }
-        if (merchant.merchantStatus != MerchantOperationalStatus.ACTIVE) {
-            throw OrderCreationConflictException("Merchant is inactive: $merchantId")
+    private fun requireActiveBranch(merchantId: UUID, branchId: UUID): ActiveBranchInfo =
+        try {
+            merchantGateway.requireActiveBranch(merchantId, branchId)
+        } catch (ex: IllegalStateException) {
+            throw OrderCreationConflictException(ex.message ?: "Branch validation failed")
         }
-        val branch = merchantBranchRepository.findById(branchId)
-            .orElseThrow { NoSuchElementException("Branch not found: $branchId") }
-        if (branch.merchantApplicationId != merchantId) {
-            throw OrderCreationConflictException("Branch does not belong to merchant: $branchId")
-        }
-        if (!branch.active) {
-            throw OrderCreationConflictException("Branch is inactive: $branchId")
-        }
-        return branch
-    }
 
-    private fun validateOfferingRules(merchantId: UUID, orderType: com.elegant.software.blitzpay.order.domain.OrderType, usesDeferredPayment: Boolean) {
-        val enabled = merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(merchantId)
-            .map { it.offeringCode }
-            .toSet()
+    private fun validateOfferingRules(merchantId: UUID, orderType: com.elegant.software.blitzpay.order.persistence.model.OrderType, usesDeferredPayment: Boolean) {
+        val enabled = merchantGateway.getEnabledOfferings(merchantId)
         val requiredOffering = when (orderType) {
-            com.elegant.software.blitzpay.order.domain.OrderType.PRE_ORDER -> "PRE_ORDER"
-            com.elegant.software.blitzpay.order.domain.OrderType.WALK_IN_ORDERING -> "WALK_IN_ORDERING"
+            com.elegant.software.blitzpay.order.persistence.model.OrderType.PRE_ORDER -> "PRE_ORDER"
+            com.elegant.software.blitzpay.order.persistence.model.OrderType.WALK_IN_ORDERING -> "WALK_IN_ORDERING"
         }
         if (requiredOffering !in enabled) {
             throw OrderCreationConflictException("Merchant does not support $requiredOffering")
@@ -365,11 +345,11 @@ class OrderService(
     }
 
     private fun validateWalkInLocationIfNeeded(
-        branch: MerchantBranch,
-        orderType: com.elegant.software.blitzpay.order.domain.OrderType,
+        branch: ActiveBranchInfo,
+        orderType: com.elegant.software.blitzpay.order.persistence.model.OrderType,
         customerLocation: OrderCustomerLocationRequest?,
     ) {
-        if (orderType != com.elegant.software.blitzpay.order.domain.OrderType.WALK_IN_ORDERING) {
+        if (orderType != com.elegant.software.blitzpay.order.persistence.model.OrderType.WALK_IN_ORDERING) {
             return
         }
         requireNotNull(customerLocation) { "customerLocation is required for WALK_IN_ORDERING" }

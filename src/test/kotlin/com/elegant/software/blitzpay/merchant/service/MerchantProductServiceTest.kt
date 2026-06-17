@@ -1,12 +1,12 @@
-package com.elegant.software.blitzpay.merchant.application
+package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.CreateProductRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
-import com.elegant.software.blitzpay.merchant.domain.MerchantProductCategory
-import com.elegant.software.blitzpay.merchant.domain.MerchantProduct
-import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductCategoryRepository
-import com.elegant.software.blitzpay.merchant.repository.MerchantProductRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
@@ -32,7 +32,7 @@ class MerchantProductServiceTest {
     private val productRepository = mock<MerchantProductRepository>()
     private val categoryRepository = mock<MerchantProductCategoryRepository>()
     private val merchantApplicationRepository = mock<MerchantApplicationRepository>()
-    private val merchantBranchRepository = mock<com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository>()
+    private val merchantBranchRepository = mock<com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository>()
     private val entityManager = mock<EntityManager>()
     private val storageService = mock<StorageService>()
     private val session = mock<Session>()

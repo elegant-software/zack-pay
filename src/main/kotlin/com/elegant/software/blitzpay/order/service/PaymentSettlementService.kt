@@ -1,12 +1,12 @@
-package com.elegant.software.blitzpay.order.application
+package com.elegant.software.blitzpay.order.service
 
 import com.elegant.software.blitzpay.order.api.PaymentSettlementData
 import com.elegant.software.blitzpay.order.api.PaymentSettlementGateway
 import com.elegant.software.blitzpay.order.api.PaymentSettlementRefreshCandidate
-import com.elegant.software.blitzpay.order.domain.PaymentSettlement
-import com.elegant.software.blitzpay.order.repository.OrderRepository
-import com.elegant.software.blitzpay.order.repository.PaymentAttemptRepository
-import com.elegant.software.blitzpay.order.repository.PaymentSettlementRepository
+import com.elegant.software.blitzpay.order.persistence.model.PaymentSettlement
+import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
+import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
+import com.elegant.software.blitzpay.order.persistence.repository.PaymentSettlementRepository
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service

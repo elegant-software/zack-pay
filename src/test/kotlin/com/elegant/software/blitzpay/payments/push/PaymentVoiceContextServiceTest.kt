@@ -1,10 +1,10 @@
 package com.elegant.software.blitzpay.payments.push
 
-import com.elegant.software.blitzpay.payments.push.api.PaymentStatusCode
+import com.elegant.software.blitzpay.order.api.PaymentStatusCode
 import com.elegant.software.blitzpay.payments.push.api.RecentPaymentSummary
-import com.elegant.software.blitzpay.payments.push.internal.PaymentStatusService
-import com.elegant.software.blitzpay.payments.push.internal.PaymentVoiceContextService
-import com.elegant.software.blitzpay.payments.push.persistence.DeviceRegistrationRepository
+import com.elegant.software.blitzpay.payments.push.service.PaymentStatusService
+import com.elegant.software.blitzpay.payments.push.service.PaymentVoiceContextService
+import com.elegant.software.blitzpay.payments.push.persistence.model.DeviceRegistrationRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify

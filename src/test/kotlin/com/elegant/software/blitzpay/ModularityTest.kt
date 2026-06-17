@@ -15,7 +15,7 @@
  */
 package com.elegant.software.blitzpay
 
-import com.elegant.software.blitzpay.payments.QuickpayApplication
+import com.elegant.software.blitzpay.QuickpayApplication
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.modulith.core.ApplicationModules

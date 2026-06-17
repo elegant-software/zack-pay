@@ -1,6 +1,6 @@
-package com.elegant.software.blitzpay.merchant.repository
+package com.elegant.software.blitzpay.merchant.persistence.repository
 
-import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
