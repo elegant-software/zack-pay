@@ -2,7 +2,7 @@
   <configuration default="true" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <option name="ACTIVE_PROFILES" value="local" />
     <module name="blitz-pay.main" />
-    <option name="SPRING_BOOT_MAIN_CLASS" value="com.elegant.software.blitzpay.payments.QuickpayApplicationKt" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.elegant.software.blitzpay.QuickpayApplicationKt" />
     <extension name="net.ashald.envfile">
       <option name="IS_ENABLED" value="true" />
       <option name="IS_SUBST" value="true" />
@@ -11,7 +11,7 @@
       <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
       <ENTRIES>
         <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
-        <ENTRY IS_ENABLED="true" PARSER="env" IS_EXECUTABLE="false" PATH="./" />
+        <ENTRY IS_ENABLED="true" PARSER="env" IS_EXECUTABLE="false" PATH=".env" />
       </ENTRIES>
     </extension>
     <method v="2">

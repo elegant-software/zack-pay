@@ -79,6 +79,7 @@ class MerchantManagementService(
         )
         application.merchantStatus = request.merchantStatus ?: application.merchantStatus
         request.merchantMobility?.let { application.merchantMobility = it }
+        request.defaultVatPercent?.let { application.defaultVatPercent = it }
         application.website = resolvedContactInfo.website
         application.publicEmail = resolvedContactInfo.email
         application.publicPhoneNumber = resolvedContactInfo.phoneNumber
@@ -160,6 +161,7 @@ class MerchantManagementService(
             .map { it.offeringCode }
             .toSortedSet(),
         merchantMobility = merchantMobility,
+        defaultVatPercent = defaultVatPercent,
     )
 
     private fun signedUrl(storageKey: String?): String? =

@@ -15,6 +15,7 @@ import jakarta.persistence.Table
 import jakarta.persistence.CascadeType
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
+import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
@@ -83,6 +84,9 @@ class MerchantApplication(
 
     @Column(name = "reminder_lead_time_minutes")
     var reminderLeadTimeMinutes: Int? = null,
+
+    @Column(name = "default_vat_percent", precision = 5, scale = 2)
+    var defaultVatPercent: BigDecimal? = null,
 
 ) {
     @ElementCollection(fetch = FetchType.EAGER)

@@ -4,6 +4,7 @@ import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
+import com.elegant.software.blitzpay.order.domain.CreatorType
 import com.elegant.software.blitzpay.order.domain.OrderStatus
 import com.elegant.software.blitzpay.order.domain.PaymentAttempt
 import com.elegant.software.blitzpay.order.repository.OrderRepository
@@ -82,6 +83,11 @@ class PaymentAttemptService(
             )
             assertPayable(orderId)
         }
+    }
+
+    override fun isShopperOrder(orderId: String, shopperId: String): Boolean {
+        val order = orderRepository.findByOrderId(orderId) ?: return false
+        return order.creatorType == CreatorType.SHOPPER && order.createdById == shopperId
     }
 
     private fun checkoutPaymentMethodForProvider(provider: String): CheckoutPaymentMethod? =

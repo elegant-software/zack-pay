@@ -113,3 +113,13 @@ databaseChangeLog:
       file: db/changelog/20260610-002-payment-settlement-reconciliation.sql
   - include:
       file: db/changelog/20260611-001-appearance-history.sql
+  - include:
+      file: db/changelog/20260616-001-order-buyer-contact.sql
+  - include:
+      file: db/changelog/20260616-002-merchant-default-vat.sql
+  - include:
+      file: db/changelog/20260616-003-order-invoices.sql
+  - include:
+      file: db/changelog/20260617-001-shopper-profiles.sql
+  - include:
+      file: db/changelog/20260617-002-widen-buyer-contact-country.sql

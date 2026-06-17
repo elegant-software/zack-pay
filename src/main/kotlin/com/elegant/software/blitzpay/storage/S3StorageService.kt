@@ -34,6 +34,16 @@ internal class S3StorageService(
         log.info("Uploaded storage object key={}", storageKey)
     }
 
+    override fun download(storageKey: String): ByteArray {
+        val getRequest = GetObjectRequest.builder()
+            .bucket(props.bucket)
+            .key(storageKey)
+            .build()
+        return observe("download") {
+            s3Client.getObjectAsBytes(getRequest).asByteArray()
+        }
+    }
+
     override fun presignUpload(storageKey: String, contentType: String, ttlMinutes: Long): PresignedUpload {
         val putRequest = PutObjectRequest.builder()
             .bucket(props.bucket)

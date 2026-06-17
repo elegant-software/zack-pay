@@ -3,12 +3,14 @@ package com.elegant.software.blitzpay.order.application
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
 import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
+import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import com.elegant.software.blitzpay.merchant.domain.MerchantBranch
 import com.elegant.software.blitzpay.merchant.domain.MerchantLocation
 import com.elegant.software.blitzpay.merchant.repository.MerchantApplicationRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.order.api.AddOrderItemRequest
+import com.elegant.software.blitzpay.order.api.BuyerContactRequest
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.CreateOrderRequest
@@ -52,6 +54,7 @@ class OrderService(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentAttemptRepository: PaymentAttemptRepository,
+    private val shopperProfileGateway: ShopperProfileGateway,
 ) {
     private val log = LoggerFactory.getLogger(OrderService::class.java)
 
@@ -68,6 +71,11 @@ class OrderService(
         validateOfferingRules(merchantId, request.orderType, request.usesDeferredPayment)
         validateWalkInLocationIfNeeded(branch, request.orderType, request.customerLocation)
 
+        val resolvedBuyerContact = request.buyerContact
+            ?: shopperProfileGateway.findByShopperId(shopperId)?.let { p ->
+                BuyerContactRequest(name = p.name, street = p.street, zip = p.zip, city = p.city, country = p.country)
+            }
+
         val order = Order(
             orderId = Order.nextOrderId(),
             merchantApplicationId = merchantId,
@@ -80,6 +88,11 @@ class OrderService(
             totalAmountMinor = request.items.sumOf { productsById.getValue(it.productId).unitPriceMinor() * it.quantity },
             itemCount = request.items.sumOf { it.quantity },
             checkoutPaymentMethod = resolveCheckoutPaymentMethod(request)?.name,
+            buyerContactName = resolvedBuyerContact?.name,
+            buyerContactStreet = resolvedBuyerContact?.street,
+            buyerContactZip = resolvedBuyerContact?.zip,
+            buyerContactCity = resolvedBuyerContact?.city,
+            buyerContactCountry = resolvedBuyerContact?.country,
         )
         val savedOrder = orderRepository.save(order)
         val savedItems = orderItemRepository.saveAll(

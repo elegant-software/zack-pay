@@ -9,8 +9,8 @@ plugins {
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.kotlin.jpa)
-    alias(libs.plugins.cyclonedx)
-    alias(libs.plugins.dependency.track)
+    alias(libs.plugins.cyclonedx) apply false
+    alias(libs.plugins.dependency.track) apply false
     alias(libs.plugins.spring.cloud.contract)
     alias(libs.plugins.studer.jooq)
     `maven-publish`
@@ -264,16 +264,21 @@ tasks.named("check") {
 
 
 
-tasks.named<org.cyclonedx.gradle.CyclonedxAggregateTask>("cyclonedxBom") {
-    jsonOutput.set(layout.buildDirectory.file("reports/cyclonedx/bom.json"))
-}
+if (providers.gradleProperty("sbom").isPresent) {
+    apply(plugin = libs.plugins.cyclonedx.get().pluginId)
+    apply(plugin = libs.plugins.dependency.track.get().pluginId)
 
-dependencyTrackCompanion {
-    url.set(providers.gradleProperty("dependencyTrackUrl").orElse(System.getenv("DT_URL") ?: ""))
-    apiKey.set(providers.gradleProperty("dependencyTrackApiKey").orElse(System.getenv("DT_API_KEY") ?: ""))
-    projectName.set(project.name)
-    projectVersion.set(project.version.toString())
-    autoCreate.set(true)
+    tasks.named<org.cyclonedx.gradle.CyclonedxAggregateTask>("cyclonedxBom") {
+        jsonOutput.set(layout.buildDirectory.file("reports/cyclonedx/bom.json"))
+    }
+
+    configure<com.liftric.dtcp.extensions.DepTrackCompanionExtension> {
+        url.set(providers.gradleProperty("dependencyTrackUrl").orElse(System.getenv("DT_URL") ?: ""))
+        apiKey.set(providers.gradleProperty("dependencyTrackApiKey").orElse(System.getenv("DT_API_KEY") ?: ""))
+        projectName.set(project.name)
+        projectVersion.set(project.version.toString())
+        autoCreate.set(true)
+    }
 }
 
 contracts {

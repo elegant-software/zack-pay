@@ -13,6 +13,8 @@ interface OrderGateway {
         provider: String,
         providerReference: String? = null,
     ): OrderPaymentSummary
+
+    fun isShopperOrder(orderId: String, shopperId: String): Boolean
 }
 
 data class OrderPaymentSummary(
