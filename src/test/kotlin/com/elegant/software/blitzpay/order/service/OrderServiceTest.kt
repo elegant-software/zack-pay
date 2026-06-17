@@ -47,9 +47,10 @@ class OrderServiceTest {
     private val orderRepository = mock<OrderRepository>()
     private val orderItemRepository = mock<OrderItemRepository>()
     private val paymentAttemptRepository = mock<PaymentAttemptRepository>()
+    private val shopperProfileGateway = mock<com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway>()
     private val service = OrderService(
         merchantGateway, merchantApplicationRepository, merchantBranchRepository, merchantOfferingAssignmentRepository,
-        orderRepository, orderItemRepository, paymentAttemptRepository,
+        orderRepository, orderItemRepository, paymentAttemptRepository, shopperProfileGateway,
     )
 
     private val merchantId = UUID.fromString("11111111-1111-1111-1111-111111111111")

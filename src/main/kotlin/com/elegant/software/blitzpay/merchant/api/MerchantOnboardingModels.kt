@@ -5,6 +5,7 @@ import com.elegant.software.blitzpay.merchant.domain.MerchantMobility
 import com.elegant.software.blitzpay.merchant.domain.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.domain.PersonRole
 import com.elegant.software.blitzpay.merchant.domain.SupportingMaterialType
+import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
@@ -60,6 +61,7 @@ data class UpdateMerchantRequest(
     val contactPhoneNumber: String? = null,
     val status: MerchantOnboardingStatus? = null,
     val merchantMobility: MerchantMobility? = null,
+    val defaultVatPercent: BigDecimal? = null,
 )
 
 data class MerchantPersonRequest(
@@ -135,6 +137,7 @@ data class MerchantDetailsResponse(
     val location: MerchantLocationInfo? = null,
     val offerings: Set<String> = emptySet(),
     val merchantMobility: MerchantMobility = MerchantMobility.BRICK_AND_MORTAR,
+    val defaultVatPercent: BigDecimal? = null,
 )
 
 data class MerchantVerticalResponse(

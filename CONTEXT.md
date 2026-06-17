@@ -296,6 +296,26 @@ _Avoid_: appointment duration, slot duration, time required
 A customer order always placed against a specific Branch of a Merchant.
 _Avoid_: merchant-only order
 
+**Buyer Contact**:
+The customer's personal name and postal address (street, zip, city, country) snapshotted onto an Order at creation time. Sourced from an explicit per-order value when supplied; otherwise resolved automatically from the shopper's Shopper Profile. Required for Order Invoice generation; when absent, no invoice is issued.
+_Avoid_: customer account, billing address, live profile reference
+
+**Shopper Profile**:
+The shopper's persistent personal name and postal address (street, zip, city, country) stored against their account and editable from the account screen in the shopper app. Used as the automatic source for Buyer Contact when no explicit buyer contact is supplied at order creation time. The name field is a personal legal name only, not a company name. The UI presents the address block as "Invoice Address." Shoppers manage their own profile; no other actor may write it.
+_Avoid_: invoice profile, billing profile, user preferences, Keycloak identity fields
+
+**Order Invoice**:
+A ZUGFeRD EN16931 compliant PDF document generated for a Paid Order when Buyer Contact is present. The Merchant is the seller; the buyer is identified by Buyer Contact. Includes the Merchant's logo when one is configured. Stored in S3 with a reference row in the database. Carries an Invoice Delivery Status starting as `PENDING`.
+_Avoid_: receipt, payment confirmation, post-appointment invoice
+
+**Invoice Delivery Status**:
+The delivery lifecycle state of an Order Invoice: `PENDING` (generated, not yet sent) or `SENT` (delivered to the buyer by the mail service).
+_Avoid_: invoice status, payment status, order status
+
+**Merchant Default VAT Rate**:
+The merchant-level VAT percentage applied uniformly to all line items on an Order Invoice. Optional; when absent, 0% is used.
+_Avoid_: per-product VAT, line-item tax rate, country VAT rate
+
 **Order Type**:
 The explicit business classification of an Order, distinguishing Pre-Order from Walk-In Ordering.
 _Avoid_: inferring order kind from channel, actor, or payment state
@@ -364,6 +384,17 @@ _Avoid_: branch report, manager report, caller-supplied merchant filter
 - A **Branch** must have exactly one **Branch Location**
 - An **Order** belongs to exactly one **Branch**
 - An **Order** has exactly one **Order Type**
+- An **Order** may have zero or one **Buyer Contact**
+- **Buyer Contact** on an **Order** is resolved at order creation time: the explicit per-order value wins when supplied; otherwise the shopper's **Shopper Profile** is used; when both are absent, no **Buyer Contact** is recorded
+- An **Order** may have zero or one **Order Invoice**
+- An **Order Invoice** is generated only when **Buyer Contact** is present on the **Order**
+- An **Order Invoice** is generated when the **Order** transitions to **Paid**
+- A shopper account may have zero or one **Shopper Profile**
+- A **Shopper Profile** is owned and editable only by its shopper account
+- A **Shopper Profile** may be deleted by its owner, returning the account to the zero state
+- An **Order Invoice** has exactly one **Invoice Delivery Status**, starting as `PENDING`
+- A **Merchant** may have zero or one **Merchant Default VAT Rate**
+- An **Order Invoice** applies the **Merchant Default VAT Rate** to all line items; when absent, 0% is used
 - An **Order** may have zero or more **Payment Attempt** entries
 - A **Payment Attempt** belongs to exactly one **Order**
 - A **Payment Attempt** has zero or one **Payment Settlement**

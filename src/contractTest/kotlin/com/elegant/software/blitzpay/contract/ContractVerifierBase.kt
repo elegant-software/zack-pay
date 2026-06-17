@@ -24,6 +24,9 @@ import com.elegant.software.blitzpay.merchant.repository.MonitoringRecordReposit
 import com.elegant.software.blitzpay.merchant.repository.MerchantBranchAppearanceRepository
 import com.elegant.software.blitzpay.merchant.repository.ProximityEventRepository
 import com.elegant.software.blitzpay.appointments.persistence.AppointmentRepository
+import com.elegant.software.blitzpay.invoice.persistence.OrderInvoiceRepository
+import com.elegant.software.blitzpay.shopper.persistence.ShopperProfileRepository
+import com.elegant.software.blitzpay.shopper.service.ShopperProfileService
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchOpeningExceptionRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchOpeningHoursRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeAvailabilityExceptionRepository
@@ -213,6 +216,15 @@ abstract class ContractVerifierBase {
     @MockitoBean
     protected lateinit var shopperDeviceRegistrationRepository: ShopperDeviceRegistrationRepository
 
+    @MockitoBean
+    protected lateinit var orderInvoiceRepository: OrderInvoiceRepository
+
+    @MockitoBean
+    protected lateinit var shopperProfileRepository: ShopperProfileRepository
+
+    @MockitoBean
+    protected lateinit var shopperProfileService: ShopperProfileService
+
     @BeforeEach
     fun setupRestAssured() {
         whenever(merchantVerticalRepository.existsByCodeAndActiveTrue(any())).thenReturn(true)
@@ -270,6 +282,7 @@ abstract class ContractVerifierBase {
                 currency = "EUR"
             )
         )
+        whenever(orderGateway.isShopperOrder(any(), any())).thenReturn(false)
         whenever(paymentService.startPayment(any())).thenAnswer { invocation ->
             val request = invocation.getArgument<PaymentRequested>(0)
             PaymentResult(

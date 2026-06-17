@@ -5,6 +5,9 @@ info:
 servers:
 - url: http://localhost:8080
   description: Generated server url
+security:
+- bearerAuth: []
+- oauth2: []
 tags:
 - name: Merchant Verticals
   description: Platform-managed industry verticals available for merchant registration
@@ -71,7 +74,66 @@ tags:
   description: Manage scheduled location appearances for MOBILE merchants
 - name: Orders
   description: Create and inspect orders for shoppers
+- name: Shopper Profile
+  description: Shopper invoice address — used automatically as Buyer Contact on orders
 paths:
+  /{version}/shopper/profile:
+    get:
+      tags:
+      - Shopper Profile
+      summary: Get the authenticated shopper's invoice address
+      operationId: get
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShopperProfileResponse"
+    put:
+      tags:
+      - Shopper Profile
+      summary: Create or update the authenticated shopper's invoice address
+      operationId: upsert
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertShopperProfileRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShopperProfileResponse"
+    delete:
+      tags:
+      - Shopper Profile
+      summary: Delete the authenticated shopper's invoice address
+      operationId: delete
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
   /{version}/shopper/appointments/{appointmentId}/reschedule:
     put:
       tags:
@@ -154,7 +216,7 @@ paths:
       tags:
       - Merchant Products
       summary: Get a single product
-      operationId: get
+      operationId: get_1
       parameters:
       - name: merchantId
         in: path
@@ -294,7 +356,7 @@ paths:
       tags:
       - Merchant Product Categories
       summary: Delete a product category
-      operationId: delete
+      operationId: delete_1
       parameters:
       - name: merchantId
         in: path
@@ -472,7 +534,7 @@ paths:
       tags:
       - Merchant Branches
       summary: Get a branch by ID
-      operationId: get_1
+      operationId: get_2
       parameters:
       - name: merchantId
         in: path
@@ -648,7 +710,7 @@ paths:
       tags:
       - Merchant Onboarding
       summary: Get merchant application details
-      operationId: get_2
+      operationId: get_3
       parameters:
       - name: id
         in: path
@@ -2471,7 +2533,7 @@ paths:
     get:
       tags:
       - Appointment Policy
-      operationId: get_3
+      operationId: get_4
       parameters:
       - name: merchantId
         in: path
@@ -2643,6 +2705,30 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/UserSearchResult"
+  /{version}/shopper/orders/{orderId}/invoice:
+    get:
+      tags:
+      - Invoices
+      summary: Get a presigned download URL for the invoice of a paid order
+      operationId: getInvoice
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InvoiceDownloadResponse"
   /{version}/reporting/settlements:
     get:
       tags:
@@ -2839,7 +2925,7 @@ paths:
       tags:
       - Orders
       summary: Get the latest business status for an order
-      operationId: get_4
+      operationId: get_5
       parameters:
       - name: orderId
         in: path
@@ -2930,7 +3016,7 @@ paths:
       tags:
       - Appearances
       summary: Get an appearance by ID
-      operationId: get_5
+      operationId: get_6
       parameters:
       - name: merchantId
         in: path
@@ -2966,7 +3052,7 @@ paths:
       tags:
       - Appearances
       summary: Cancel (delete) an appearance
-      operationId: delete_1
+      operationId: delete_2
       parameters:
       - name: merchantId
         in: path
@@ -3771,6 +3857,44 @@ paths:
           description: No Content
 components:
   schemas:
+    UpsertShopperProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        street:
+          type: string
+        zip:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+      required:
+      - city
+      - country
+      - name
+      - street
+      - zip
+    ShopperProfileResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        street:
+          type: string
+        zip:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+      required:
+      - city
+      - country
+      - name
+      - street
+      - zip
     RescheduleRequest:
       type: object
       properties:
@@ -4532,6 +4656,10 @@ components:
           enum:
           - BRICK_AND_MORTAR
           - MOBILE
+        defaultVatPercent:
+          type:
+          - number
+          - "null"
     MerchantDetailsResponse:
       type: object
       properties:
@@ -4617,6 +4745,10 @@ components:
           enum:
           - BRICK_AND_MORTAR
           - MOBILE
+        defaultVatPercent:
+          type:
+          - number
+          - "null"
       required:
       - address
       - applicationId
@@ -5346,6 +5478,25 @@ components:
       required:
       - message
       - status
+    BuyerContactRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        street:
+          type: string
+        zip:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+      required:
+      - city
+      - country
+      - name
+      - street
+      - zip
     CreateOrderItemRequest:
       type: object
       properties:
@@ -5400,6 +5551,10 @@ components:
           - PAY_BY_BANK
           - TERMINAL
           - PAYPAL
+        buyerContact:
+          oneOf:
+          - $ref: "#/components/schemas/BuyerContactRequest"
+          - type: "null"
       required:
       - items
       - orderType
@@ -5424,6 +5579,25 @@ components:
       - capturedAt
       - latitude
       - longitude
+    BuyerContactResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        street:
+          type: string
+        zip:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+      required:
+      - city
+      - country
+      - name
+      - street
+      - zip
     OrderItemResponse:
       type: object
       properties:
@@ -5510,6 +5684,10 @@ components:
           - PAY_BY_BANK
           - TERMINAL
           - PAYPAL
+        buyerContact:
+          oneOf:
+          - $ref: "#/components/schemas/BuyerContactResponse"
+          - type: "null"
         items:
           type: array
           items:
@@ -6668,6 +6846,16 @@ components:
       - enabled
       - groups
       - id
+    InvoiceDownloadResponse:
+      type: object
+      properties:
+        url:
+          type: string
+        filename:
+          type: string
+      required:
+      - filename
+      - url
     SettlementPageResponse:
       type: object
       properties:
@@ -7367,3 +7555,18 @@ components:
         templated:
           type: boolean
     FormDescription: {}
+  securitySchemes:
+    bearerAuth:
+      type: http
+      description: Paste a Keycloak access token directly (no 'Bearer ' prefix)
+      scheme: bearer
+      bearerFormat: JWT
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://keycloak.elegantsoftware.de/realms/blitzpay/protocol/openid-connect/auth
+          tokenUrl: https://keycloak.elegantsoftware.de/realms/blitzpay/protocol/openid-connect/token
+          scopes:
+            openid: OpenID Connect
+            profile: User profile

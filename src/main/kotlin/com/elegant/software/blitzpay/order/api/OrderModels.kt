@@ -45,6 +45,23 @@ data class OrderCustomerLocationRequest(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+data class BuyerContactRequest(
+    val name: String,
+    val street: String,
+    val zip: String,
+    val city: String,
+    val country: String,
+)
+
+data class BuyerContactResponse(
+    val name: String,
+    val street: String,
+    val zip: String,
+    val city: String,
+    val country: String,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class CreateOrderRequest(
     val branchId: UUID? = null,
     val orderType: OrderType = OrderType.PRE_ORDER,
@@ -53,6 +70,7 @@ data class CreateOrderRequest(
     val items: List<CreateOrderItemRequest> = emptyList(),
     val paymentMethod: PaymentMethod? = null,
     val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
+    val buyerContact: BuyerContactRequest? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -103,6 +121,7 @@ data class OrderResponse(
     val paymentRetryAllowed: Boolean,
     val paymentSource: PaymentSource? = null,
     val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
+    val buyerContact: BuyerContactResponse? = null,
     val items: List<OrderItemResponse>,
     val createdAt: Instant,
     val lastPaymentRequestId: UUID? = null,
@@ -168,6 +187,16 @@ internal fun Order.toResponse(items: List<OrderItem>, paymentReference: PaymentR
     paymentRetryAllowed = status.paymentRetryAllowed,
     paymentSource = paymentSource?.let { runCatching { PaymentSource.valueOf(it) }.getOrNull() },
     checkoutPaymentMethod = checkoutPaymentMethod?.let { runCatching { CheckoutPaymentMethod.valueOf(it) }.getOrNull() },
+    buyerContact = run {
+        val name = buyerContactName
+        val street = buyerContactStreet
+        val zip = buyerContactZip
+        val city = buyerContactCity
+        val country = buyerContactCountry
+        if (name != null && street != null && zip != null && city != null && country != null)
+            BuyerContactResponse(name, street, zip, city, country)
+        else null
+    },
     items = items.sortedBy { it.createdAt }.map {
         OrderItemResponse(
             itemId = it.id,

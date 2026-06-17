@@ -77,6 +77,21 @@ class Order(
 
     @Column(name = "appointment_id")
     val appointmentId: UUID? = null,
+
+    @Column(name = "buyer_contact_name", length = 255)
+    val buyerContactName: String? = null,
+
+    @Column(name = "buyer_contact_street", length = 255)
+    val buyerContactStreet: String? = null,
+
+    @Column(name = "buyer_contact_zip", length = 32)
+    val buyerContactZip: String? = null,
+
+    @Column(name = "buyer_contact_city", length = 128)
+    val buyerContactCity: String? = null,
+
+    @Column(name = "buyer_contact_country", length = 64)
+    val buyerContactCountry: String? = null,
 ) {
     fun markPaymentInProgress(paymentRequestId: UUID, provider: String, at: Instant = Instant.now()) {
         require(status != OrderStatus.PAID) { "Order is already paid: $orderId" }
