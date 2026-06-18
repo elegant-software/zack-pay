@@ -84,7 +84,6 @@ dependencies {
     // ----------------------------
     implementation(libs.truelayer.java)
     implementation(libs.truelayer.signing) // TrueLayer official signing lib
-    implementation(libs.nimbus.jose.jwt) // webhook signature verification
     implementation(libs.logstash.logback.encoder) // Structured JSON logging (production)
 
 

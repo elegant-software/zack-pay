@@ -4,6 +4,7 @@ import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
 import com.elegant.software.blitzpay.merchant.api.BranchLocationInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
 import com.elegant.software.blitzpay.merchant.api.MerchantSummary
+import com.elegant.software.blitzpay.merchant.api.OrderableMerchantProduct
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
@@ -120,7 +121,7 @@ class MerchantOnboardingService(
                 .toSet()
 
             products.map {
-                com.elegant.software.blitzpay.merchant.api.OrderableMerchantProduct(
+                OrderableMerchantProduct(
                     productId = it.id,
                     merchantApplicationId = it.merchantApplicationId,
                     branchId = it.merchantBranchId,

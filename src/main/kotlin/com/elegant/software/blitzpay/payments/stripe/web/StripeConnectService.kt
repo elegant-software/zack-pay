@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.payments.stripe.web
 
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
+import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.stripe.model.Account
 import com.stripe.model.AccountLink
 import com.stripe.net.RequestOptions
@@ -14,7 +15,7 @@ import java.util.UUID
 @Service
 class StripeConnectService(
     private val stripeConnectGateway: StripeConnectGateway,
-    private val stripeProperties: com.elegant.software.blitzpay.payments.stripe.config.StripeProperties,
+    private val stripeProperties: StripeProperties,
 ) {
     private val log = LoggerFactory.getLogger(StripeConnectService::class.java)
 

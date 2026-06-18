@@ -5,6 +5,8 @@ import com.elegant.software.blitzpay.merchant.api.MerchantCredentialResolver
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
+import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
+import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.elegant.software.blitzpay.payments.stripe.outbound.StripePaymentService
 import com.stripe.exception.StripeException
 import io.swagger.v3.oas.annotations.Operation
@@ -61,7 +63,7 @@ class StripePaymentController(
     private val stripePaymentService: StripePaymentService,
     private val credentialResolver: MerchantCredentialResolver,
     private val stripeConnectGateway: StripeConnectGateway,
-    private val stripeProperties: com.elegant.software.blitzpay.payments.stripe.config.StripeProperties,
+    private val stripeProperties: StripeProperties,
     private val orderGateway: OrderGateway,
     private val paymentStatusInitializationGateway: PaymentStatusInitializationGateway,
 ) {
@@ -224,6 +226,6 @@ class StripePaymentController(
             .take(22)
             .ifBlank { "BLITZPAY ORDER" }
 
-    private data class StripePaymentContext(val merchantId: UUID, val orderId: String, val orderSummary: com.elegant.software.blitzpay.order.api.OrderPaymentSummary, val resolvedBranchId: UUID)
+    private data class StripePaymentContext(val merchantId: UUID, val orderId: String, val orderSummary: OrderPaymentSummary, val resolvedBranchId: UUID)
     private class StripeOrderValidationException(val status: HttpStatus, override val message: String) : RuntimeException(message)
 }

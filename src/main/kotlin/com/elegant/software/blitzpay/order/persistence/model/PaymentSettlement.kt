@@ -4,6 +4,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.elegant.software.blitzpay.order.api.PaymentSettlementData
 import java.time.Instant
 import java.util.UUID
 
@@ -67,7 +68,7 @@ class PaymentSettlement(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 ) {
-    fun refreshFrom(data: com.elegant.software.blitzpay.order.api.PaymentSettlementData) {
+    fun refreshFrom(data: PaymentSettlementData) {
         processingFeeMinor = data.processingFeeMinor
         platformFeeMinor = data.platformFeeMinor
         netAmountMinor = data.netAmountMinor

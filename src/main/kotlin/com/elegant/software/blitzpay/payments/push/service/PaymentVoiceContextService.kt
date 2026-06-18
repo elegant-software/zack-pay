@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.push.service
 
+import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
 import com.elegant.software.blitzpay.payments.push.api.PaymentVoiceContextGateway
 import com.elegant.software.blitzpay.payments.push.api.RecentPaymentSummary
 import com.elegant.software.blitzpay.payments.push.persistence.model.DeviceRegistrationRepository
@@ -11,7 +12,7 @@ import java.util.UUID
 class PaymentVoiceContextService(
     private val paymentStatusService: PaymentStatusService,
     private val deviceRegistrationRepository: DeviceRegistrationRepository,
-) : PaymentVoiceContextGateway, com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway {
+) : PaymentVoiceContextGateway, PaymentStatusInitializationGateway {
     private val log = LoggerFactory.getLogger(PaymentVoiceContextService::class.java)
 
     override fun findRecentPaymentsBySubject(subject: String, limit: Int): List<RecentPaymentSummary> =
