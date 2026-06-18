@@ -91,6 +91,12 @@ class PaymentAttemptService(
         return order.creatorType == CreatorType.SHOPPER && order.createdById == shopperId
     }
 
+    override fun isMerchantOrder(orderId: String, merchantId: UUID, branchId: UUID?): Boolean {
+        val order = orderRepository.findByOrderId(orderId) ?: return false
+        if (order.merchantApplicationId != merchantId) return false
+        return branchId == null || order.merchantBranchId == branchId
+    }
+
     @Transactional(readOnly = true)
     override fun findLastPaymentRequestId(orderId: String): UUID? =
         orderRepository.findByOrderId(orderId)?.lastPaymentRequestId

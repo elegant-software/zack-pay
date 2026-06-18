@@ -5,6 +5,7 @@ import com.elegant.software.blitzpay.merchant.api.BranchNameUpdated
 import com.elegant.software.blitzpay.merchant.api.BranchResponse
 import com.elegant.software.blitzpay.merchant.api.CreateBranchRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateBranchRequest
+import com.elegant.software.blitzpay.merchant.iam.service.MerchantGroupSyncService
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
@@ -17,6 +18,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.util.Optional
 import java.util.UUID
 
 @Service
@@ -27,6 +29,7 @@ class MerchantBranchService(
     private val storageService: StorageService,
     private val eventPublisher: ApplicationEventPublisher,
     private val geofenceProperties: GeofenceProperties,
+    private val groupSyncService: Optional<MerchantGroupSyncService>,
 ) {
 
     fun create(merchantId: UUID, request: CreateBranchRequest, active: Boolean = true): BranchResponse {
@@ -64,6 +67,7 @@ class MerchantBranchService(
         )
         val saved = merchantBranchRepository.save(branch)
         if (active) {
+            groupSyncService.ifPresent { it.ensureBranchGroupExists(merchantId, merchant.businessProfile.legalBusinessName, saved.id, saved.name) }
             eventPublisher.publishEvent(BranchCreated(saved.id, merchantId, saved.name, merchant.businessProfile.legalBusinessName))
         }
         return saved.toResponse()
@@ -217,6 +221,7 @@ class MerchantBranchService(
 
         val saved = merchantBranchRepository.saveAndFlush(branch)
         if (wasInactive && saved.active) {
+            groupSyncService.ifPresent { it.ensureBranchGroupExists(merchantId, merchant.businessProfile.legalBusinessName, saved.id, saved.name) }
             eventPublisher.publishEvent(BranchCreated(saved.id, merchantId, saved.name, merchant.businessProfile.legalBusinessName))
         } else if (saved.name != previousName) {
             eventPublisher.publishEvent(BranchNameUpdated(saved.id, merchantId, saved.name))

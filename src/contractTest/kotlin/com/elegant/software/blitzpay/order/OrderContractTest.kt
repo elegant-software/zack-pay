@@ -15,12 +15,15 @@ import com.elegant.software.blitzpay.order.persistence.model.CreatorType
 import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import com.elegant.software.blitzpay.order.persistence.model.OrderType
 import org.junit.jupiter.api.Test
+import com.elegant.software.blitzpay.order.api.BranchCustomerResponse
+import com.elegant.software.blitzpay.shopper.api.ShopperSearchResult
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class OrderContractTest : ContractVerifierBase() {
@@ -670,6 +673,148 @@ class OrderContractTest : ContractVerifierBase() {
             .jsonPath("$.orderId").isEqualTo("ORD-DEFERRED00001")
             .jsonPath("$.paymentSource").isEqualTo("MANUAL_SETTLEMENT")
             .jsonPath("$.usesDeferredPayment").isEqualTo(true)
+    }
+
+    // ── Invoice Order ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `post merchant invoice order returns created with targetShopperId and dueDate`() {
+        whenever(orderService.createMerchantOrder(any(), any())).thenReturn(
+            MerchantOrderResponse(
+                orderId = "ORD-INVOICE00001",
+                merchantId = merchantId,
+                branchId = branchId,
+                orderType = OrderType.WALK_IN_ORDERING,
+                usesDeferredPayment = true,
+                targetShopperId = "shopper-target-123",
+                dueDate = LocalDate.of(2026, 7, 1),
+                status = OrderStatus.CREATED,
+                creatorType = CreatorType.MERCHANT,
+                currency = "EUR",
+                totalAmountMinor = 2500,
+                paymentRetryAllowed = true,
+                qrCode = null,
+                items = listOf(
+                    OrderItemResponse(
+                        itemId = UUID.fromString("44444444-4444-4444-4444-444444444441"),
+                        productId = UUID.fromString("22222222-2222-2222-2222-222222222221"),
+                        name = "Coffee",
+                        quantity = 2,
+                        unitPriceMinor = 1250,
+                        lineTotalMinor = 2500,
+                    )
+                ),
+                createdAt = Instant.parse("2026-06-19T10:00:00Z"),
+            )
+        )
+
+        webTestClient.post()
+            .uri("/v1/merchant/orders")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer $fakeJwt")
+            .bodyValue(
+                """
+                {
+                  "merchantId": "11111111-1111-1111-1111-111111111111",
+                  "branchId": "33333333-3333-3333-3333-333333333333",
+                  "orderType": "WALK_IN_ORDERING",
+                  "usesDeferredPayment": true,
+                  "targetShopperId": "shopper-target-123",
+                  "dueDate": "2026-07-01",
+                  "items": [
+                    { "productId": "22222222-2222-2222-2222-222222222221", "quantity": 2 }
+                  ]
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated
+            .expectBody()
+            .jsonPath("$.orderId").isEqualTo("ORD-INVOICE00001")
+            .jsonPath("$.targetShopperId").isEqualTo("shopper-target-123")
+            .jsonPath("$.dueDate").isEqualTo("2026-07-01")
+            .jsonPath("$.usesDeferredPayment").isEqualTo(true)
+            .jsonPath("$.qrCode").doesNotExist()
+    }
+
+    @Test
+    fun `get branch customers returns past shoppers`() {
+        whenever(orderService.listBranchCustomers(branchId)).thenReturn(
+            listOf(
+                BranchCustomerResponse(shopperAccountId = "shopper-abc", name = "Jane Doe"),
+                BranchCustomerResponse(shopperAccountId = "shopper-xyz", name = "John Smith"),
+            )
+        )
+
+        webTestClient.get()
+            .uri("/v1/merchant/orders/branches/$branchId/customers")
+            .header("Authorization", "Bearer $fakeJwt")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$[0].shopperAccountId").isEqualTo("shopper-abc")
+            .jsonPath("$[0].name").isEqualTo("Jane Doe")
+            .jsonPath("$[1].shopperAccountId").isEqualTo("shopper-xyz")
+    }
+
+    @Test
+    fun `get shopper search by email returns matching shopper`() {
+        whenever(shopperProfileService.findByEmail("jane@example.com")).thenReturn(
+            ShopperSearchResult(shopperAccountId = "shopper-abc", name = "Jane Doe")
+        )
+
+        webTestClient.get()
+            .uri("/v1/merchant/orders/shoppers/search?email=jane@example.com")
+            .header("Authorization", "Bearer $fakeJwt")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.shopperAccountId").isEqualTo("shopper-abc")
+            .jsonPath("$.name").isEqualTo("Jane Doe")
+    }
+
+    @Test
+    fun `get shopper search by email returns 404 when not found`() {
+        whenever(shopperProfileService.findByEmail("unknown@example.com")).thenReturn(null)
+
+        webTestClient.get()
+            .uri("/v1/merchant/orders/shoppers/search?email=unknown@example.com")
+            .header("Authorization", "Bearer $fakeJwt")
+            .exchange()
+            .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `get shopper orders includes invoice orders targeted at the shopper`() {
+        whenever(orderService.listShopperOrders(any())).thenReturn(
+            listOf(
+                OrderSummaryResponse(
+                    orderId = "ORD-INVOICE00001",
+                    merchantId = merchantId,
+                    branchId = branchId,
+                    orderType = OrderType.WALK_IN_ORDERING,
+                    usesDeferredPayment = true,
+                    targetShopperId = "test-user",
+                    dueDate = LocalDate.of(2026, 7, 1),
+                    status = OrderStatus.CREATED,
+                    currency = "EUR",
+                    totalAmountMinor = 2500,
+                    paymentRetryAllowed = true,
+                    createdAt = Instant.parse("2026-06-19T10:00:00Z"),
+                ),
+            )
+        )
+
+        webTestClient.get()
+            .uri("/v1/orders")
+            .header("Authorization", "Bearer $fakeJwt")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$[0].orderId").isEqualTo("ORD-INVOICE00001")
+            .jsonPath("$[0].targetShopperId").isEqualTo("test-user")
+            .jsonPath("$[0].dueDate").isEqualTo("2026-07-01")
+            .jsonPath("$[0].usesDeferredPayment").isEqualTo(true)
     }
 
     private fun appointmentOrderResponse(

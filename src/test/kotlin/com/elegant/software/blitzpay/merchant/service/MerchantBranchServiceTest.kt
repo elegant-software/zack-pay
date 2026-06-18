@@ -32,7 +32,7 @@ class MerchantBranchServiceTest {
     private val geofenceProperties = mock<com.elegant.software.blitzpay.merchant.config.GeofenceProperties>().also {
         whenever(it.defaultRadiusMeters).thenReturn(500)
     }
-    private val service = MerchantBranchService(branchRepository, merchantRepository, storageService, eventPublisher, geofenceProperties)
+    private val service = MerchantBranchService(branchRepository, merchantRepository, storageService, eventPublisher, geofenceProperties, java.util.Optional.empty())
 
     private fun merchantApplication(name: String = "Test Merchant GmbH") = MerchantApplication(
         applicationReference = "BLTZ-TEST",

@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantActivated
 import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
+import com.elegant.software.blitzpay.merchant.iam.service.MerchantGroupSyncService
 import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
@@ -14,6 +15,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.util.Optional
 import java.util.UUID
 
 @Service
@@ -24,6 +26,7 @@ class MerchantRegistrationService(
     private val merchantObservabilitySupport: MerchantObservabilitySupport,
     private val eventPublisher: ApplicationEventPublisher,
     private val merchantVerticalService: MerchantVerticalService,
+    private val groupSyncService: Optional<MerchantGroupSyncService>,
 ) {
 
     private val log = LoggerFactory.getLogger(MerchantRegistrationService::class.java)
@@ -104,6 +107,7 @@ class MerchantRegistrationService(
         merchantObservabilitySupport.recordSuccess(action, saved.status)
         log.info("Merchant registration saved: action={} ref={} status={}", action, saved.applicationReference, saved.status)
         if (activateDirectly) {
+            groupSyncService.ifPresent { it.ensureMerchantGroupExists(saved.id, saved.businessProfile.legalBusinessName) }
             eventPublisher.publishEvent(MerchantActivated(saved.id, saved.businessProfile.legalBusinessName))
         }
         return saved

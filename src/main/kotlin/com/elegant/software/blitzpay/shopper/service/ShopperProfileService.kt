@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.shopper.service
 
 import com.elegant.software.blitzpay.shopper.api.ShopperProfileData
 import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
+import com.elegant.software.blitzpay.shopper.api.ShopperSearchResult
 import com.elegant.software.blitzpay.shopper.domain.ShopperProfile
 import com.elegant.software.blitzpay.shopper.persistence.ShopperProfileRepository
 import com.elegant.software.blitzpay.shopper.web.UpsertShopperProfileRequest
@@ -22,6 +23,10 @@ class ShopperProfileService(
         repository.findByShopperAccountId(shopperId)?.toData()
 
     @Transactional(readOnly = true)
+    override fun findByEmail(email: String): ShopperSearchResult? =
+        repository.findByEmail(email)?.let { ShopperSearchResult(it.shopperAccountId, it.name) }
+
+    @Transactional(readOnly = true)
     fun get(shopperId: String): ShopperProfileData? =
         repository.findByShopperAccountId(shopperId)?.toData()
 
@@ -34,6 +39,7 @@ class ShopperProfileService(
             existing.zip = request.zip
             existing.city = request.city
             existing.country = request.country
+            existing.email = request.email ?: existing.email
             existing.updatedAt = Instant.now()
             existing
         } else {
@@ -44,6 +50,7 @@ class ShopperProfileService(
                 zip = request.zip,
                 city = request.city,
                 country = request.country,
+                email = request.email,
             )
         }
         val saved = repository.save(profile)
@@ -63,5 +70,6 @@ class ShopperProfileService(
         zip = zip,
         city = city,
         country = country,
+        email = email,
     )
 }

@@ -919,6 +919,19 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MerchantUserAssignmentResponse"
+  /{version}/user-management/keycloak-groups/sync:
+    post:
+      tags:
+      - User Management
+      summary: Sync all active merchants and branches to Keycloak groups
+      operationId: syncKeycloakGroups
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SyncResult"
   /{version}/shopper/devices:
     post:
       tags:
@@ -3333,6 +3346,47 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchant/orders/shoppers/search:
+    get:
+      tags:
+      - Merchant Orders
+      summary: Search for a shopper by email address
+      operationId: searchShopper
+      parameters:
+      - name: email
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShopperSearchResult"
+  /{version}/merchant/orders/branches/{branchId}/customers:
+    get:
+      tags:
+      - Merchant Orders
+      summary: List past customers (shoppers) who have ordered at the given branch
+      operationId: listBranchCustomers
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchCustomerResponse"
   /{version}/geofence/regions:
     get:
       tags:
@@ -3870,6 +3924,10 @@ components:
           type: string
         country:
           type: string
+        email:
+          type:
+          - string
+          - "null"
       required:
       - city
       - country
@@ -3889,6 +3947,10 @@ components:
           type: string
         country:
           type: string
+        email:
+          type:
+          - string
+          - "null"
       required:
       - city
       - country
@@ -4906,6 +4968,23 @@ components:
       - merchantId
       - merchantName
       - role
+    SyncResult:
+      type: object
+      properties:
+        merchantsSynced:
+          type: integer
+          format: int32
+        branchesSynced:
+          type: integer
+          format: int32
+        failures:
+          type: array
+          items:
+            type: string
+      required:
+      - branchesSynced
+      - failures
+      - merchantsSynced
     ShopperDeviceRequest:
       type: object
       properties:
@@ -5645,6 +5724,15 @@ components:
           - WALK_IN_ORDERING
         usesDeferredPayment:
           type: boolean
+        targetShopperId:
+          type:
+          - string
+          - "null"
+        dueDate:
+          type:
+          - string
+          - "null"
+          format: date
         status:
           type: string
           enum:
@@ -6479,6 +6567,15 @@ components:
           - WALK_IN_ORDERING
         usesDeferredPayment:
           type: boolean
+        targetShopperId:
+          type:
+          - string
+          - "null"
+        dueDate:
+          type:
+          - string
+          - "null"
+          format: date
         customerLocation:
           oneOf:
           - $ref: "#/components/schemas/OrderCustomerLocationRequest"
@@ -6512,6 +6609,15 @@ components:
           - WALK_IN_ORDERING
         usesDeferredPayment:
           type: boolean
+        targetShopperId:
+          type:
+          - string
+          - "null"
+        dueDate:
+          type:
+          - string
+          - "null"
+          format: date
         status:
           type: string
           enum:
@@ -6543,7 +6649,9 @@ components:
           - TERMINAL
           - PAYPAL
         qrCode:
-          $ref: "#/components/schemas/QrCodeResponse"
+          oneOf:
+          - $ref: "#/components/schemas/QrCodeResponse"
+          - type: "null"
         items:
           type: array
           items:
@@ -6560,7 +6668,6 @@ components:
       - orderId
       - orderType
       - paymentRetryAllowed
-      - qrCode
       - status
       - totalAmountMinor
       - usesDeferredPayment
@@ -7246,6 +7353,15 @@ components:
           - WALK_IN_ORDERING
         usesDeferredPayment:
           type: boolean
+        targetShopperId:
+          type:
+          - string
+          - "null"
+        dueDate:
+          type:
+          - string
+          - "null"
+          format: date
         status:
           type: string
           enum:
@@ -7448,6 +7564,26 @@ components:
             $ref: "#/components/schemas/NearbyMerchantResponse"
       required:
       - merchants
+    ShopperSearchResult:
+      type: object
+      properties:
+        shopperAccountId:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - shopperAccountId
+    BranchCustomerResponse:
+      type: object
+      properties:
+        shopperAccountId:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - shopperAccountId
     GeofenceRegionResponse:
       type: object
       properties:

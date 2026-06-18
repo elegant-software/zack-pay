@@ -3,6 +3,7 @@ package com.elegant.software.blitzpay.merchant.config
 import com.elegant.software.blitzpay.config.ApiVersionProperties
 import com.elegant.software.blitzpay.config.OpenApiGroupProperties
 import com.elegant.software.blitzpay.config.rewriteVersionPaths
+import com.elegant.software.blitzpay.merchant.iam.web.UserManagementController
 import com.elegant.software.blitzpay.merchant.web.MerchantOnboardingController
 import io.swagger.v3.oas.models.info.Info
 import org.springdoc.core.models.GroupedOpenApi
@@ -41,6 +42,18 @@ class MerchantOpenApiConfig(
             )
             .addOpenApiCustomizer { openApi ->
                 openApi.info = Info().title("BlitzPay — Mobile Geofencing API").version("v${apiVersionProperties.versions.merchant}")
+                openApi.paths = rewriteVersionPaths(openApi.paths, apiVersionProperties.versions.merchant)
+            }
+            .build()
+
+    @Bean
+    fun userManagementApi(): GroupedOpenApi =
+        GroupedOpenApi.builder()
+            .group(openApiGroupProperties.groups.userManagement.label)
+            .packagesToScan(UserManagementController::class.java.packageName)
+            .pathsToMatch("/{version}/user-management/**")
+            .addOpenApiCustomizer { openApi ->
+                openApi.info = Info().title("BlitzPay — User Management API").version("v${apiVersionProperties.versions.merchant}")
                 openApi.paths = rewriteVersionPaths(openApi.paths, apiVersionProperties.versions.merchant)
             }
             .build()

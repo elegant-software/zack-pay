@@ -6,5 +6,6 @@ import java.util.UUID
 
 interface ShopperProfileRepository : JpaRepository<ShopperProfile, UUID> {
     fun findByShopperAccountId(shopperAccountId: String): ShopperProfile?
+    fun findByEmail(email: String): ShopperProfile?
     fun deleteByShopperAccountId(shopperAccountId: String)
 }

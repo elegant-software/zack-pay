@@ -31,6 +31,9 @@ class ShopperProfile(
     @Column(name = "country", nullable = false, length = 64)
     var country: String,
 
+    @Column(name = "email", length = 255)
+    var email: String? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 

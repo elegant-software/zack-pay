@@ -153,17 +153,28 @@ class UserManagementService(
 
     private fun resolveTargetGroupId(merchantId: UUID, branchId: UUID?): String {
         val rootId = groups().findByName(KeycloakGroupNames.ROOT)?.id
-            ?: throw IllegalStateException("root merchants group not found in Keycloak")
+            ?: throw IllegalStateException(
+                "Keycloak root group '${KeycloakGroupNames.ROOT}' does not exist. " +
+                    "Activate a merchant to trigger automatic group creation, or create the group manually in Keycloak."
+            )
 
         val merchantGroupName = KeycloakGroupNames.merchantGroup(merchantId)
         val merchantGroupId = groups().group(rootId).getSubGroups(merchantGroupName, true, 0, 200, false).firstOrNull()?.id
-            ?: throw IllegalStateException("merchant group not found: $merchantGroupName")
+            ?: throw IllegalStateException(
+                "Keycloak group '$merchantGroupName' not found under '${KeycloakGroupNames.ROOT}'. " +
+                    "This group is created automatically when a MerchantActivated event is published. " +
+                    "Ensure the merchant $merchantId has been activated and the event was processed successfully."
+            )
 
         if (branchId == null) return merchantGroupId
 
         val branchGroupName = KeycloakGroupNames.branchGroup(branchId)
         return groups().group(merchantGroupId).getSubGroups(branchGroupName, true, 0, 200, false).firstOrNull()?.id
-            ?: throw IllegalStateException("branch group not found: $branchGroupName")
+            ?: throw IllegalStateException(
+                "Keycloak group '$branchGroupName' not found under '$merchantGroupName'. " +
+                    "This group is created automatically when a BranchCreated event is published. " +
+                    "Ensure the branch $branchId has been created and the event was processed successfully."
+            )
     }
 
     private fun groups(): GroupsResource = keycloak.realm(keycloakProperties.realm).groups()

@@ -16,6 +16,8 @@ interface OrderGateway {
 
     fun isShopperOrder(orderId: String, shopperId: String): Boolean
 
+    fun isMerchantOrder(orderId: String, merchantId: UUID, branchId: UUID? = null): Boolean
+
     fun findLastPaymentRequestId(orderId: String): UUID?
 }
 

@@ -9,6 +9,7 @@ data class UpsertShopperProfileRequest(
     val zip: String,
     val city: String,
     val country: String,
+    val email: String? = null,
 )
 
 data class ShopperProfileResponse(
@@ -17,4 +18,5 @@ data class ShopperProfileResponse(
     val zip: String,
     val city: String,
     val country: String,
+    val email: String? = null,
 )
