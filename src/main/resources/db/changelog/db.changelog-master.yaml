@@ -123,3 +123,5 @@ databaseChangeLog:
       file: db/changelog/20260617-001-shopper-profiles.sql
   - include:
       file: db/changelog/20260617-002-widen-buyer-contact-country.sql
+  - include:
+      file: db/changelog/20260619-001-invoice-order-columns.sql

@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 @Entity
@@ -74,6 +75,12 @@ class Order(
 
     @Column(name = "settlement_note", length = 2000)
     var settlementNote: String? = null,
+
+    @Column(name = "target_shopper_id", length = 512)
+    val targetShopperId: String? = null,
+
+    @Column(name = "due_date")
+    val dueDate: LocalDate? = null,
 
     @Column(name = "appointment_id")
     val appointmentId: UUID? = null,

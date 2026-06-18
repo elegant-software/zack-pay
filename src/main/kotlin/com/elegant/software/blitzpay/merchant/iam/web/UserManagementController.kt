@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.merchant.iam.web
 
+import com.elegant.software.blitzpay.merchant.iam.service.MerchantGroupSyncService
 import com.elegant.software.blitzpay.merchant.iam.service.UserManagementService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -13,12 +14,16 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.util.Optional
 import java.util.UUID
 
 @Tag(name = "User Management", description = "Manage Platform User assignments to Merchants and Branches")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/user-management", version = "1")
-class UserManagementController(private val service: UserManagementService) {
+class UserManagementController(
+    private val service: UserManagementService,
+    private val groupSyncService: Optional<MerchantGroupSyncService>,
+) {
 
     @Operation(summary = "Search Platform Users by name or email")
     @GetMapping("/users")
@@ -46,5 +51,12 @@ class UserManagementController(private val service: UserManagementService) {
     ): ResponseEntity<Void> {
         service.revokeAssignment(userId, assignmentId)
         return ResponseEntity.noContent().build()
+    }
+
+    @Operation(summary = "Sync all active merchants and branches to Keycloak groups")
+    @PostMapping("/keycloak-groups/sync")
+    fun syncKeycloakGroups(): ResponseEntity<MerchantGroupSyncService.SyncResult> {
+        val sync = groupSyncService.orElseThrow { IllegalStateException("Keycloak integration is not available") }
+        return ResponseEntity.ok(sync.syncAll())
     }
 }

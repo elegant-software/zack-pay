@@ -5,10 +5,13 @@ import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
 import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import com.elegant.software.blitzpay.order.api.AddOrderItemRequest
+import com.elegant.software.blitzpay.order.api.BranchCustomerResponse
 import com.elegant.software.blitzpay.order.api.BuyerContactRequest
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.CreateOrderRequest
+import com.elegant.software.blitzpay.order.api.InvoiceOrderCreated
+import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
 import com.elegant.software.blitzpay.order.api.MerchantItemPriceOverrideRequest
 import com.elegant.software.blitzpay.order.api.OrderCustomerLocationRequest
 import com.elegant.software.blitzpay.order.api.MerchantOrderResponse
@@ -28,6 +31,7 @@ import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepos
 import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
 import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -47,6 +51,7 @@ class OrderService(
     private val orderItemRepository: OrderItemRepository,
     private val paymentAttemptRepository: PaymentAttemptRepository,
     private val shopperProfileGateway: ShopperProfileGateway,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val log = LoggerFactory.getLogger(OrderService::class.java)
 
@@ -104,6 +109,9 @@ class OrderService(
         requireNotNull(request.branchId) { "branchId is required" }
         require(request.items.isNotEmpty()) { "Order must contain at least one item" }
         request.items.forEach { require(it.quantity > 0) { "quantity must be > 0 for product ${it.productId}" } }
+        if (request.targetShopperId != null) {
+            require(request.usesDeferredPayment) { "usesDeferredPayment must be true when targetShopperId is set" }
+        }
 
         val products = merchantGateway.findOrderableProducts(request.items.map { it.productId }.distinct())
         val productsById = products.associateBy { it.productId }
@@ -111,22 +119,56 @@ class OrderService(
         requireActiveBranch(request.merchantId, request.branchId)
         validateOfferingRules(request.merchantId, request.orderType, request.usesDeferredPayment)
 
+        val resolvedBuyerContact = request.targetShopperId?.let { shopperId ->
+            shopperProfileGateway.findByShopperId(shopperId)?.let { p ->
+                BuyerContactRequest(name = p.name, street = p.street, zip = p.zip, city = p.city, country = p.country)
+            }
+        }
+
         val order = Order(
             orderId = Order.nextOrderId(),
             merchantApplicationId = request.merchantId,
             merchantBranchId = request.branchId,
             orderType = request.orderType,
             usesDeferredPayment = request.usesDeferredPayment,
+            targetShopperId = request.targetShopperId,
+            dueDate = request.dueDate,
             creatorType = CreatorType.MERCHANT,
             createdById = merchantUserId,
             currency = DEFAULT_CURRENCY,
             totalAmountMinor = request.items.sumOf { productsById.getValue(it.productId).unitPriceMinor() * it.quantity },
             itemCount = request.items.sumOf { it.quantity },
+            buyerContactName = resolvedBuyerContact?.name,
+            buyerContactStreet = resolvedBuyerContact?.street,
+            buyerContactZip = resolvedBuyerContact?.zip,
+            buyerContactCity = resolvedBuyerContact?.city,
+            buyerContactCountry = resolvedBuyerContact?.country,
         )
         val savedOrder = orderRepository.save(order)
         val savedItems = orderItemRepository.saveAll(
             request.items.map { OrderItem.fromProduct(savedOrder.id, productsById.getValue(it.productId), it.quantity) }
         )
+
+        val targetShopper = savedOrder.targetShopperId
+        if (targetShopper != null) {
+            eventPublisher.publishEvent(InvoiceOrderCreated(
+                orderId = savedOrder.orderId,
+                orderIdFk = savedOrder.id,
+                merchantId = savedOrder.merchantApplicationId,
+                branchId = savedOrder.merchantBranchId,
+                targetShopperId = targetShopper,
+                totalAmountMinor = savedOrder.totalAmountMinor,
+                currency = savedOrder.currency,
+                dueDate = savedOrder.dueDate,
+                buyerContactName = savedOrder.buyerContactName,
+                buyerContactStreet = savedOrder.buyerContactStreet,
+                buyerContactZip = savedOrder.buyerContactZip,
+                buyerContactCity = savedOrder.buyerContactCity,
+                buyerContactCountry = savedOrder.buyerContactCountry,
+                items = savedItems.map { OrderItemSnapshot(it.productName, it.quantity, it.effectiveUnitPriceMinor) },
+            ))
+            return savedOrder.toMerchantResponse(savedItems)
+        }
 
         val qrUrl = buildQrPaymentUrl(savedOrder.orderId, savedOrder.totalAmountMinor, savedOrder.currency)
         return savedOrder.toMerchantResponse(savedItems, qrUrl)
@@ -144,7 +186,7 @@ class OrderService(
     fun listShopperOrders(shopperId: String): List<OrderSummaryResponse> {
         val cutoff = Instant.now().minus(7, ChronoUnit.DAYS)
         return orderRepository
-            .findByCreatedByIdAndCreatorTypeAndCreatedAtAfter(shopperId, CreatorType.SHOPPER, cutoff)
+            .findShopperOrders(shopperId, cutoff)
             .map { it.toSummaryResponse() }
     }
 
@@ -250,6 +292,16 @@ class OrderService(
         orderRepository.save(order)
         val items = orderItemRepository.findAllByOrderIdFk(order.id)
         return order.toResponse(items)
+    }
+
+    @Transactional(readOnly = true)
+    fun listBranchCustomers(branchId: UUID): List<BranchCustomerResponse> {
+        val shopperIds = orderRepository.findDistinctShopperIdsByBranch(branchId)
+        return shopperIds.mapNotNull { shopperId ->
+            shopperProfileGateway.findByShopperId(shopperId)?.let { profile ->
+                BranchCustomerResponse(shopperAccountId = shopperId, name = profile.name)
+            }
+        }
     }
 
     @Transactional(readOnly = true)

@@ -9,6 +9,8 @@ import com.elegant.software.blitzpay.invoice.persistence.OrderInvoice
 import com.elegant.software.blitzpay.invoice.persistence.OrderInvoiceRepository
 import com.elegant.software.blitzpay.merchant.api.MerchantInvoiceGateway
 import com.elegant.software.blitzpay.merchant.api.MerchantInvoiceProfile
+import com.elegant.software.blitzpay.order.api.InvoiceOrderCreated
+import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
 import com.elegant.software.blitzpay.order.api.OrderPaid
 import com.elegant.software.blitzpay.storage.StorageService
 import org.slf4j.LoggerFactory
@@ -69,6 +71,38 @@ class InvoiceOrchestrationListener(
         log.info("invoice generated and stored orderId={} s3Key={}", event.orderId, s3Key)
     }
 
+    @ApplicationModuleListener
+    fun on(event: InvoiceOrderCreated) {
+        log.info("invoice-order processing started orderId={} merchantId={}", event.orderId, event.merchantId)
+
+        if (orderInvoiceRepository.existsByOrderId(event.orderId)) {
+            log.info("invoice skipped — already exists orderId={}", event.orderId)
+            return
+        }
+
+        val merchant = merchantInvoiceGateway.findForInvoice(event.merchantId)
+        if (merchant == null) {
+            log.warn("invoice skipped — merchant not found merchantId={} orderId={}", event.merchantId, event.orderId)
+            return
+        }
+
+        val invoiceData = buildInvoiceDataFromOrder(event, merchant)
+        val pdfBytes = invoiceService.generatePdf(invoiceData)
+
+        val s3Key = "invoices/${event.orderId}.pdf"
+        storageService.upload(s3Key, "application/pdf", pdfBytes)
+
+        orderInvoiceRepository.save(
+            OrderInvoice(
+                orderIdFk = event.orderIdFk,
+                orderId = event.orderId,
+                s3Key = s3Key,
+                generatedAt = Instant.now(),
+            )
+        )
+        log.info("invoice-order invoice generated orderId={} s3Key={}", event.orderId, s3Key)
+    }
+
     private fun missingBuyerContactFields(event: OrderPaid): String =
         buildList {
             if (event.buyerContactName == null) add("name")
@@ -111,6 +145,68 @@ class InvoiceOrchestrationListener(
                 city = event.buyerContactCity!!,
                 country = event.buyerContactCountry!!,
             ),
+            lineItems = if (event.items.isNotEmpty()) {
+                event.items.map { item ->
+                    InvoiceLineItem(
+                        description = item.productName,
+                        quantity = item.quantity.toBigDecimal(),
+                        unitPrice = item.effectiveUnitPriceMinor.toBigDecimal().movePointLeft(2).setScale(2, RoundingMode.HALF_UP),
+                        vatPercent = vatPercent,
+                    )
+                }
+            } else {
+                listOf(
+                    InvoiceLineItem(
+                        description = "Order ${event.orderId}",
+                        quantity = BigDecimal.ONE,
+                        unitPrice = grossMajor,
+                        vatPercent = vatPercent,
+                    )
+                )
+            },
+            logoBase64 = logoBase64,
+        )
+    }
+
+    private fun buildInvoiceDataFromOrder(event: InvoiceOrderCreated, merchant: MerchantInvoiceProfile): InvoiceData {
+        val issueDate = java.time.LocalDate.now()
+        val vatPercent = merchant.defaultVatPercent ?: BigDecimal.ZERO
+        val grossMajor = event.totalAmountMinor.toBigDecimal().movePointLeft(2).setScale(2, RoundingMode.HALF_UP)
+
+        val logoBase64 = merchant.logoStorageKey?.let { key ->
+            runCatching {
+                Base64.getEncoder().encodeToString(storageService.download(key))
+            }.onFailure {
+                log.warn("invoice logo fetch failed key={} orderId={}", key, event.orderId)
+            }.getOrNull()
+        }
+
+        val buyer = if (event.buyerContactName != null) {
+            TradePartyData(
+                name = event.buyerContactName,
+                street = event.buyerContactStreet ?: "",
+                zip = event.buyerContactZip ?: "",
+                city = event.buyerContactCity ?: "",
+                country = event.buyerContactCountry ?: "",
+            )
+        } else {
+            TradePartyData(name = "—", street = "", zip = "", city = "", country = "")
+        }
+
+        return InvoiceData(
+            invoiceNumber = "INV-${event.orderId}",
+            issueDate = issueDate,
+            dueDate = event.dueDate ?: issueDate,
+            currency = event.currency,
+            seller = TradePartyData(
+                name = merchant.merchantName,
+                street = merchant.addressLine1 ?: "",
+                zip = merchant.postalCode ?: "",
+                city = merchant.city ?: "",
+                country = merchant.country ?: "",
+                vatId = merchant.registrationNumber,
+            ),
+            buyer = buyer,
             lineItems = if (event.items.isNotEmpty()) {
                 event.items.map { item ->
                     InvoiceLineItem(

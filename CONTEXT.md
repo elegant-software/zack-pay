@@ -301,7 +301,7 @@ The customer's personal name and postal address (street, zip, city, country) sna
 _Avoid_: customer account, billing address, live profile reference
 
 **Shopper Profile**:
-The shopper's persistent personal name and postal address (street, zip, city, country) stored against their account and editable from the account screen in the shopper app. Used as the automatic source for Buyer Contact when no explicit buyer contact is supplied at order creation time. The name field is a personal legal name only, not a company name. The UI presents the address block as "Invoice Address." Shoppers manage their own profile; no other actor may write it.
+The shopper's persistent personal name, email address, and postal address (street, zip, city, country) stored against their account and editable from the account screen in the shopper app. Email is optional and pre-populated from the Keycloak token's `email` claim on create or update. Used as the automatic source for Buyer Contact when no explicit buyer contact is supplied at order creation time. The name field is a personal legal name only, not a company name. The UI presents the address block as "Invoice Address." Shoppers manage their own profile; no other actor may write it.
 _Avoid_: invoice profile, billing profile, user preferences, Keycloak identity fields
 
 **Order Invoice**:
@@ -323,6 +323,22 @@ _Avoid_: inferring order kind from channel, actor, or payment state
 **Appointment Order**:
 A Pre-Order created automatically when a Merchant Manager marks an Appointment Completed and the Merchant has Deferred Payment enabled. Carries the Appointment's booked Product as its initial line item priced at the live Product price at completion time. May be modified and paid through the normal order flow. At most one Appointment Order may exist per Appointment.
 _Avoid_: post-appointment invoice, automatic checkout, appointment payment, appointment checkout
+
+**Invoice Order**:
+An Order with Deferred Payment created by a Merchant and addressed to a specific Target Shopper. The Merchant selects products, sets an optional Invoice Due Date, and picks the recipient. The Target Shopper sees the order in their orders list and pays using the standard payment methods. A push notification is sent to the Target Shopper on creation. Payment, settlement, and Order Invoice generation follow the normal Order lifecycle.
+_Avoid_: standalone invoice entity, bill, payment request, receipt
+
+**Target Shopper**:
+The shopper account designated to see and pay an Invoice Order, identified by the shopper's Keycloak subject ID. Recorded on the Order separately from the creator. For non-invoice orders this is absent; the shopper self-associates through the existing QR or ordering flow.
+_Avoid_: recipient, payee, invoice recipient
+
+**Invoice Due Date**:
+An optional merchant-set date on an Invoice Order indicating when payment is expected. Display-only; no enforcement or late penalties. Shown to the Target Shopper alongside the order.
+_Avoid_: payment deadline, expiry date, mandatory due date
+
+**Branch Customer**:
+A shopper account that has previously placed or been targeted by an Order at a Branch. Derived from order history. Used by the merchant to select a Target Shopper when creating an Invoice Order.
+_Avoid_: customer record, CRM contact, registered customer
 
 **Payment Attempt**:
 An individual attempt to pay an Order through a specific payment provider. An Order may have multiple Payment Attempts (e.g. after a failure and retry), each with its own provider reference.
@@ -492,6 +508,16 @@ _Avoid_: branch report, manager report, caller-supplied merchant filter
 - An **Appointment Order** uses the live **Product** price at the time the **Appointment** is marked **Completed**, not the **Appointment Product Snapshot** price
 - An **Order** may carry a reference to zero or one source **Appointment**
 - An **Appointment Order** is a **Pre-Order** with **Deferred Payment**
+- An **Invoice Order** is an **Order** with **Deferred Payment** and a **Target Shopper**
+- An **Order** may have zero or one **Target Shopper**
+- An **Order** may have zero or one **Invoice Due Date**
+- An **Invoice Due Date** is display-only; no enforcement or late penalties
+- A **Target Shopper** receives a push notification when an **Invoice Order** is created
+- A shopper's orders list includes orders they created and orders where they are the **Target Shopper**
+- A **Merchant** may look up a **Branch Customer** from past order history at a **Branch**
+- A **Merchant** may look up a shopper by email via the **Shopper Profile** email field
+- A **Shopper Profile** may have zero or one email address
+- **Shopper Profile** email is pre-populated from the Keycloak token `email` claim on create or update
 - For a shopper-linked **Appointment**, the **Appointment Order** is created with `creatorType = SHOPPER`; for a contact-only **Appointment**, it is created with `creatorType = MERCHANT`
 - An **Appointment** may show an **Appointment Price** from its booked **Product**
 - An **Appointment** keeps an **Appointment Product Snapshot**
@@ -1179,3 +1205,9 @@ _Avoid_: Terminal secret, SDK token, auth token
 - **Terminal Location** could have been stored at the Merchant level (one location per Merchant). Resolved: a Location maps to a Branch, not a Merchant; it is stored per Branch as a nullable column so multi-branch merchants each have a distinct Stripe Location.
 - **Terminal Location** creation could have been eager (at enable time) or explicit (admin endpoint). Resolved: created lazily on first **Connection Token** request for the Branch; eager creation is incomplete and a lazy fallback is unavoidable regardless.
 - **Tap to Pay** payment initiation could have been restricted to the merchant app only. Resolved: either the shopper or the merchant app may call `create-intent` with `card_present`; the Order links the payment attempt and serves as the coordination point between the two apps without real-time signaling.
+- Merchant-to-shopper invoicing could have been modelled as a standalone Invoice entity separate from Order. Resolved: an **Invoice Order** is an **Order** with **Deferred Payment** and a **Target Shopper**; the existing Order lifecycle, payment infrastructure, and Order Invoice generation are reused without duplication.
+- The **Target Shopper** on an **Invoice Order** could have overwritten `createdById`. Resolved: `createdById` stays as the merchant (audit trail); **Target Shopper** is a separate field identifying who sees and pays the order.
+- Shopper-to-shopper invoicing was considered. Resolved: deferred because shoppers lack Connected Accounts for receiving payments; only merchant-to-shopper **Invoice Order** is in scope.
+- A separate Invoices screen in the shopper app could have shown **Invoice Order** entries. Resolved: the orders list includes **Invoice Order** entries with invoice-style presentation; no separate screen.
+- Merchant recipient selection could have required a QR scan or phone number lookup. Resolved: the merchant picks from **Branch Customer** (past order history) or searches by email via **Shopper Profile**; QR scan is in-person only and deferred.
+- **Shopper Profile** email could have been mandatory. Resolved: email is nullable so existing profiles are unaffected; pre-populated from the Keycloak `email` claim on create or update.

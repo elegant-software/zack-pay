@@ -1,12 +1,15 @@
 package com.elegant.software.blitzpay.order.web
 
 import com.elegant.software.blitzpay.order.api.AddOrderItemRequest
+import com.elegant.software.blitzpay.order.api.BranchCustomerResponse
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.MerchantItemPriceOverrideRequest
 import com.elegant.software.blitzpay.order.api.MerchantOrderResponse
 import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.SettleOrderRequest
 import com.elegant.software.blitzpay.order.api.UpdateOrderItemRequest
+import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
+import com.elegant.software.blitzpay.shopper.api.ShopperSearchResult
 import com.elegant.software.blitzpay.order.service.OrderCreationConflictException
 import com.elegant.software.blitzpay.order.service.OrderMutationConflictException
 import com.elegant.software.blitzpay.order.service.OrderService
@@ -24,7 +27,10 @@ import java.util.UUID
 @Tag(name = "Merchant Orders", description = "Create and list orders for authenticated merchant branches")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchant/orders", version = "1")
-class MerchantOrderController(private val orderService: OrderService) {
+class MerchantOrderController(
+    private val orderService: OrderService,
+    private val shopperProfileGateway: ShopperProfileGateway,
+) {
 
     @Operation(summary = "Create an order from branch products and return a QR code for customer payment")
     @PostMapping
@@ -118,6 +124,19 @@ class MerchantOrderController(private val orderService: OrderService) {
     @GetMapping("/{orderId}")
     fun getOrder(@PathVariable orderId: String): ResponseEntity<OrderResponse> =
         ResponseEntity.ok(orderService.getMerchantOrder(orderId))
+
+    @Operation(summary = "List past customers (shoppers) who have ordered at the given branch")
+    @GetMapping("/branches/{branchId}/customers")
+    fun listBranchCustomers(@PathVariable branchId: UUID): ResponseEntity<List<BranchCustomerResponse>> =
+        ResponseEntity.ok(orderService.listBranchCustomers(branchId))
+
+    @Operation(summary = "Search for a shopper by email address")
+    @GetMapping("/shoppers/search")
+    fun searchShopper(@RequestParam email: String): ResponseEntity<ShopperSearchResult> {
+        val result = shopperProfileGateway.findByEmail(email)
+            ?: return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(result)
+    }
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun badRequest(ex: IllegalArgumentException): ResponseEntity<OrderErrorResponse> =

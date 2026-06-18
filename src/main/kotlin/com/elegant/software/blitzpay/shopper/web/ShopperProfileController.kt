@@ -86,5 +86,6 @@ class ShopperProfileController(private val service: ShopperProfileService) {
         zip = zip,
         city = city,
         country = country,
+        email = email,
     )
 }

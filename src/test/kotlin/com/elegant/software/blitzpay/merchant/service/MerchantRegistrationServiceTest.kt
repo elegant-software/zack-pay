@@ -29,7 +29,7 @@ class MerchantRegistrationServiceTest {
     private val observabilitySupport = mock<MerchantObservabilitySupport>()
     private val eventPublisher = mock<ApplicationEventPublisher>()
     private val merchantVerticalService = mock<MerchantVerticalService>()
-    private val service = MerchantRegistrationService(repository, auditTrail, observabilitySupport, eventPublisher, merchantVerticalService)
+    private val service = MerchantRegistrationService(repository, auditTrail, observabilitySupport, eventPublisher, merchantVerticalService, java.util.Optional.empty())
 
     private val validRequest = RegisterMerchantRequest(
         businessProfile = MerchantBusinessProfileRequest(

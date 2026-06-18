@@ -19,6 +19,7 @@ import com.elegant.software.blitzpay.order.persistence.repository.OrderRepositor
 import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -38,8 +39,9 @@ class OrderServiceTest {
     private val orderItemRepository = mock<OrderItemRepository>()
     private val paymentAttemptRepository = mock<PaymentAttemptRepository>()
     private val shopperProfileGateway = mock<com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway>()
+    private val eventPublisher = mock<org.springframework.context.ApplicationEventPublisher>()
     private val service = OrderService(
-        merchantGateway, orderRepository, orderItemRepository, paymentAttemptRepository, shopperProfileGateway,
+        merchantGateway, orderRepository, orderItemRepository, paymentAttemptRepository, shopperProfileGateway, eventPublisher,
     )
 
     private val merchantId = UUID.fromString("11111111-1111-1111-1111-111111111111")
@@ -175,7 +177,7 @@ class OrderServiceTest {
         assertEquals(2_900L, response.totalAmountMinor)
         assertEquals(merchantId, response.merchantId)
         assertEquals(OrderType.WALK_IN_ORDERING, response.orderType)
-        assert(response.qrCode.paymentUrl.contains("blitzpay://payment/qr"))
+        assert(response.qrCode!!.paymentUrl.contains("blitzpay://payment/qr"))
     }
 
     @Test
@@ -275,6 +277,53 @@ class OrderServiceTest {
 
         assertEquals(true, response.usesDeferredPayment)
         assertEquals(OrderStatus.CREATED, response.status)
+    }
+
+    @Test
+    fun `createMerchantOrder with targetShopperId creates invoice order and publishes event`() {
+        val productId1 = UUID.fromString("22222222-2222-2222-2222-222222222221")
+        val targetShopperId = "shopper-target-123"
+        val request = CreateMerchantOrderRequest(
+            merchantId = merchantId,
+            branchId = branchId,
+            orderType = OrderType.WALK_IN_ORDERING,
+            usesDeferredPayment = true,
+            targetShopperId = targetShopperId,
+            dueDate = java.time.LocalDate.of(2026, 7, 1),
+            items = listOf(CreateOrderItemRequest(productId1, 2)),
+        )
+        stubActiveMerchantContext("WALK_IN_ORDERING", "DEFERRED_PAYMENT")
+        whenever(merchantGateway.findOrderableProducts(any())).thenReturn(
+            listOf(OrderableMerchantProduct(productId1, merchantId, branchId, "Coffee", "Medium roast", BigDecimal("12.50"), true))
+        )
+        whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
+        whenever(orderItemRepository.saveAll(any<List<OrderItem>>())).thenAnswer { it.arguments[0] }
+
+        val response = service.createMerchantOrder(request, "merchant-user-xyz")
+
+        assertEquals(targetShopperId, response.targetShopperId)
+        assertEquals(java.time.LocalDate.of(2026, 7, 1), response.dueDate)
+        assertNull(response.qrCode)
+        val captor = argumentCaptor<com.elegant.software.blitzpay.order.api.InvoiceOrderCreated>()
+        verify(eventPublisher).publishEvent(captor.capture())
+        assertEquals(targetShopperId, captor.firstValue.targetShopperId)
+    }
+
+    @Test
+    fun `createMerchantOrder rejects targetShopperId without deferred payment`() {
+        val productId1 = UUID.fromString("22222222-2222-2222-2222-222222222221")
+        val request = CreateMerchantOrderRequest(
+            merchantId = merchantId,
+            branchId = branchId,
+            orderType = OrderType.WALK_IN_ORDERING,
+            usesDeferredPayment = false,
+            targetShopperId = "shopper-target-123",
+            items = listOf(CreateOrderItemRequest(productId1, 1)),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            service.createMerchantOrder(request, "merchant-user-xyz")
+        }
     }
 
     @Test

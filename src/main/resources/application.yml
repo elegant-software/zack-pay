@@ -177,6 +177,8 @@ blitzpay:
         label: Voice
       reporting:
         label: Reporting & Dashboards
+      user-management:
+        label: Operations-User Management
       actuator:
         label: Monitoring-Actuator
   cors:

@@ -7,6 +7,7 @@ import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import com.elegant.software.blitzpay.order.persistence.model.OrderType
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 enum class PaymentMethod { TRUELAYER, QRPAY, BRAINTREE, STRIPE }
@@ -79,6 +80,8 @@ data class CreateMerchantOrderRequest(
     val branchId: UUID? = null,
     val orderType: OrderType = OrderType.WALK_IN_ORDERING,
     val usesDeferredPayment: Boolean = false,
+    val targetShopperId: String? = null,
+    val dueDate: LocalDate? = null,
     val customerLocation: OrderCustomerLocationRequest? = null,
     val items: List<CreateOrderItemRequest> = emptyList(),
 )
@@ -113,6 +116,8 @@ data class OrderResponse(
     val branchId: UUID?,
     val orderType: OrderType = OrderType.PRE_ORDER,
     val usesDeferredPayment: Boolean = false,
+    val targetShopperId: String? = null,
+    val dueDate: LocalDate? = null,
     val status: OrderStatus,
     val creatorType: CreatorType,
     val createdById: String,
@@ -136,13 +141,15 @@ data class MerchantOrderResponse(
     val branchId: UUID?,
     val orderType: OrderType = OrderType.WALK_IN_ORDERING,
     val usesDeferredPayment: Boolean = false,
+    val targetShopperId: String? = null,
+    val dueDate: LocalDate? = null,
     val status: OrderStatus,
     val creatorType: CreatorType,
     val currency: String,
     val totalAmountMinor: Long,
     val paymentRetryAllowed: Boolean,
     val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
-    val qrCode: QrCodeResponse,
+    val qrCode: QrCodeResponse? = null,
     val items: List<OrderItemResponse>,
     val createdAt: Instant,
 )
@@ -153,6 +160,8 @@ data class OrderSummaryResponse(
     val branchId: UUID?,
     val orderType: OrderType = OrderType.PRE_ORDER,
     val usesDeferredPayment: Boolean = false,
+    val targetShopperId: String? = null,
+    val dueDate: LocalDate? = null,
     val status: OrderStatus,
     val currency: String,
     val totalAmountMinor: Long,
@@ -160,6 +169,11 @@ data class OrderSummaryResponse(
     val paymentSource: PaymentSource? = null,
     val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
     val createdAt: Instant,
+)
+
+data class BranchCustomerResponse(
+    val shopperAccountId: String,
+    val name: String,
 )
 
 data class OrderPaymentInitiationRequested(
@@ -179,6 +193,8 @@ internal fun Order.toResponse(items: List<OrderItem>, paymentReference: PaymentR
     branchId = merchantBranchId,
     orderType = orderType,
     usesDeferredPayment = usesDeferredPayment,
+    targetShopperId = targetShopperId,
+    dueDate = dueDate,
     status = status,
     creatorType = creatorType,
     createdById = createdById,
@@ -220,6 +236,8 @@ internal fun Order.toSummaryResponse() = OrderSummaryResponse(
     branchId = merchantBranchId,
     orderType = orderType,
     usesDeferredPayment = usesDeferredPayment,
+    targetShopperId = targetShopperId,
+    dueDate = dueDate,
     status = status,
     currency = currency,
     totalAmountMinor = totalAmountMinor,
@@ -229,19 +247,21 @@ internal fun Order.toSummaryResponse() = OrderSummaryResponse(
     createdAt = createdAt,
 )
 
-internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: String) = MerchantOrderResponse(
+internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: String? = null) = MerchantOrderResponse(
     orderId = orderId,
     merchantId = merchantApplicationId,
     branchId = merchantBranchId,
     orderType = orderType,
     usesDeferredPayment = usesDeferredPayment,
+    targetShopperId = targetShopperId,
+    dueDate = dueDate,
     status = status,
     creatorType = creatorType,
     currency = currency,
     totalAmountMinor = totalAmountMinor,
     paymentRetryAllowed = status.paymentRetryAllowed,
     checkoutPaymentMethod = checkoutPaymentMethod?.let { runCatching { CheckoutPaymentMethod.valueOf(it) }.getOrNull() },
-    qrCode = QrCodeResponse(paymentUrl = qrPaymentUrl),
+    qrCode = qrPaymentUrl?.let { QrCodeResponse(paymentUrl = it) },
     items = items.sortedBy { it.createdAt }.map {
         OrderItemResponse(
             itemId = it.id,

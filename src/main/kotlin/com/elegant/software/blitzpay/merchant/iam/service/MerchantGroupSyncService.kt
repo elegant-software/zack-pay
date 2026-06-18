@@ -6,6 +6,9 @@ import com.elegant.software.blitzpay.merchant.api.MerchantActivated
 import com.elegant.software.blitzpay.merchant.api.MerchantNameUpdated
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupNames
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.resource.GroupsResource
 import org.keycloak.representations.idm.GroupRepresentation
@@ -19,8 +22,57 @@ import java.util.UUID
 class MerchantGroupSyncService(
     private val keycloak: Keycloak,
     private val properties: KeycloakProperties,
+    private val merchantRepository: MerchantApplicationRepository,
+    private val branchRepository: MerchantBranchRepository,
 ) {
     private val log = LoggerFactory.getLogger(MerchantGroupSyncService::class.java)
+
+    fun ensureMerchantGroupExists(merchantId: UUID, merchantName: String) {
+        val rootId = ensureRootGroup()
+        ensureMerchantGroup(rootId, merchantId, merchantName)
+        log.info("keycloak merchant group ensured merchantId={}", merchantId)
+    }
+
+    fun ensureBranchGroupExists(merchantId: UUID, merchantName: String, branchId: UUID, branchName: String) {
+        val rootId = ensureRootGroup()
+        val merchantGroupId = ensureMerchantGroup(rootId, merchantId, merchantName)
+        ensureBranchGroup(merchantGroupId, branchId, branchName, merchantId)
+        log.info("keycloak branch group ensured branchId={} merchantId={}", branchId, merchantId)
+    }
+
+    fun syncAll(): SyncResult {
+        val merchants = merchantRepository.findAllByStatus(MerchantOnboardingStatus.ACTIVE)
+        var merchantsSynced = 0
+        var branchesSynced = 0
+        val failures = mutableListOf<String>()
+
+        for (merchant in merchants) {
+            try {
+                ensureMerchantGroupExists(merchant.id, merchant.businessProfile.legalBusinessName)
+                merchantsSynced++
+            } catch (e: Exception) {
+                log.error("sync failed for merchant {}", merchant.id, e)
+                failures += "merchant ${merchant.id}: ${e.message}"
+                continue
+            }
+
+            val branches = branchRepository.findAllByMerchantApplicationIdAndActiveTrue(merchant.id)
+            for (branch in branches) {
+                try {
+                    ensureBranchGroupExists(merchant.id, merchant.businessProfile.legalBusinessName, branch.id, branch.name)
+                    branchesSynced++
+                } catch (e: Exception) {
+                    log.error("sync failed for branch {} merchant {}", branch.id, merchant.id, e)
+                    failures += "branch ${branch.id} (merchant ${merchant.id}): ${e.message}"
+                }
+            }
+        }
+
+        log.info("keycloak sync complete: merchants={} branches={} failures={}", merchantsSynced, branchesSynced, failures.size)
+        return SyncResult(merchantsSynced, branchesSynced, failures)
+    }
+
+    data class SyncResult(val merchantsSynced: Int, val branchesSynced: Int, val failures: List<String>)
 
     fun syncMerchant(event: MerchantActivated) {
         try {
