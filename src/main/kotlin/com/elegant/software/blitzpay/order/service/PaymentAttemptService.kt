@@ -88,7 +88,8 @@ class PaymentAttemptService(
 
     override fun isShopperOrder(orderId: String, shopperId: String): Boolean {
         val order = orderRepository.findByOrderId(orderId) ?: return false
-        return order.creatorType == CreatorType.SHOPPER && order.createdById == shopperId
+        return (order.creatorType == CreatorType.SHOPPER && order.createdById == shopperId)
+            || order.targetShopperId == shopperId
     }
 
     override fun isMerchantOrder(orderId: String, merchantId: UUID, branchId: UUID?): Boolean {
