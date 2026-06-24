@@ -15,16 +15,21 @@ export class DataStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
 
-    // Shared RDS instance for blitzpay + keycloak databases (ADR-0006).
+    const dbSg = new ec2.SecurityGroup(this, 'DbSg', { vpc: props.vpc });
+    dbSg.addIngressRule(ec2.Peer.ipv4(props.vpc.vpcCidrBlock), ec2.Port.tcp(5432));
+
+    // Shared RDS instance for zackpay + keycloak databases (ADR-0006).
     // db.t3.micro; upgrade to db.t3.small if connection pressure becomes visible.
     this.db = new rds.DatabaseInstance(this, 'Db', {
+      credentials: rds.Credentials.fromGeneratedSecret('zackpay'),
+      securityGroups: [dbSg],
       engine: rds.DatabaseInstanceEngine.postgres({
         version: rds.PostgresEngineVersion.VER_16,
       }),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       vpc: props.vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
-      databaseName: 'blitzpay',
+      databaseName: 'zackpay',
       multiAz: false,
       storageEncrypted: true,
       deletionProtection: true,
@@ -32,7 +37,7 @@ export class DataStack extends cdk.Stack {
     });
 
     this.storageBucket = new s3.Bucket(this, 'StorageBucket', {
-      bucketName: `blitzpay-${this.account}`,
+      bucketName: `zackpay-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
       enforceSSL: true,

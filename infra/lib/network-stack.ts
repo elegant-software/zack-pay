@@ -31,7 +31,7 @@ export class NetworkStack extends cdk.Stack {
 
     this.cluster = new ecs.Cluster(this, 'Cluster', {
       vpc: this.vpc,
-      clusterName: 'blitzpay',
+      clusterName: 'zackpay',
     });
   }
 }

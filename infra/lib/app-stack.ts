@@ -32,7 +32,7 @@ export class AppStack extends cdk.Stack {
     // S3: scoped to the storage bucket only
     props.storageBucket.grantReadWrite(taskRole);
 
-    // Secrets Manager: scoped to /blitzpay/* only
+    // Secrets Manager: scoped to /zackpay/* only
     taskRole.addToPolicy(new iam.PolicyStatement({
       actions: ['secretsmanager:GetSecretValue'],
       resources: [
@@ -54,15 +54,22 @@ export class AppStack extends cdk.Stack {
     taskDef.addContainer('App', {
       image: ecs.ContainerImage.fromEcrRepository(props.repository, 'latest'),
       portMappings: [{ containerPort: 8080 }],
-      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'blitzpay' }),
+      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'zackpay' }),
       environment: {
         SPRING_PROFILES_ACTIVE: 'production',
         STORAGE_BUCKET: props.storageBucket.bucketName,
-        SPRING_DATASOURCE_URL: `jdbc:postgresql://${props.db.dbInstanceEndpointAddress}:5432/blitzpay`,
+        SPRING_DATASOURCE_URL: `jdbc:postgresql://${props.db.dbInstanceEndpointAddress}:5432/zackpay`,
       },
       secrets: {
         SPRING_DATASOURCE_USERNAME: ecs.Secret.fromSecretsManager(dbSecret, 'username'),
         SPRING_DATASOURCE_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret, 'password'),
+        STRIPE_SECRET_KEY: ecs.Secret.fromSecretsManager(props.stripeSecret, 'stripe.secret-key'),
+        STRIPE_WEBHOOK_SECRET: ecs.Secret.fromSecretsManager(props.stripeSecret, 'stripe.webhook-secret'),
+        STRIPE_CONNECT_WEBHOOK_SECRET: ecs.Secret.fromSecretsManager(props.stripeSecret, 'stripe.connect-webhook-secret'),
+        BRAINTREE_PRIVATE_KEY: ecs.Secret.fromSecretsManager(props.braintreeSecret, 'braintree.private-key'),
+        KEYCLOAK_IAM_ADMIN_CLIENT_ID: ecs.Secret.fromSecretsManager(props.keycloakSecret, 'keycloak.iam.admin-client-id'),
+        KEYCLOAK_IAM_ADMIN_CLIENT_SECRET: ecs.Secret.fromSecretsManager(props.keycloakSecret, 'keycloak.iam.admin-client-secret'),
+        EXPO_ACCESS_TOKEN: ecs.Secret.fromSecretsManager(props.expoSecret, 'zackpay.expo.access-token'),
       },
     });
 
@@ -95,9 +102,6 @@ export class AppStack extends cdk.Stack {
       ec2.Peer.securityGroupId(alb.connections.securityGroups[0].securityGroupId),
       ec2.Port.tcp(8080),
     );
-
-    // Allow app → RDS
-    props.db.connections.allowFrom(service, ec2.Port.tcp(5432));
 
     new cdk.CfnOutput(this, 'AlbDns', { value: alb.loadBalancerDnsName });
   }
