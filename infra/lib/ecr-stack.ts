@@ -9,7 +9,7 @@ export class EcrStack extends cdk.Stack {
     super(scope, id, props);
 
     this.repository = new ecr.Repository(this, 'Repository', {
-      repositoryName: 'blitzpay',
+      repositoryName: 'zackpay',
       imageScanOnPush: true,
       lifecycleRules: [
         {
