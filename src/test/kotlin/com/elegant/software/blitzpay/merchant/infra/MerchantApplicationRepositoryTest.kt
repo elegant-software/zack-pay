@@ -18,6 +18,8 @@ import com.elegant.software.blitzpay.QuickpayApplication
 import com.truelayer.java.TrueLayerClient
 import org.junit.jupiter.api.Test
 import org.keycloak.admin.client.Keycloak
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -42,6 +44,10 @@ class MerchantApplicationRepositoryTest(
     private lateinit var trueLayerClient: TrueLayerClient
     @MockitoBean
     private lateinit var keycloak: Keycloak
+    @MockitoBean
+    private lateinit var s3Client: S3Client
+    @MockitoBean
+    private lateinit var s3Presigner: S3Presigner
     companion object {
         @Container
         private val postgres = PostgreSQLContainer("postgres:17-alpine")
