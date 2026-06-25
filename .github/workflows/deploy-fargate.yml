@@ -58,6 +58,7 @@ jobs:
           done
 
           echo "No ECS service in cluster '$ECS_CLUSTER' uses a task definition with container '$CONTAINER_NAME'." >&2
+          echo "Deploy the CDK app stack first so the application ECS service exists: cd infra && npm run cdk -- deploy ZackPayApp" >&2
           echo "Available services and container names:" >&2
           for SERVICE_ARN in $SERVICE_ARNS; do
             TASK_DEF_ARN=$(aws ecs describe-services \

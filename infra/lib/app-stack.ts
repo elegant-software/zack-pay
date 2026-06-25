@@ -44,7 +44,7 @@ export class AppStack extends cdk.Stack {
     }));
 
     const taskDef = new ecs.FargateTaskDefinition(this, 'TaskDef', {
-      memoryLimitMiB: 1024,
+      memoryLimitMiB: 2048,
       cpu: 512,
       taskRole,
     });

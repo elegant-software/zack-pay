@@ -12,10 +12,10 @@ spring:
     web-application-type: servlet
   config:
     import:
-      - optional:aws-secretsmanager:/blitzpay/stripe
-      - optional:aws-secretsmanager:/blitzpay/braintree
-      - optional:aws-secretsmanager:/blitzpay/keycloak
-      - optional:aws-secretsmanager:/blitzpay/expo
+      - optional:aws-secretsmanager:/zackpay/stripe
+      - optional:aws-secretsmanager:/zackpay/braintree
+      - optional:aws-secretsmanager:/zackpay/keycloak
+      - optional:aws-secretsmanager:/zackpay/expo
   reactor:
     context-propagation: auto
   datasource:

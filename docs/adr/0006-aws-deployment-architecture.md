@@ -35,10 +35,10 @@ The storage backend migrates from a self-hosted MinIO instance (`minio.elegantso
 
 Application secrets (Stripe keys, Braintree private key, Keycloak admin credentials, Expo access token) are loaded from AWS Secrets Manager at bootstrap via `spring.config.import`. Secrets are grouped by provider:
 
-- `/blitzpay/stripe` — `stripe.secret-key`, `stripe.webhook-secret`, `stripe.connect-webhook-secret`
-- `/blitzpay/braintree` — `braintree.private-key`
-- `/blitzpay/keycloak` — `keycloak.iam.admin-client-id`, `keycloak.iam.admin-client-secret`
-- `/blitzpay/expo` — `blitzpay.expo.access-token`
+- `/zackpay/stripe` — `stripe.secret-key`, `stripe.webhook-secret`, `stripe.connect-webhook-secret`
+- `/zackpay/braintree` — `braintree.private-key`
+- `/zackpay/keycloak` — `keycloak.iam.admin-client-id`, `keycloak.iam.admin-client-secret`
+- `/zackpay/expo` — `blitzpay.expo.access-token`
 
 Non-sensitive config (public keys, URLs, realm names) stays in `application.yml` with env-var substitution.
 
@@ -56,7 +56,7 @@ All AWS resources (ECS, RDS, S3, Secrets Manager) are deployed in `eu-central-1`
 
 The CDK TypeScript project lives at `infra/` in the `blitz-pay` root, alongside the existing `helm/` and `k8s/` directories. A separate infrastructure repository was considered but ruled out: CDK is TypeScript with its own `package.json`/`cdk.json`/`tsconfig.json`; Gradle and Spring Modulith are completely blind to it. Co-locating infra and app allows a single PR to change both (e.g. adding an env var and its Secrets Manager entry together). A dedicated infra repo would be a 6th repository for a single ECS service.
 
-CDK stacks are split by concern: `NetworkStack` (VPC/subnets/security groups), `DataStack` (shared RDS), `SecretsStack` (Secrets Manager secrets), `EcrStack` (Docker image repository), `AppStack` (ECS Fargate, ALB, task definition, IAM role). The ECS task role is granted exactly `s3:GetObject/PutObject/DeleteObject` on the storage bucket and `secretsmanager:GetSecretValue` on `/blitzpay/*`.
+CDK stacks are split by concern: `NetworkStack` (VPC/subnets/security groups), `DataStack` (shared RDS), `SecretsStack` (Secrets Manager secrets), `EcrStack` (Docker image repository), `AppStack` (ECS Fargate, ALB, task definition, IAM role). The ECS task role is granted exactly `s3:GetObject/PutObject/DeleteObject` on the storage bucket and `secretsmanager:GetSecretValue` on `/zackpay/*`.
 
 ## Open decisions
 
