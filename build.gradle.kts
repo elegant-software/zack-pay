@@ -259,6 +259,10 @@ allOpen {
 tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs("--add-opens", "java.base/java.util=ALL-UNNAMED")
+    // Disable Spring Cloud AWS auto-config in tests — no real AWS credentials in CI
+    systemProperty("spring.cloud.aws.s3.enabled", "false")
+    systemProperty("spring.cloud.aws.secretsmanager.enabled", "false")
+    systemProperty("spring.cloud.aws.region.static", "us-east-1")
 }
 
 tasks.named<Test>("contractTest") {
