@@ -13,7 +13,7 @@ import java.nio.file.Path
 
 @Configuration
 @EnableConfigurationProperties(TrueLayerProperties::class)
-@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true")
 class TrueLayerConfig {
 
     @Bean

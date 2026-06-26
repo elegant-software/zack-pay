@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.Base64
 import java.util.*
 
-@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/payments", version = "1")
 

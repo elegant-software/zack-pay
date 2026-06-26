@@ -14,7 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import java.util.*
 
-@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true")
 @Component
 class PaymentInitRequestListener(
     private val paymentUpdateBus: PaymentUpdateBus,

@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true")
 class TruelayerOpenApiConfig(
     private val apiVersionProperties: ApiVersionProperties,
     private val openApiGroupProperties: OpenApiGroupProperties,

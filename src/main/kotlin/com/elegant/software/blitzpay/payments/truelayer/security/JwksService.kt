@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import java.time.Duration
 
-@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true")
 @EnableConfigurationProperties(TlWebhookProperties::class)
 @Service
 class JwksService(private val props: TlWebhookProperties) {

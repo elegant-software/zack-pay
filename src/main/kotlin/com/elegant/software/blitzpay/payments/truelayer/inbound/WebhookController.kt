@@ -19,7 +19,7 @@ import java.time.Instant
 import java.time.format.DateTimeParseException
 
 
-@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/webhooks/truelayer", version = "1")
 class TlWebhookController(

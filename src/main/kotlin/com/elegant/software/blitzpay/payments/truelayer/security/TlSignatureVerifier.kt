@@ -15,7 +15,7 @@ import java.net.URL
 import java.time.Duration
 import java.time.Instant
 
-@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true")
 @Component
 class TlSignatureVerifier(
     private val trueLayerProperties: TrueLayerProperties

@@ -121,7 +121,7 @@ api:
     reporting: 1
 
 truelayer:
-  enabled: ${TRUELAYER_ENABLED:true}
+  enabled: ${TRUELAYER_ENABLED:false}
   webhookJku: ${TRUELAYER_WEBHOOK_JKU:http://localhost:8080/.well-known/jwks.json}
   # SDK configuration
   clientId: ${TRUELAYER_CLIENT_ID:}

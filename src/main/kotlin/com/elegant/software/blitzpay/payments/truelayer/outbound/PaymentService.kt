@@ -36,7 +36,7 @@ import java.util.concurrent.TimeoutException
  * same fields assembled below.
  */
 @EnableConfigurationProperties(TrueLayerProperties::class)
-@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["truelayer.enabled"], havingValue = "true")
 @Component
 class PaymentService(
     private val trueLayerProperties: TrueLayerProperties,
