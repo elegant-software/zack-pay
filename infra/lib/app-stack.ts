@@ -1,4 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
@@ -85,12 +86,24 @@ export class AppStack extends cdk.Stack {
       circuitBreaker: { rollback: true },
     });
 
+    const cert = new acm.Certificate(this, 'Cert', {
+      domainName: 'api.elegantsoftware.de',
+      validation: acm.CertificateValidation.fromDns(),
+    });
+
     const alb = new elbv2.ApplicationLoadBalancer(this, 'Alb', {
       vpc: props.vpc,
       internetFacing: true,
     });
 
-    const listener = alb.addListener('Http', { port: 80 });
+    alb.addListener('Http', { port: 80 }).addAction('RedirectToHttps', {
+      action: elbv2.ListenerAction.redirect({ protocol: 'HTTPS', port: '443', permanent: true }),
+    });
+
+    const listener = alb.addListener('Https', {
+      port: 443,
+      certificates: [cert],
+    });
     listener.addTargets('App', {
       port: 8080,
       targets: [service],
@@ -103,6 +116,8 @@ export class AppStack extends cdk.Stack {
       ec2.Port.tcp(8080),
     );
 
+    new cdk.CfnOutput(this, 'AppUrl', { value: 'https://api.elegantsoftware.de' });
     new cdk.CfnOutput(this, 'AlbDns', { value: alb.loadBalancerDnsName });
+    new cdk.CfnOutput(this, 'CertArn', { value: cert.certificateArn });
   }
 }
