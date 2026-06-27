@@ -8,6 +8,7 @@ import { AppStack } from '../lib/app-stack';
 import { BastionStack } from '../lib/bastion-stack';
 import { KeycloakStack } from '../lib/keycloak-stack';
 import { CiCdStack } from '../lib/cicd-stack';
+import { WebAdminCertStack } from '../lib/webadmin-cert-stack';
 import { WebAdminStack } from '../lib/webadmin-stack';
 
 const app = new cdk.App();
@@ -45,7 +46,17 @@ new AppStack(app, 'ZackPayApp', {
   expoSecret: secrets.expoSecret,
 });
 
-const webAdmin = new WebAdminStack(app, 'ZackPayWebAdmin', { env });
+// CloudFront cert must be in us-east-1; crossRegionReferences lets CDK wire the ARN via SSM.
+const webAdminCert = new WebAdminCertStack(app, 'ZackPayWebAdminCert', {
+  env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'us-east-1' },
+  crossRegionReferences: true,
+});
+
+const webAdmin = new WebAdminStack(app, 'ZackPayWebAdmin', {
+  env,
+  crossRegionReferences: true,
+  cert: webAdminCert.cert,
+});
 
 const cicd = new CiCdStack(app, 'ZackPayCiCd', {
   env,
