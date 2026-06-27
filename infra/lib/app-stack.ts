@@ -57,9 +57,11 @@ export class AppStack extends cdk.Stack {
       portMappings: [{ containerPort: 8080 }],
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'zackpay' }),
       environment: {
-        SPRING_PROFILES_ACTIVE: 'production',
+        SPRING_PROFILES_ACTIVE: 'staging',
         STORAGE_BUCKET: props.storageBucket.bucketName,
         SPRING_DATASOURCE_URL: `jdbc:postgresql://${props.db.dbInstanceEndpointAddress}:5432/zackpay`,
+        KEYCLOAK_IAM_SERVER_URL: 'https://auth.elegantsoftware.de',
+        KEYCLOAK_IAM_REALM: 'blitzpay',
       },
       secrets: {
         SPRING_DATASOURCE_USERNAME: ecs.Secret.fromSecretsManager(dbSecret, 'username'),
@@ -84,6 +86,7 @@ export class AppStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroups: [sg],
       circuitBreaker: { rollback: true },
+      healthCheckGracePeriod: cdk.Duration.seconds(300),
     });
 
     const cert = new acm.Certificate(this, 'Cert', {

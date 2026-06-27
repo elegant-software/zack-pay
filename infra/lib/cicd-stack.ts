@@ -1,12 +1,16 @@
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
 interface CiCdStackProps extends cdk.StackProps {
   repository: ecr.Repository;
   /** GitHub org/repo, e.g. "elegant-software/blitz-pay" */
   githubRepo: string;
+  webAdminBucket: s3.Bucket;
+  /** CloudFront distribution ID for cache invalidation after deploy */
+  webAdminDistributionId: string;
 }
 
 export class CiCdStack extends cdk.Stack {
@@ -62,9 +66,24 @@ export class CiCdStack extends cdk.Stack {
       },
     }));
 
+    // Web admin: sync built Angular dist/ to S3 then invalidate CloudFront
+    props.webAdminBucket.grantReadWrite(deployRole);
+    deployRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['cloudfront:CreateInvalidation'],
+      resources: [`arn:aws:cloudfront::${this.account}:distribution/${props.webAdminDistributionId}`],
+    }));
+
     new cdk.CfnOutput(this, 'DeployRoleArn', {
       value: deployRole.roleArn,
       description: 'Set this as AWS_DEPLOY_ROLE_ARN in GitHub repo secrets',
+    });
+    new cdk.CfnOutput(this, 'WebAdminBucket', {
+      value: props.webAdminBucket.bucketName,
+      description: 'Set this as WEB_ADMIN_BUCKET in GitHub repo secrets',
+    });
+    new cdk.CfnOutput(this, 'WebAdminDistributionId', {
+      value: props.webAdminDistributionId,
+      description: 'Set this as WEB_ADMIN_DISTRIBUTION_ID in GitHub repo secrets',
     });
   }
 }

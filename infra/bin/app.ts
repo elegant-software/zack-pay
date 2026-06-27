@@ -8,6 +8,7 @@ import { AppStack } from '../lib/app-stack';
 import { BastionStack } from '../lib/bastion-stack';
 import { KeycloakStack } from '../lib/keycloak-stack';
 import { CiCdStack } from '../lib/cicd-stack';
+import { WebAdminStack } from '../lib/webadmin-stack';
 
 const app = new cdk.App();
 
@@ -44,8 +45,12 @@ new AppStack(app, 'ZackPayApp', {
   expoSecret: secrets.expoSecret,
 });
 
-new CiCdStack(app, 'ZackPayCiCd', {
+const webAdmin = new WebAdminStack(app, 'ZackPayWebAdmin', { env });
+
+const cicd = new CiCdStack(app, 'ZackPayCiCd', {
   env,
   repository: ecr.repository,
   githubRepo: 'elegant-software/blitz-pay',
+  webAdminBucket: webAdmin.bucket,
+  webAdminDistributionId: webAdmin.distribution.distributionId,
 });
