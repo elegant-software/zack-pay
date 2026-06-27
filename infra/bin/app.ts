@@ -50,7 +50,7 @@ const webAdmin = new WebAdminStack(app, 'ZackPayWebAdmin', { env });
 const cicd = new CiCdStack(app, 'ZackPayCiCd', {
   env,
   repository: ecr.repository,
-  githubRepo: 'elegant-software/blitz-pay',
+  githubRepos: ['elegant-software/blitz-pay', 'elegant-software/blitzpay-admin-dashboard'],
   webAdminBucket: webAdmin.bucket,
   webAdminDistributionId: webAdmin.distribution.distributionId,
 });

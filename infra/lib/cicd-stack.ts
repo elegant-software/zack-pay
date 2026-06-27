@@ -6,8 +6,8 @@ import { Construct } from 'constructs';
 
 interface CiCdStackProps extends cdk.StackProps {
   repository: ecr.Repository;
-  /** GitHub org/repo, e.g. "elegant-software/blitz-pay" */
-  githubRepo: string;
+  /** GitHub org/repos allowed to assume the deploy role */
+  githubRepos: string[];
   webAdminBucket: s3.Bucket;
   /** CloudFront distribution ID for cache invalidation after deploy */
   webAdminDistributionId: string;
@@ -29,7 +29,7 @@ export class CiCdStack extends cdk.Stack {
           'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
         },
         StringLike: {
-          'token.actions.githubusercontent.com:sub': `repo:${props.githubRepo}:*`,
+          'token.actions.githubusercontent.com:sub': props.githubRepos.map(r => `repo:${r}:*`),
         },
       }),
       maxSessionDuration: cdk.Duration.hours(1),
