@@ -1,8 +1,10 @@
 package com.elegant.software.blitzpay.contract
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 
+@Disabled("TrueLayer disabled — payment request endpoint not active")
 class PaymentsContractTest : ContractVerifierBase() {
 
     @Test
