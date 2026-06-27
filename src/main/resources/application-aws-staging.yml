@@ -1,0 +1,11 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: metrics,health,prometheus
+        exclude: env
+
+blitzpay:
+  voice:
+    whisper:
+      base-url: http://whisper:8000/v1

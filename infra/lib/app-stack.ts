@@ -57,7 +57,7 @@ export class AppStack extends cdk.Stack {
       portMappings: [{ containerPort: 8080 }],
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'zackpay' }),
       environment: {
-        SPRING_PROFILES_ACTIVE: 'staging',
+        SPRING_PROFILES_ACTIVE: 'aws-staging',
         STORAGE_BUCKET: props.storageBucket.bucketName,
         SPRING_DATASOURCE_URL: `jdbc:postgresql://${props.db.dbInstanceEndpointAddress}:5432/zackpay`,
         KEYCLOAK_IAM_SERVER_URL: 'https://auth.elegantsoftware.de',
