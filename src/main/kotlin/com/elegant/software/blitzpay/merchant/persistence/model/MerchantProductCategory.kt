@@ -13,8 +13,8 @@ class MerchantProductCategory(
     @Id
     val id: UUID = UUID.randomUUID(),
 
-    @Column(name = "merchant_application_id", nullable = false, updatable = false)
-    val merchantApplicationId: UUID,
+    @Column(name = "merchant_id", nullable = false, updatable = false)
+    val merchantId: UUID,
 
     @Column(nullable = false, length = 100)
     var name: String,

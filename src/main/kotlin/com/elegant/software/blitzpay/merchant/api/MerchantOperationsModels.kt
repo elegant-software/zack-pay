@@ -7,6 +7,8 @@ data class MerchantContactInfo(
     val website: String? = null,
     val email: String? = null,
     val phoneNumber: String? = null,
+    val xHandle: String? = null,
+    val instagramHandle: String? = null,
 )
 
 data class MerchantAddress(
@@ -41,7 +43,6 @@ data class MerchantOperationsResponse(
     val merchantName: String,
     val merchantStatus: MerchantOperationalStatus,
     val businessType: String,
-    val registrationNumber: String,
     val operatingCountry: String,
     val contactInfo: MerchantContactInfo = MerchantContactInfo(),
     val address: MerchantAddress = MerchantAddress(),

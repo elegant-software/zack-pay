@@ -2,7 +2,7 @@ package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.ProviderAccountResponse
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProviderAccount
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProviderAccountRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.PaymentServiceProviderRepository
 import org.springframework.stereotype.Service
@@ -13,7 +13,7 @@ import java.util.UUID
 @Service
 @Transactional
 class MerchantProviderAccountService(
-    private val merchantApplicationRepository: MerchantApplicationRepository,
+    private val merchantRepository: MerchantRepository,
     private val providerAccountRepository: MerchantProviderAccountRepository,
     private val pspRepository: PaymentServiceProviderRepository,
 ) {
@@ -21,7 +21,7 @@ class MerchantProviderAccountService(
     fun list(merchantId: UUID): List<ProviderAccountResponse> {
         requireMerchantExists(merchantId)
         return providerAccountRepository
-            .findAllByMerchantApplicationId(merchantId)
+            .findAllByMerchantId(merchantId)
             .map { it.toResponse() }
     }
 
@@ -29,9 +29,9 @@ class MerchantProviderAccountService(
         requireMerchantExists(merchantId)
         requireValidPsp(pspCode)
         val account = providerAccountRepository
-            .findByMerchantApplicationIdAndPspCode(merchantId, pspCode)
+            .findByMerchantIdAndPspCode(merchantId, pspCode)
             ?: MerchantProviderAccount(
-                merchantApplicationId = merchantId,
+                merchantId = merchantId,
                 pspCode = pspCode,
                 enabled = true,
             )
@@ -43,7 +43,7 @@ class MerchantProviderAccountService(
     fun disable(merchantId: UUID, pspCode: String) {
         requireMerchantExists(merchantId)
         val account = providerAccountRepository
-            .findByMerchantApplicationIdAndPspCode(merchantId, pspCode)
+            .findByMerchantIdAndPspCode(merchantId, pspCode)
             ?: throw NoSuchElementException("Provider account not found for merchant $merchantId and PSP $pspCode")
         account.enabled = false
         account.updatedAt = Instant.now()
@@ -51,7 +51,7 @@ class MerchantProviderAccountService(
     }
 
     private fun requireMerchantExists(merchantId: UUID) {
-        if (!merchantApplicationRepository.existsById(merchantId)) {
+        if (!merchantRepository.existsById(merchantId)) {
             throw NoSuchElementException("Merchant not found: $merchantId")
         }
     }

@@ -10,15 +10,15 @@ import java.util.Optional
 import java.util.UUID
 
 interface MerchantProductRepository : JpaRepository<MerchantProduct, UUID> {
-    fun findByNameAndMerchantApplicationIdAndMerchantBranchIdAndActiveTrue(
+    fun findByNameAndMerchantIdAndMerchantBranchIdAndActiveTrue(
         name: String,
-        merchantApplicationId: UUID,
+        merchantId: UUID,
         merchantBranchId: UUID
     ): MerchantProduct?
 
-    fun findByNameAndMerchantApplicationIdAndMerchantBranchId(
+    fun findByNameAndMerchantIdAndMerchantBranchId(
         name: String,
-        merchantApplicationId: UUID,
+        merchantId: UUID,
         merchantBranchId: UUID
     ): MerchantProduct?
 

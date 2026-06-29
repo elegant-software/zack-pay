@@ -12,14 +12,14 @@ import java.util.UUID
 @Table(
     name = "merchant_provider_accounts",
     schema = "blitzpay",
-    uniqueConstraints = [UniqueConstraint(columnNames = ["merchant_application_id", "psp_code"])]
+    uniqueConstraints = [UniqueConstraint(columnNames = ["merchant_id", "psp_code"])]
 )
 class MerchantProviderAccount(
     @Id
     val id: UUID = UUID.randomUUID(),
 
-    @Column(name = "merchant_application_id", nullable = false, updatable = false)
-    val merchantApplicationId: UUID,
+    @Column(name = "merchant_id", nullable = false, updatable = false)
+    val merchantId: UUID,
 
     @Column(name = "psp_code", length = 32, nullable = false, updatable = false)
     val pspCode: String,

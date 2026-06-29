@@ -10,7 +10,7 @@ import java.time.Instant
 import java.util.UUID
 
 data class MerchantOfferingAssignmentId(
-    val merchantApplicationId: UUID = UUID.randomUUID(),
+    val merchantId: UUID = UUID.randomUUID(),
     val offeringCode: String = "",
 ) : Serializable
 
@@ -19,8 +19,8 @@ data class MerchantOfferingAssignmentId(
 @Table(name = "merchant_application_offerings", schema = "blitzpay")
 class MerchantOfferingAssignment(
     @Id
-    @Column(name = "merchant_application_id", nullable = false, updatable = false)
-    val merchantApplicationId: UUID,
+    @Column(name = "merchant_id", nullable = false, updatable = false)
+    val merchantId: UUID,
 
     @Id
     @Column(name = "offering_code", nullable = false, length = 64, updatable = false)

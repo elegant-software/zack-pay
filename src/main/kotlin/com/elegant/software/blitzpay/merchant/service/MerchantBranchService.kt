@@ -11,7 +11,7 @@ import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntitySt
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
 import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
 import com.elegant.software.blitzpay.merchant.config.GeofenceProperties
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import org.springframework.context.ApplicationEventPublisher
@@ -25,7 +25,7 @@ import java.util.UUID
 @Transactional
 class MerchantBranchService(
     private val merchantBranchRepository: MerchantBranchRepository,
-    private val merchantApplicationRepository: MerchantApplicationRepository,
+    private val merchantRepository: MerchantRepository,
     private val storageService: StorageService,
     private val eventPublisher: ApplicationEventPublisher,
     private val geofenceProperties: GeofenceProperties,
@@ -48,7 +48,7 @@ class MerchantBranchService(
         }
         val merchant = requireMerchant(merchantId)
         val branch = MerchantBranch(
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = request.name,
             active = active,
             status = if (active) MerchantEntityStatus.ACTIVE else MerchantEntityStatus.INACTIVE,
@@ -67,8 +67,8 @@ class MerchantBranchService(
         )
         val saved = merchantBranchRepository.save(branch)
         if (active) {
-            groupSyncService.ifPresent { it.ensureBranchGroupExists(merchantId, merchant.businessProfile.legalBusinessName, saved.id, saved.name) }
-            eventPublisher.publishEvent(BranchCreated(saved.id, merchantId, saved.name, merchant.businessProfile.legalBusinessName))
+            groupSyncService.ifPresent { it.ensureBranchGroupExists(merchantId, merchant.merchantName, saved.id, saved.name) }
+            eventPublisher.publishEvent(BranchCreated(saved.id, merchantId, saved.name, merchant.merchantName))
         }
         return saved.toResponse()
     }
@@ -76,7 +76,7 @@ class MerchantBranchService(
     fun list(merchantId: UUID): List<BranchResponse> {
         requireMerchantExists(merchantId)
         return merchantBranchRepository
-            .findAllByMerchantApplicationId(merchantId)
+            .findAllByMerchantId(merchantId)
             .map { it.toResponse() }
     }
 
@@ -84,7 +84,7 @@ class MerchantBranchService(
         requireMerchantExists(merchantId)
         val branch = merchantBranchRepository.findById(branchId)
             .orElseThrow { NoSuchElementException("Branch not found: $branchId") }
-        if (branch.merchantApplicationId != merchantId) {
+        if (branch.merchantId != merchantId) {
             throw NoSuchElementException("Branch not found: $branchId")
         }
         return branch.toResponse()
@@ -92,12 +92,12 @@ class MerchantBranchService(
 
     fun findByName(merchantId: UUID, branchName: String): BranchResponse? {
         requireMerchantExists(merchantId)
-        return merchantBranchRepository.findByNameAndMerchantApplicationIdAndActiveTrue(branchName, merchantId)?.toResponse()
+        return merchantBranchRepository.findByNameAndMerchantIdAndActiveTrue(branchName, merchantId)?.toResponse()
     }
 
     fun findByNameIncludingInactive(merchantId: UUID, branchName: String): BranchResponse? {
         requireMerchantExists(merchantId)
-        return merchantBranchRepository.findByNameAndMerchantApplicationId(branchName, merchantId)?.toResponse()
+        return merchantBranchRepository.findByNameAndMerchantId(branchName, merchantId)?.toResponse()
     }
 
     fun upsertByName(
@@ -123,7 +123,7 @@ class MerchantBranchService(
         geofenceRadiusMeters?.let { require(it > 0) { "geofenceRadiusMeters must be positive" } }
         requireMerchantExists(merchantId)
 
-        val existing = merchantBranchRepository.findByNameAndMerchantApplicationId(branchName, merchantId)
+        val existing = merchantBranchRepository.findByNameAndMerchantId(branchName, merchantId)
         if (existing == null) {
             if (latitude == null && (geofenceRadiusMeters != null || googlePlaceId != null)) {
                 throw IllegalArgumentException(
@@ -197,7 +197,7 @@ class MerchantBranchService(
 
         val branch = merchantBranchRepository.findById(branchId)
             .orElseThrow { NoSuchElementException("Branch not found: $branchId") }
-        if (branch.merchantApplicationId != merchantId) {
+        if (branch.merchantId != merchantId) {
             throw NoSuchElementException("Branch not found: $branchId")
         }
 
@@ -221,8 +221,8 @@ class MerchantBranchService(
 
         val saved = merchantBranchRepository.saveAndFlush(branch)
         if (wasInactive && saved.active) {
-            groupSyncService.ifPresent { it.ensureBranchGroupExists(merchantId, merchant.businessProfile.legalBusinessName, saved.id, saved.name) }
-            eventPublisher.publishEvent(BranchCreated(saved.id, merchantId, saved.name, merchant.businessProfile.legalBusinessName))
+            groupSyncService.ifPresent { it.ensureBranchGroupExists(merchantId, merchant.merchantName, saved.id, saved.name) }
+            eventPublisher.publishEvent(BranchCreated(saved.id, merchantId, saved.name, merchant.merchantName))
         } else if (saved.name != previousName) {
             eventPublisher.publishEvent(BranchNameUpdated(saved.id, merchantId, saved.name))
         }
@@ -234,7 +234,7 @@ class MerchantBranchService(
         requireMerchantExists(merchantId)
         val branch = merchantBranchRepository.findById(branchId)
             .orElseThrow { NoSuchElementException("Branch not found: $branchId") }
-        if (branch.merchantApplicationId != merchantId) {
+        if (branch.merchantId != merchantId) {
             throw NoSuchElementException("Branch not found: $branchId")
         }
         branch.updateImage(storageKey)
@@ -242,11 +242,11 @@ class MerchantBranchService(
     }
 
     private fun requireMerchant(merchantId: UUID) =
-        merchantApplicationRepository.findById(merchantId)
+        merchantRepository.findById(merchantId)
             .orElseThrow { NoSuchElementException("Merchant not found: $merchantId") }
 
     private fun requireMerchantExists(merchantId: UUID) {
-        if (!merchantApplicationRepository.existsById(merchantId)) {
+        if (!merchantRepository.existsById(merchantId)) {
             throw NoSuchElementException("Merchant not found: $merchantId")
         }
     }
@@ -278,7 +278,7 @@ class MerchantBranchService(
 
     private fun MerchantBranch.toResponse() = BranchResponse(
         id = id,
-        merchantId = merchantApplicationId,
+        merchantId = merchantId,
         branchCode = branchCode,
         name = name,
         active = active,

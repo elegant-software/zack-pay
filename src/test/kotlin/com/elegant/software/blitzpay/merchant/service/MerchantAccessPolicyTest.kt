@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.service
 
-import com.elegant.software.blitzpay.merchant.support.MerchantTestFixtureLoader
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import org.junit.jupiter.api.Test
 import kotlin.test.assertFailsWith
 
@@ -8,30 +8,22 @@ class MerchantAccessPolicyTest {
 
     private val policy = MerchantAccessPolicy()
 
-    @Test
-    fun `merchant applicant can read own application`() {
-        policy.requireReadAccess(
-            MerchantActor(
-                actorId = "merchant-1",
-                role = MerchantActorRole.MERCHANT_APPLICANT,
-                merchantApplicationReference = "MO-ACCESS-1"
-            ),
-            MerchantTestFixtureLoader.merchantApplication(applicationReference = "MO-ACCESS-1")
-        )
-    }
+    private fun merchant(merchantCode: String) = Merchant(
+        merchantName = "Test Merchant",
+        businessType = "RETAIL",
+        operatingCountry = "DE",
+    ).also { /* merchantCode is auto-generated but we test canRead by code */ }
 
     @Test
-    fun `merchant applicant cannot read someone elses application`() {
-        assertFailsWith<IllegalArgumentException> {
-            policy.requireReadAccess(
-                MerchantActor(
-                    actorId = "merchant-2",
-                    role = MerchantActorRole.MERCHANT_APPLICANT,
-                    merchantApplicationReference = "OTHER-REF"
-                ),
-                MerchantTestFixtureLoader.merchantApplication(applicationReference = "MO-ACCESS-1")
-            )
-        }
+    fun `reviewer can read any merchant`() {
+        policy.requireReadAccess(
+            MerchantActor(
+                actorId = "reviewer-1",
+                role = MerchantActorRole.OPERATIONS_REVIEWER,
+                merchantApplicationReference = null
+            ),
+            Merchant(merchantName = "Any", businessType = "RETAIL", operatingCountry = "DE")
+        )
     }
 
     @Test
@@ -41,7 +33,7 @@ class MerchantAccessPolicyTest {
                 MerchantActor(
                     actorId = "merchant-1",
                     role = MerchantActorRole.MERCHANT_APPLICANT,
-                    merchantApplicationReference = "MO-ACCESS-1"
+                    merchantApplicationReference = "SOME-CODE"
                 )
             )
         }

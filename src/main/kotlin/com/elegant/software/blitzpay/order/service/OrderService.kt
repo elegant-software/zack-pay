@@ -66,7 +66,7 @@ class OrderService(
         val products = merchantGateway.findOrderableProducts(request.items.map { it.productId }.distinct())
         val productsById = products.associateBy { it.productId }
         validateProducts(request, productsById)
-        val merchantId = products.map { it.merchantApplicationId }.distinct().single()
+        val merchantId = products.map { it.merchantId }.distinct().single()
         val branch = requireActiveBranch(merchantId, request.branchId)
         validateOfferingRules(merchantId, request.orderType, request.usesDeferredPayment)
         validateWalkInLocationIfNeeded(branch, request.orderType, request.customerLocation)
@@ -216,7 +216,7 @@ class OrderService(
         val product = products.firstOrNull { it.productId == request.productId }
             ?: throw NoSuchElementException("Product not found: ${request.productId}")
         if (!product.active) throw OrderMutationConflictException("Product is not orderable: ${request.productId}")
-        if (product.merchantApplicationId != order.merchantApplicationId) {
+        if (product.merchantId != order.merchantApplicationId) {
             throw OrderMutationConflictException("Product does not belong to the order's merchant")
         }
         val newItem = OrderItem.fromProduct(order.id, product, request.quantity)
@@ -352,7 +352,7 @@ class OrderService(
         val inactive = productsById.values.filterNot { it.active }.map { it.productId }
         if (inactive.isNotEmpty()) throw OrderCreationConflictException("Products are not orderable: ${inactive.joinToString(",")}")
 
-        val merchantIds = productsById.values.map { it.merchantApplicationId }.distinct()
+        val merchantIds = productsById.values.map { it.merchantId }.distinct()
         if (merchantIds.size != 1) throw OrderCreationConflictException("All ordered products must belong to the same merchant")
         val branchIds = productsById.values.mapNotNull { it.branchId }.distinct()
         if (branchIds.size != 1) throw OrderCreationConflictException("All ordered products must belong to the same branch")
@@ -372,7 +372,7 @@ class OrderService(
         val inactive = productsById.values.filterNot { it.active }.map { it.productId }
         if (inactive.isNotEmpty()) throw OrderCreationConflictException("Products are not orderable: ${inactive.joinToString(",")}")
 
-        val wrongMerchant = productsById.values.filter { it.merchantApplicationId != request.merchantId }.map { it.productId }
+        val wrongMerchant = productsById.values.filter { it.merchantId != request.merchantId }.map { it.productId }
         if (wrongMerchant.isNotEmpty()) throw OrderCreationConflictException("Products do not belong to merchant: ${wrongMerchant.joinToString(",")}")
         val wrongBranch = productsById.values.filter { it.branchId != request.branchId }.map { it.productId }
         if (wrongBranch.isNotEmpty()) throw OrderCreationConflictException("Products do not belong to branch: ${wrongBranch.joinToString(",")}")

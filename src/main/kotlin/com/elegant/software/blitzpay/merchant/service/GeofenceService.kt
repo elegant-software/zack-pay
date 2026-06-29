@@ -2,8 +2,8 @@ package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.GeofenceRegionResponse
 import com.elegant.software.blitzpay.merchant.api.GeofenceRegionsResponse
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -15,15 +15,15 @@ import kotlin.math.sin
 
 @Service
 class GeofenceService(
-    private val merchantApplicationRepository: MerchantApplicationRepository,
+    private val merchantRepository: MerchantRepository,
     private val merchantBranchRepository: MerchantBranchRepository,
 ) {
     private val log = LoggerFactory.getLogger(GeofenceService::class.java)
 
     @Transactional(readOnly = true)
     fun buildRegions(lat: Double?, lng: Double?): GeofenceRegionsResponse {
-        val merchantRegions = merchantApplicationRepository
-            .findAllByStatus(MerchantOnboardingStatus.ACTIVE)
+        val merchantRegions = merchantRepository
+            .findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)
             .filter { it.location != null }
             .map { merchant ->
                 val loc = merchant.location!!
@@ -31,7 +31,7 @@ class GeofenceService(
                     regionId = "merchant:${merchant.id}",
                     regionType = "MERCHANT",
                     sourceId = merchant.id,
-                    displayName = merchant.businessProfile.legalBusinessName,
+                    displayName = merchant.merchantName,
                     latitude = loc.latitude,
                     longitude = loc.longitude,
                     radiusMeters = loc.geofenceRadiusMeters,

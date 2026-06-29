@@ -6,17 +6,14 @@ import com.elegant.software.blitzpay.merchant.api.MerchantContactInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantLocationInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantNameUpdated
 import com.elegant.software.blitzpay.merchant.api.UpdateMerchantRequest
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
 import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOfferingAssignment
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MonitoringRecordRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -26,9 +23,8 @@ import java.util.UUID
 
 @Service
 class MerchantManagementService(
-    private val repository: MerchantApplicationRepository,
+    private val repository: MerchantRepository,
     private val branchRepository: MerchantBranchRepository,
-    private val monitoringRecordRepository: MonitoringRecordRepository,
     private val merchantOfferingRepository: MerchantOfferingRepository,
     private val merchantOfferingAssignmentRepository: MerchantOfferingAssignmentRepository,
     private val storageService: StorageService,
@@ -36,109 +32,98 @@ class MerchantManagementService(
 ) {
     private val log = LoggerFactory.getLogger(MerchantManagementService::class.java)
 
-    fun get(applicationId: UUID): MerchantDetailsResponse =
-        repository.findById(applicationId)
-            .orElseThrow { NoSuchElementException("Merchant application not found: $applicationId") }
+    fun get(merchantId: UUID): MerchantDetailsResponse =
+        repository.findById(merchantId)
+            .orElseThrow { NoSuchElementException("Merchant not found: $merchantId") }
             .toDetailsResponse()
 
-    fun update(applicationId: UUID, request: UpdateMerchantRequest): MerchantDetailsResponse {
-        val application = repository.findById(applicationId)
-            .orElseThrow { NoSuchElementException("Merchant application not found: $applicationId") }
+    fun update(merchantId: UUID, request: UpdateMerchantRequest): MerchantDetailsResponse {
+        val merchant = repository.findById(merchantId)
+            .orElseThrow { NoSuchElementException("Merchant not found: $merchantId") }
 
-        val resolvedMerchantName = request.merchantName
-            ?: request.legalBusinessName
-            ?: application.merchantName.ifBlank { application.businessProfile.legalBusinessName }
+        val resolvedMerchantName = request.merchantName ?: merchant.merchantName
         require(resolvedMerchantName.isNotBlank()) { "merchantName must not be blank" }
 
-        val resolvedAddress = request.address ?: MerchantAddress(
-            addressLine1 = request.primaryBusinessAddress ?: application.address?.addressLine1 ?: application.businessProfile.primaryBusinessAddress,
-            addressLine2 = application.address?.addressLine2,
-            city = application.address?.city,
-            postalCode = application.address?.postalCode,
-            country = application.address?.country,
-        )
-
         val resolvedContactInfo = request.contactInfo ?: MerchantContactInfo(
-            website = request.website ?: application.website,
-            email = request.contactEmail ?: application.publicEmail ?: application.primaryContact.email,
-            phoneNumber = request.contactPhoneNumber ?: application.publicPhoneNumber ?: application.primaryContact.phoneNumber,
+            website = request.website ?: merchant.website,
+            email = request.contactEmail ?: merchant.publicEmail,
+            phoneNumber = request.contactPhoneNumber ?: merchant.publicPhoneNumber,
+            xHandle = merchant.xHandle,
+            instagramHandle = merchant.instagramHandle,
         )
-        val resolvedContactFullName = request.contactFullName ?: application.primaryContact.fullName.ifBlank { resolvedMerchantName }
 
-        val previousName = application.merchantName.ifBlank { application.businessProfile.legalBusinessName }
-        application.updateProfile(
-            legalBusinessName = resolvedMerchantName,
-            primaryBusinessAddress = flattenAddress(resolvedAddress),
-            businessType = request.businessType,
-            primaryContact = PrimaryContact(
-                fullName = resolvedContactFullName,
-                email = resolvedContactInfo.email.orEmpty(),
-                phoneNumber = resolvedContactInfo.phoneNumber.orEmpty()
-            ),
-            nextStatus = request.status
-        )
-        application.merchantStatus = request.merchantStatus ?: application.merchantStatus
-        request.merchantMobility?.let { application.merchantMobility = it }
-        request.defaultVatPercent?.let { application.defaultVatPercent = it }
-        application.website = resolvedContactInfo.website
-        application.publicEmail = resolvedContactInfo.email
-        application.publicPhoneNumber = resolvedContactInfo.phoneNumber
-        request.location?.let {
-            application.updateLocation(it.toDomainLocation())
-            application.address = PostalAddress(
-                addressLine1 = resolvedAddress.addressLine1,
-                addressLine2 = resolvedAddress.addressLine2,
-                city = resolvedAddress.city,
-                postalCode = resolvedAddress.postalCode,
-                country = resolvedAddress.country,
+        val previousName = merchant.merchantName
+        merchant.merchantName = resolvedMerchantName
+        request.businessType?.let { merchant.businessType = it }
+        merchant.merchantStatus = request.merchantStatus ?: merchant.merchantStatus
+        request.merchantMobility?.let { merchant.merchantMobility = it }
+        request.defaultVatPercent?.let { merchant.defaultVatPercent = it }
+        merchant.website = resolvedContactInfo.website
+        merchant.publicEmail = resolvedContactInfo.email
+        merchant.publicPhoneNumber = resolvedContactInfo.phoneNumber
+        merchant.xHandle = resolvedContactInfo.xHandle
+        merchant.instagramHandle = resolvedContactInfo.instagramHandle
+
+        request.address?.let { addr ->
+            merchant.address = PostalAddress(
+                addressLine1 = addr.addressLine1,
+                addressLine2 = addr.addressLine2,
+                city = addr.city,
+                postalCode = addr.postalCode,
+                country = addr.country,
             )
         }
-        request.offerings?.let { syncOfferings(application.id, it) }
 
-        val saved = repository.save(application)
+        request.location?.let {
+            merchant.updateLocation(it.toDomainLocation())
+            if (request.address != null) {
+                merchant.address = PostalAddress(
+                    addressLine1 = request.address.addressLine1,
+                    addressLine2 = request.address.addressLine2,
+                    city = request.address.city,
+                    postalCode = request.address.postalCode,
+                    country = request.address.country,
+                )
+            }
+        }
+        request.offerings?.let { syncOfferings(merchant.id, it) }
+
+        val saved = repository.save(merchant)
         if (saved.merchantName != previousName) {
-            eventPublisher.publishEvent(MerchantNameUpdated(applicationId, saved.merchantName))
+            eventPublisher.publishEvent(MerchantNameUpdated(merchantId, saved.merchantName))
         }
         return saved.toDetailsResponse()
     }
 
     @Transactional
-    fun deleteMerchantApplication(applicationId: UUID) {
-        val application = repository.findById(applicationId)
-            .orElseThrow { NoSuchElementException("Merchant application not found: $applicationId") }
-        branchRepository.deleteAllByMerchantApplicationId(applicationId)
-        application.monitoringRecord?.let { monitoringRecordRepository.deleteById(it.id) }
-        repository.delete(application)
-        log.info("merchant application deleted id={}", applicationId)
+    fun deleteMerchant(merchantId: UUID) {
+        val merchant = repository.findById(merchantId)
+            .orElseThrow { NoSuchElementException("Merchant not found: $merchantId") }
+        branchRepository.deleteAllByMerchantId(merchantId)
+        repository.delete(merchant)
+        log.info("merchant deleted id={}", merchantId)
     }
 
-    private fun MerchantApplication.toDetailsResponse() = MerchantDetailsResponse(
-        applicationId = id,
-        applicationReference = applicationReference,
+    private fun Merchant.toDetailsResponse() = MerchantDetailsResponse(
+        merchantId = id,
         merchantCode = merchantCode,
-        merchantName = merchantName.ifBlank { businessProfile.legalBusinessName },
+        merchantName = merchantName,
         merchantStatus = merchantStatus,
-        registrationNumber = businessProfile.registrationNumber,
-        businessType = businessProfile.businessType,
-        operatingCountry = businessProfile.operatingCountry,
-        legalBusinessName = businessProfile.legalBusinessName,
-        primaryBusinessAddress = businessProfile.primaryBusinessAddress,
+        businessType = businessType,
+        operatingCountry = operatingCountry,
         website = website,
-        contactFullName = primaryContact.fullName,
-        contactEmail = primaryContact.email,
-        contactPhoneNumber = primaryContact.phoneNumber,
-        status = status,
-        submittedAt = submittedAt,
         lastUpdatedAt = lastUpdatedAt,
-        logoStorageKey = businessProfile.logoStorageKey,
-        logoUrl = signedUrl(businessProfile.logoStorageKey),
+        logoStorageKey = logoStorageKey,
+        logoUrl = signedUrl(logoStorageKey),
         contactInfo = MerchantContactInfo(
             website = website,
-            email = publicEmail ?: primaryContact.email,
-            phoneNumber = publicPhoneNumber ?: primaryContact.phoneNumber,
+            email = publicEmail,
+            phoneNumber = publicPhoneNumber,
+            xHandle = xHandle,
+            instagramHandle = instagramHandle,
         ),
         address = MerchantAddress(
-            addressLine1 = address?.addressLine1 ?: businessProfile.primaryBusinessAddress.takeIf { it.isNotBlank() },
+            addressLine1 = address?.addressLine1,
             addressLine2 = address?.addressLine2,
             city = address?.city,
             postalCode = address?.postalCode,
@@ -157,7 +142,7 @@ class MerchantManagementService(
                 placeEnrichedAt = it.placeEnrichedAt,
             )
         },
-        offerings = merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(id)
+        offerings = merchantOfferingAssignmentRepository.findAllByMerchantId(id)
             .map { it.offeringCode }
             .toSortedSet(),
         merchantMobility = merchantMobility,
@@ -166,15 +151,6 @@ class MerchantManagementService(
 
     private fun signedUrl(storageKey: String?): String? =
         storageKey?.let { runCatching { storageService.presignDownload(it) }.getOrNull() }
-
-    private fun flattenAddress(address: MerchantAddress): String =
-        listOfNotNull(
-            address.addressLine1?.takeIf { it.isNotBlank() },
-            address.addressLine2?.takeIf { it.isNotBlank() },
-            address.postalCode?.takeIf { it.isNotBlank() },
-            address.city?.takeIf { it.isNotBlank() },
-            address.country?.takeIf { it.isNotBlank() },
-        ).joinToString(", ")
 
     private fun MerchantLocationInfo.toDomainLocation(): MerchantLocation {
         require(latitude != null) { "location.latitude must not be null" }
@@ -201,7 +177,7 @@ class MerchantManagementService(
         val unknown = normalized - knownCodes
         require(unknown.isEmpty()) { "Unknown merchant offerings: ${unknown.joinToString(",")}" }
 
-        val existing = merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(merchantId).associateBy { it.offeringCode }
+        val existing = merchantOfferingAssignmentRepository.findAllByMerchantId(merchantId).associateBy { it.offeringCode }
         val toDelete = existing.keys - normalized
         val toCreate = normalized - existing.keys
 

@@ -1,12 +1,10 @@
 package com.elegant.software.blitzpay.merchant.service
 
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -18,24 +16,18 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GeofenceServiceTest {
-    private val merchantRepo = mock<MerchantApplicationRepository>()
+    private val merchantRepo = mock<MerchantRepository>()
     private val branchRepo = mock<MerchantBranchRepository>()
     private val service = GeofenceService(merchantRepo, branchRepo)
 
     private fun merchant(
-        status: MerchantOnboardingStatus = MerchantOnboardingStatus.ACTIVE,
+        status: MerchantOperationalStatus = MerchantOperationalStatus.ACTIVE,
         location: MerchantLocation? = MerchantLocation(48.8566, 2.3522, 150),
-    ) = MerchantApplication(
-        applicationReference = "REF-${UUID.randomUUID()}",
-        businessProfile = BusinessProfile(
-            legalBusinessName = "Test Merchant",
-            businessType = "RETAIL",
-            registrationNumber = "REG001",
-            operatingCountry = "DE",
-            primaryBusinessAddress = "Berlin"
-        ),
-        primaryContact = PrimaryContact("Test", "test@test.com", "+49111"),
-        status = status,
+    ) = Merchant(
+        merchantName = "Test Merchant",
+        businessType = "RETAIL",
+        operatingCountry = "DE",
+        merchantStatus = status,
     ).also { if (location != null) it.updateLocation(location) }
 
     private fun branch(
@@ -43,7 +35,7 @@ class GeofenceServiceTest {
         location: MerchantLocation? = MerchantLocation(48.8738, 2.2950, 100),
         merchantId: UUID = UUID.randomUUID(),
     ) = MerchantBranch(
-        merchantApplicationId = merchantId,
+        merchantId = merchantId,
         name = "Test Branch",
         active = active,
         location = location,
@@ -52,7 +44,7 @@ class GeofenceServiceTest {
     @Test
     fun `returns merchant region for active merchant with location`() {
         val m = merchant()
-        whenever(merchantRepo.findAllByStatus(MerchantOnboardingStatus.ACTIVE)).thenReturn(listOf(m))
+        whenever(merchantRepo.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)).thenReturn(listOf(m))
         whenever(branchRepo.findAllByActiveTrue()).thenReturn(emptyList())
 
         val result = service.buildRegions(null, null)
@@ -66,7 +58,7 @@ class GeofenceServiceTest {
 
     @Test
     fun `returns branch region for active branch with location`() {
-        whenever(merchantRepo.findAllByStatus(MerchantOnboardingStatus.ACTIVE)).thenReturn(emptyList())
+        whenever(merchantRepo.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)).thenReturn(emptyList())
         val b = branch()
         whenever(branchRepo.findAllByActiveTrue()).thenReturn(listOf(b))
 
@@ -81,7 +73,7 @@ class GeofenceServiceTest {
     @Test
     fun `excludes merchant without location`() {
         val m = merchant(location = null)
-        whenever(merchantRepo.findAllByStatus(MerchantOnboardingStatus.ACTIVE)).thenReturn(listOf(m))
+        whenever(merchantRepo.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)).thenReturn(listOf(m))
         whenever(branchRepo.findAllByActiveTrue()).thenReturn(emptyList())
 
         val result = service.buildRegions(null, null)
@@ -91,7 +83,7 @@ class GeofenceServiceTest {
 
     @Test
     fun `excludes branch without location`() {
-        whenever(merchantRepo.findAllByStatus(MerchantOnboardingStatus.ACTIVE)).thenReturn(emptyList())
+        whenever(merchantRepo.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)).thenReturn(emptyList())
         val b = branch(location = null)
         whenever(branchRepo.findAllByActiveTrue()).thenReturn(listOf(b))
 
@@ -102,7 +94,7 @@ class GeofenceServiceTest {
 
     @Test
     fun `returns empty list when no active merchants or branches have location`() {
-        whenever(merchantRepo.findAllByStatus(MerchantOnboardingStatus.ACTIVE)).thenReturn(emptyList())
+        whenever(merchantRepo.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)).thenReturn(emptyList())
         whenever(branchRepo.findAllByActiveTrue()).thenReturn(emptyList())
 
         val result = service.buildRegions(null, null)
@@ -113,7 +105,7 @@ class GeofenceServiceTest {
     @Test
     fun `distanceMeters is null when no caller position provided`() {
         val m = merchant()
-        whenever(merchantRepo.findAllByStatus(MerchantOnboardingStatus.ACTIVE)).thenReturn(listOf(m))
+        whenever(merchantRepo.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)).thenReturn(listOf(m))
         whenever(branchRepo.findAllByActiveTrue()).thenReturn(emptyList())
 
         val result = service.buildRegions(null, null)
@@ -125,7 +117,7 @@ class GeofenceServiceTest {
     fun `sorts regions by distance when caller position provided`() {
         val near = branch(location = MerchantLocation(48.8566, 2.3522, 100))
         val far = branch(location = MerchantLocation(51.5074, -0.1278, 100))
-        whenever(merchantRepo.findAllByStatus(MerchantOnboardingStatus.ACTIVE)).thenReturn(emptyList())
+        whenever(merchantRepo.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)).thenReturn(emptyList())
         whenever(branchRepo.findAllByActiveTrue()).thenReturn(listOf(far, near))
 
         val result = service.buildRegions(48.8566, 2.3522)
@@ -138,7 +130,7 @@ class GeofenceServiceTest {
     @Test
     fun `includes distanceMeters in each region when caller position provided`() {
         val m = merchant()
-        whenever(merchantRepo.findAllByStatus(MerchantOnboardingStatus.ACTIVE)).thenReturn(listOf(m))
+        whenever(merchantRepo.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)).thenReturn(listOf(m))
         whenever(branchRepo.findAllByActiveTrue()).thenReturn(emptyList())
 
         val result = service.buildRegions(48.8566, 2.3522)

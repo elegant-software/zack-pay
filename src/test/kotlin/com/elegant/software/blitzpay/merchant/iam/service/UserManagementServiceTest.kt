@@ -135,7 +135,7 @@ class UserManagementServiceTest {
         stubRootGroup()
         stubMerchantGroup(merchantId)
         whenever(merchantLookup.requireMerchant(merchantId)).thenReturn(MerchantReference(merchantId, "Test Merchant"))
-        whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantApplicationIdAndBranchId(userId, merchantId, null)).thenReturn(false)
+        whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantIdAndBranchId(userId, merchantId, null)).thenReturn(false)
         whenever(assignmentRepository.save(any<MerchantUserAssignment>())).thenAnswer { it.arguments[0] as MerchantUserAssignment }
         whenever(usersResource.get(userId.toString())).thenReturn(userResource)
 
@@ -154,7 +154,7 @@ class UserManagementServiceTest {
         stubBranchGroup(merchantId, branchId)
         whenever(merchantLookup.requireMerchant(merchantId)).thenReturn(MerchantReference(merchantId, "Test Merchant"))
         whenever(merchantLookup.findBranch(branchId)).thenReturn(BranchReference(branchId, merchantId, "Branch A"))
-        whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantApplicationIdAndBranchId(userId, merchantId, branchId)).thenReturn(false)
+        whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantIdAndBranchId(userId, merchantId, branchId)).thenReturn(false)
         whenever(assignmentRepository.save(any<MerchantUserAssignment>())).thenAnswer { it.arguments[0] as MerchantUserAssignment }
         whenever(usersResource.get(userId.toString())).thenReturn(userResource)
 
@@ -168,7 +168,7 @@ class UserManagementServiceTest {
     @Test
     fun `createAssignment rejects MERCHANT_EMPLOYEE without branchId`() {
         whenever(merchantLookup.requireMerchant(merchantId)).thenReturn(MerchantReference(merchantId, "M"))
-        whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantApplicationIdAndBranchId(any(), any(), any())).thenReturn(false)
+        whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantIdAndBranchId(any(), any(), any())).thenReturn(false)
 
         val request = CreateAssignmentRequest(merchantId = merchantId, branchId = null, role = MerchantOperationsRole.MERCHANT_EMPLOYEE, employeeId = null)
 
@@ -179,7 +179,7 @@ class UserManagementServiceTest {
     @Test
     fun `createAssignment rejects duplicate assignment`() {
         whenever(merchantLookup.requireMerchant(merchantId)).thenReturn(MerchantReference(merchantId, "M"))
-        whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantApplicationIdAndBranchId(userId, merchantId, null)).thenReturn(true)
+        whenever(assignmentRepository.existsByKeycloakUserIdAndMerchantIdAndBranchId(userId, merchantId, null)).thenReturn(true)
 
         val request = CreateAssignmentRequest(merchantId = merchantId, branchId = null, role = MerchantOperationsRole.MERCHANT_MANAGER, employeeId = null)
 
@@ -190,7 +190,7 @@ class UserManagementServiceTest {
     @Test
     fun `revokeAssignment removes Keycloak membership and deletes record`() {
         val assignment = MerchantUserAssignment(
-            id = assignmentId, keycloakUserId = userId, merchantApplicationId = merchantId,
+            id = assignmentId, keycloakUserId = userId, merchantId = merchantId,
             branchId = null, role = MerchantOperationsRole.MERCHANT_MANAGER
         )
         stubRootGroup()
@@ -209,7 +209,7 @@ class UserManagementServiceTest {
     fun `revokeAssignment rejects if assignment belongs to different user`() {
         val otherUserId = UUID.randomUUID()
         val assignment = MerchantUserAssignment(
-            id = assignmentId, keycloakUserId = otherUserId, merchantApplicationId = merchantId,
+            id = assignmentId, keycloakUserId = otherUserId, merchantId = merchantId,
             branchId = null, role = MerchantOperationsRole.MERCHANT_MANAGER
         )
         whenever(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment))

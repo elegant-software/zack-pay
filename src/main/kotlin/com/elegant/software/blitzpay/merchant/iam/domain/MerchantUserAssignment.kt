@@ -18,8 +18,8 @@ class MerchantUserAssignment(
     @Column(name = "keycloak_user_id", nullable = false, updatable = false)
     val keycloakUserId: UUID,
 
-    @Column(name = "merchant_application_id", nullable = false, updatable = false)
-    val merchantApplicationId: UUID,
+    @Column(name = "merchant_id", nullable = false, updatable = false)
+    val merchantId: UUID,
 
     @Column(name = "branch_id")
     val branchId: UUID? = null,

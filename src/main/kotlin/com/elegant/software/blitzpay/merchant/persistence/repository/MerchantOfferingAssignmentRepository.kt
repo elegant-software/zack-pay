@@ -7,6 +7,6 @@ import java.util.UUID
 
 interface MerchantOfferingAssignmentRepository :
     JpaRepository<MerchantOfferingAssignment, MerchantOfferingAssignmentId> {
-    fun findAllByMerchantApplicationId(merchantApplicationId: UUID): List<MerchantOfferingAssignment>
-    fun existsByMerchantApplicationIdAndOfferingCode(merchantApplicationId: UUID, offeringCode: String): Boolean
+    fun findAllByMerchantId(merchantId: UUID): List<MerchantOfferingAssignment>
+    fun existsByMerchantIdAndOfferingCode(merchantId: UUID, offeringCode: String): Boolean
 }

@@ -76,7 +76,7 @@ class OrderItem(
             return OrderItem(
                 orderIdFk = orderIdFk,
                 merchantProductId = product.productId,
-                merchantApplicationId = product.merchantApplicationId,
+                merchantApplicationId = product.merchantId,
                 merchantBranchId = product.branchId,
                 productName = product.name,
                 productDescription = product.description,

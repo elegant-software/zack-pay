@@ -7,7 +7,7 @@ import com.elegant.software.blitzpay.merchant.api.NearbyMerchantsResponse
 import com.elegant.software.blitzpay.merchant.api.SetMerchantLocationRequest
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
 import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -21,7 +21,7 @@ import kotlin.math.sin
 
 @Service
 class MerchantLocationService(
-    private val repository: MerchantApplicationRepository,
+    private val repository: MerchantRepository,
     private val merchantBranchRepository: MerchantBranchRepository,
 ) {
     private val log = LoggerFactory.getLogger(MerchantLocationService::class.java)
@@ -83,7 +83,7 @@ class MerchantLocationService(
                 val distanceMeters = haversineMeters(lat, lng, location.latitude, location.longitude)
                 if (distanceMeters <= radiusMeters) BranchDistance(branch, distanceMeters) else null
             }
-            .groupBy { it.branch.merchantApplicationId }
+            .groupBy { it.branch.merchantId }
 
         if (nearbyBranchesByMerchantId.isEmpty()) {
             return NearbyMerchantsResponse(emptyList())
@@ -100,7 +100,7 @@ class MerchantLocationService(
 
                 NearbyMerchantResponse(
                     merchantId = merchant.id,
-                    legalBusinessName = merchant.businessProfile.legalBusinessName,
+                    legalBusinessName = merchant.merchantName,
                     latitude = nearestLocation.latitude,
                     longitude = nearestLocation.longitude,
                     geofenceRadiusMeters = nearestLocation.geofenceRadiusMeters,

@@ -40,7 +40,7 @@ data class ProductResponse(
 
 data class OrderableMerchantProduct(
     val productId: UUID,
-    val merchantApplicationId: UUID,
+    val merchantId: UUID,
     val branchId: UUID?,
     val name: String,
     val description: String?,

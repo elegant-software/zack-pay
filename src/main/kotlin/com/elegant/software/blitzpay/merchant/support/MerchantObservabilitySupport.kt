@@ -1,9 +1,7 @@
 package com.elegant.software.blitzpay.merchant.support
 
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
-
 interface MerchantObservabilitySupport {
-    fun recordSuccess(action: String, status: MerchantOnboardingStatus)
+    fun recordSuccess(action: String, status: String)
 
     fun recordFailure(action: String, reason: String)
 }

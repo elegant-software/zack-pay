@@ -1,7 +1,6 @@
 package com.elegant.software.blitzpay.contract
 
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.iam.repository.MerchantUserAssignmentRepository
 import com.elegant.software.blitzpay.merchant.iam.service.UserManagementService
@@ -13,7 +12,7 @@ import com.elegant.software.blitzpay.order.persistence.repository.OrderRepositor
 import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
 import com.elegant.software.blitzpay.QuickpayApplication
 import com.elegant.software.blitzpay.merchant.service.MerchantProductCategoryService
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
@@ -21,7 +20,6 @@ import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOff
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingRepository
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOffering
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantVerticalRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MonitoringRecordRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchAppearanceRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.ProximityEventRepository
 import com.elegant.software.blitzpay.appointments.persistence.AppointmentRepository
@@ -113,7 +111,7 @@ abstract class ContractVerifierBase {
     protected lateinit var pushDeliveryAttemptRepository: PushDeliveryAttemptRepository
 
     @MockitoBean
-    protected lateinit var merchantApplicationRepository: MerchantApplicationRepository
+    protected lateinit var merchantRepository: MerchantRepository
 
     @MockitoBean
     protected lateinit var merchantVerticalRepository: MerchantVerticalRepository
@@ -135,9 +133,6 @@ abstract class ContractVerifierBase {
 
     @MockitoBean
     protected lateinit var merchantProductCategoryService: MerchantProductCategoryService
-
-    @MockitoBean
-    protected lateinit var monitoringRecordRepository: MonitoringRecordRepository
 
     @MockitoBean
     protected lateinit var merchantBranchAppearanceRepository: MerchantBranchAppearanceRepository
@@ -240,9 +235,9 @@ abstract class ContractVerifierBase {
                 MerchantOffering("APPOINTMENT_BOOKING", "Appointment Booking"),
             )
         )
-        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(any())).thenReturn(emptyList())
-        whenever(merchantProviderAccountRepository.findAllByMerchantApplicationId(any())).thenReturn(emptyList())
-        whenever(merchantProviderAccountRepository.existsByMerchantApplicationIdAndPspCodeAndEnabledTrue(any(), any())).thenReturn(false)
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(any())).thenReturn(emptyList())
+        whenever(merchantProviderAccountRepository.findAllByMerchantId(any())).thenReturn(emptyList())
+        whenever(merchantProviderAccountRepository.existsByMerchantIdAndPspCodeAndEnabledTrue(any(), any())).thenReturn(false)
         doNothing().whenever(paymentStatusInitializationGateway).initialize(any(), any(), any(), any(), any())
         doNothing().whenever(paymentStatusUpdateGateway).settle(any(), any(), any())
         doNothing().whenever(paymentStatusUpdateGateway).fail(any(), any(), any())
@@ -261,19 +256,11 @@ abstract class ContractVerifierBase {
         whenever(stripeConnectGateway.isPayByBankEnabled(any())).thenReturn(true)
         whenever(stripeConnectGateway.getDetails(any())).thenReturn(
             MerchantDetailsResponse(
-                applicationId = java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                applicationReference = "REF-001",
+                merchantId = java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
                 merchantName = "Test Merchant",
-                registrationNumber = "12345678",
                 businessType = "RESTAURANT",
                 operatingCountry = "GB",
-                legalBusinessName = "Test Merchant Ltd",
-                primaryBusinessAddress = "1 Test Street, London",
-                contactFullName = "John Doe",
-                contactEmail = "john@testmerchant.com",
-                contactPhoneNumber = "+441234567890",
-                status = MerchantOnboardingStatus.ACTIVE,
-                submittedAt = null,
+                merchantStatus = MerchantOperationalStatus.ACTIVE,
                 lastUpdatedAt = java.time.Instant.EPOCH,
             )
         )
