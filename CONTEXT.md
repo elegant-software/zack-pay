@@ -21,7 +21,7 @@ The operational lifecycle state of a Merchant, using a simple status model such 
 _Avoid_: onboarding workflow states
 
 **Merchant Contact Info**:
-The merchant-level public contact surface, including website, email, and phone number.
+The merchant-level public contact surface, including website, email, phone number, X handle, and Instagram handle.
 _Avoid_: branch-only contact identity
 
 **Branch**:
