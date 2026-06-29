@@ -62,6 +62,7 @@ export class AppStack extends cdk.Stack {
         SPRING_DATASOURCE_URL: `jdbc:postgresql://${props.db.dbInstanceEndpointAddress}:5432/zackpay`,
         KEYCLOAK_IAM_SERVER_URL: 'https://auth.elegantsoftware.de',
         KEYCLOAK_IAM_REALM: 'blitzpay',
+        FRONTEND_ORIGIN: 'https://admin.elegantsoftware.de',
       },
       secrets: {
         SPRING_DATASOURCE_USERNAME: ecs.Secret.fromSecretsManager(dbSecret, 'username'),
@@ -86,7 +87,7 @@ export class AppStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroups: [sg],
       circuitBreaker: { rollback: true },
-      healthCheckGracePeriod: cdk.Duration.seconds(300),
+      healthCheckGracePeriod: cdk.Duration.seconds(480),
     });
 
     const cert = new acm.Certificate(this, 'Cert', {
@@ -110,7 +111,7 @@ export class AppStack extends cdk.Stack {
     listener.addTargets('App', {
       port: 8080,
       targets: [service],
-      healthCheck: { path: '/actuator/health' },
+      healthCheck: { path: '/actuator/health', healthyThresholdCount: 2 },
     });
 
     // Allow ALB → app; restrict direct internet access to Fargate tasks
