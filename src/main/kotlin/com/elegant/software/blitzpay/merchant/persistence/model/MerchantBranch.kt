@@ -16,21 +16,21 @@ import java.util.UUID
 @Table(
     name = "merchant_branches",
     schema = "blitzpay",
-    indexes = [Index(name = "idx_merchant_branches_merchant_application_id", columnList = "merchant_application_id")]
+    indexes = [Index(name = "idx_merchant_branches_merchant_id", columnList = "merchant_id")]
 )
 class MerchantBranch(
     @Id
     val id: UUID = UUID.randomUUID(),
 
-    @Column(name = "merchant_application_id", nullable = false, updatable = false)
-    val merchantApplicationId: UUID,
+    @Column(name = "merchant_id", nullable = false, updatable = false)
+    val merchantId: UUID,
 
     @Column(name = "branch_code", nullable = false)
     val branchCode: String = "BR-" + UUID.randomUUID().toString().replace("-", "").take(12).uppercase(),
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "merchant_application_id", insertable = false, updatable = false)
-    val merchantApplication: MerchantApplication? = null,
+    @JoinColumn(name = "merchant_id", insertable = false, updatable = false)
+    val merchant: Merchant? = null,
 
     @Column(nullable = false)
     var name: String,

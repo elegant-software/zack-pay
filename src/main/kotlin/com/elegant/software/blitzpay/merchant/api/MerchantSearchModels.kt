@@ -14,15 +14,14 @@ data class MerchantSearchRequest(
 )
 
 data class MerchantSearchResultItem(
-    val applicationId: UUID,
+    val merchantId: UUID,
     val merchantName: String,
-    val legalBusinessName: String,
     val merchantCode: String,
     val city: String?,
     val country: String?,
     val businessType: String,
     val merchantMobility: MerchantMobility,
-    val status: String,
+    val merchantStatus: String,
     val lastUpdatedAt: Instant,
 )
 

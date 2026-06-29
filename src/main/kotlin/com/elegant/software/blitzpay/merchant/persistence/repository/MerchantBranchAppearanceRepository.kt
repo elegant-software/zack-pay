@@ -18,7 +18,7 @@ interface MerchantBranchAppearanceRepository : JpaRepository<MerchantBranchAppea
     @Query("""
         SELECT a FROM MerchantBranchAppearance a
         JOIN a.branch b
-        WHERE b.merchantApplicationId = :merchantId
+        WHERE b.merchantId = :merchantId
           AND a.cancelledAt IS NULL
           AND a.endTime >= :now
         ORDER BY a.startTime ASC
@@ -109,7 +109,7 @@ interface MerchantBranchAppearanceRepository : JpaRepository<MerchantBranchAppea
     @Query("""
         SELECT a FROM MerchantBranchAppearance a
         JOIN a.branch b
-        WHERE b.merchantApplicationId = :merchantId
+        WHERE b.merchantId = :merchantId
           AND (:branchId IS NULL OR a.branchId = :branchId)
           AND a.startTime >= :from
           AND a.startTime < :to
@@ -127,7 +127,7 @@ interface MerchantBranchAppearanceRepository : JpaRepository<MerchantBranchAppea
     @Query("""
         SELECT a FROM MerchantBranchAppearance a
         JOIN a.branch b
-        WHERE b.merchantApplicationId = :merchantId
+        WHERE b.merchantId = :merchantId
           AND (:branchId IS NULL OR a.branchId = :branchId)
           AND a.cancelledAt IS NOT NULL
           AND a.startTime >= :from
@@ -144,7 +144,7 @@ interface MerchantBranchAppearanceRepository : JpaRepository<MerchantBranchAppea
     @Query("""
         SELECT a FROM MerchantBranchAppearance a
         JOIN a.branch b
-        WHERE b.merchantApplicationId = :merchantId
+        WHERE b.merchantId = :merchantId
           AND (:branchId IS NULL OR a.branchId = :branchId)
           AND a.cancelledAt IS NULL
           AND a.endTime < :now

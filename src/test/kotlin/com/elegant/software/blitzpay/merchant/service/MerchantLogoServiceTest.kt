@@ -1,9 +1,7 @@
 package com.elegant.software.blitzpay.merchant.service
 
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.storage.PresignedUpload
 import com.elegant.software.blitzpay.storage.StorageService
 import org.junit.jupiter.api.Test
@@ -12,27 +10,18 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.Optional
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class MerchantLogoServiceTest {
-    private val repository = mock<MerchantApplicationRepository>()
+    private val repository = mock<MerchantRepository>()
     private val storageService = mock<StorageService>()
     private val service = MerchantLogoService(repository, storageService)
 
     @Test
     fun `create upload url returns canonical merchant logo key`() {
-        val merchant = MerchantApplication(
-            applicationReference = "BLTZ-LOGO",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Logo GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-LOGO",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Logo Strasse 1"
-            ),
-            primaryContact = PrimaryContact("Jane Doe", "jane@example.com", "+491234")
-        )
+        val merchant = Merchant(merchantName = "Logo GmbH", businessType = "RETAIL", operatingCountry = "DE")
         whenever(repository.findById(merchant.id)).thenReturn(Optional.of(merchant))
         whenever(storageService.presignUpload(any(), any(), any())).thenReturn(
             PresignedUpload(
@@ -50,7 +39,7 @@ class MerchantLogoServiceTest {
 
     @Test
     fun `attach logo rejects unexpected storage key`() {
-        val merchantId = java.util.UUID.randomUUID()
+        val merchantId = UUID.randomUUID()
 
         val ex = assertFailsWith<IllegalArgumentException> {
             service.attachLogo(merchantId, "merchants/$merchantId/branches/branch/logo.webp")

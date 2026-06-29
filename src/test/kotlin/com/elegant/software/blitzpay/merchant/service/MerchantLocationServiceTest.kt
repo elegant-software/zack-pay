@@ -1,44 +1,39 @@
 package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.SetMerchantLocationRequest
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.Optional
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class MerchantLocationServiceTest {
-    private val repository = mock<MerchantApplicationRepository>()
+    private val repository = mock<MerchantRepository>()
     private val merchantBranchRepository = mock<MerchantBranchRepository>()
     private val service = MerchantLocationService(repository, merchantBranchRepository)
 
+    private fun merchant() = Merchant(
+        merchantName = "Location GmbH",
+        businessType = "RETAIL",
+        operatingCountry = "DE",
+    )
+
     @Test
     fun `set location stores google place id for asynchronous enrichment`() {
-        val merchant = MerchantApplication(
-            applicationReference = "BLTZ-LOC",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Location GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-LOC",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Legal Strasse 1"
-            ),
-            primaryContact = PrimaryContact("Jane Doe", "jane@example.com", "+491234")
-        )
-        whenever(repository.findById(merchant.id)).thenReturn(Optional.of(merchant))
-        whenever(repository.save(any<MerchantApplication>())).thenAnswer { it.arguments[0] }
+        val m = merchant()
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
+        whenever(repository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
 
         val response = service.setLocation(
-            merchant.id,
+            m.id,
             SetMerchantLocationRequest(
                 latitude = 53.0758,
                 longitude = 8.8072,
@@ -53,20 +48,11 @@ class MerchantLocationServiceTest {
 
     @Test
     fun `find nearby returns merchant when only branch is within radius`() {
-        val merchant = MerchantApplication(
-            applicationReference = "BLTZ-NEARBY",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Branch Nearby GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-NEARBY",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Legal Strasse 2"
-            ),
-            primaryContact = PrimaryContact("Jane Doe", "jane@example.com", "+491234")
-        )
+        val merchantId = UUID.randomUUID()
+        val m = merchant().also { }
 
         val branch = MerchantBranch(
-            merchantApplicationId = merchant.id,
+            merchantId = merchantId,
             name = "Nearby Branch",
             location = MerchantLocation(
                 latitude = 53.1022777,
@@ -75,35 +61,38 @@ class MerchantLocationServiceTest {
             )
         )
 
-        whenever(merchantBranchRepository.findAllByActiveTrue()).thenReturn(listOf(branch))
-        whenever(repository.findAllById(any<Set<java.util.UUID>>())).thenReturn(listOf(merchant))
+        // Use a merchant with the same id as the branch's merchantId
+        val merchantWithId = Merchant(
+            merchantName = "Branch Nearby GmbH",
+            businessType = "RETAIL",
+            operatingCountry = "DE",
+        )
+        val branchWithMatchingId = MerchantBranch(
+            merchantId = merchantWithId.id,
+            name = "Nearby Branch",
+            location = MerchantLocation(
+                latitude = 53.1022777,
+                longitude = 8.9146786,
+                geofenceRadiusMeters = 150
+            )
+        )
+
+        whenever(merchantBranchRepository.findAllByActiveTrue()).thenReturn(listOf(branchWithMatchingId))
+        whenever(repository.findAllById(any<Set<UUID>>())).thenReturn(listOf(merchantWithId))
 
         val response = service.findNearby(53.1022777, 8.9146786, 500.0)
 
         assertEquals(1, response.merchants.size)
-        assertEquals(merchant.id, response.merchants.first().merchantId)
+        assertEquals(merchantWithId.id, response.merchants.first().merchantId)
         assertNotNull(response.merchants.first().activeBranches.firstOrNull())
-        assertEquals(branch.id, response.merchants.first().activeBranches.first().branchId)
+        assertEquals(branchWithMatchingId.id, response.merchants.first().activeBranches.first().branchId)
     }
 
     @Test
     fun `find nearby ignores merchant level location when no branch is within radius`() {
-        val merchant = MerchantApplication(
-            applicationReference = "BLTZ-NEARBY-MERCHANT-ONLY",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Merchant Only GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-NEARBY-MERCHANT",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Legal Strasse 3"
-            ),
-            primaryContact = PrimaryContact("Jane Doe", "jane@example.com", "+491234")
-        ).also {
-            it.updateLocation(MerchantLocation(53.1022777, 8.9146786, 150))
-        }
-
+        val merchantId = UUID.randomUUID()
         val distantBranch = MerchantBranch(
-            merchantApplicationId = merchant.id,
+            merchantId = merchantId,
             name = "Distant Branch",
             location = MerchantLocation(
                 latitude = 53.2000000,
@@ -113,7 +102,7 @@ class MerchantLocationServiceTest {
         )
 
         whenever(merchantBranchRepository.findAllByActiveTrue()).thenReturn(listOf(distantBranch))
-        whenever(repository.findAllById(any<Set<java.util.UUID>>())).thenReturn(listOf(merchant))
+        whenever(repository.findAllById(any<Set<UUID>>())).thenReturn(emptyList())
 
         val response = service.findNearby(53.1022777, 8.9146786, 500.0)
 

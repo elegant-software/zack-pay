@@ -1,12 +1,9 @@
 package com.elegant.software.blitzpay.merchant
 
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
 import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
 import com.elegant.software.blitzpay.storage.PresignedUpload
 import jakarta.persistence.Query
 import org.hibernate.Filter
@@ -48,10 +45,7 @@ class MerchantContractTest : ContractVerifierBase() {
 
     @Test
     fun `POST merchants returns 201 and ACTIVE status for valid registration`() {
-        whenever(merchantApplicationRepository.existsByBusinessProfileRegistrationNumberAndStatusIn(any(), any()))
-            .thenReturn(false)
-        whenever(merchantApplicationRepository.save(any<MerchantApplication>()))
-            .thenAnswer { it.arguments[0] }
+        whenever(merchantRepository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
 
         webTestClient.post()
             .uri("/v1/merchants")
@@ -61,7 +55,6 @@ class MerchantContractTest : ContractVerifierBase() {
                 {
                   "merchantName": "Acme GmbH",
                   "businessType": "RETAIL",
-                  "registrationNumber": "DE123456789",
                   "operatingCountry": "DE"
                 }
                 """.trimIndent()
@@ -69,71 +62,38 @@ class MerchantContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isCreated
             .expectBody()
-            .jsonPath("$.status").isEqualTo(MerchantOnboardingStatus.ACTIVE.name)
             .jsonPath("$.merchantName").isEqualTo("Acme GmbH")
             .jsonPath("$.merchantStatus").isEqualTo("ACTIVE")
-            .jsonPath("$.applicationId").exists()
+            .jsonPath("$.merchantId").exists()
             .jsonPath("$.merchantCode").exists()
     }
 
     @Test
-    fun `POST merchants returns 409 when registration number already active`() {
-        whenever(merchantApplicationRepository.existsByBusinessProfileRegistrationNumberAndStatusIn(any(), any()))
-            .thenReturn(true)
-
-        webTestClient.post()
-            .uri("/v1/merchants")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                """
-                {
-                  "legalBusinessName": "Duplicate GmbH",
-                  "businessType": "RETAIL",
-                  "registrationNumber": "DE-DUPLICATE",
-                  "operatingCountry": "DE",
-                  "primaryBusinessAddress": "Somestrasse 1",
-                  "contactFullName": "John Smith",
-                  "contactEmail": "john@dup.de",
-                  "contactPhoneNumber": "+4930000000"
-                }
-                """.trimIndent()
-            )
-            .exchange()
-            .expectStatus().isEqualTo(409)
-    }
-
-    @Test
     fun `GET merchant by id returns 200 when found`() {
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-CONTRACT1",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Test GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-CONTRACT-001",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Teststrasse 1, Berlin",
-                logoStorageKey = "merchants/logo/test.webp"
-            ),
-            primaryContact = PrimaryContact(fullName = "Test User", email = "test@test.de", phoneNumber = "+49301234567")
+        val merchant = Merchant(
+            merchantName = "Test GmbH",
+            businessType = "RETAIL",
+            operatingCountry = "DE",
+            logoStorageKey = "merchants/logo/test.webp",
+            publicEmail = "test@test.de",
         )
-        whenever(merchantApplicationRepository.findById(application.id))
-            .thenReturn(Optional.of(application))
+        whenever(merchantRepository.findById(merchant.id))
+            .thenReturn(Optional.of(merchant))
 
         webTestClient.get()
-            .uri("/v1/merchants/${application.id}")
+            .uri("/v1/merchants/${merchant.id}")
             .exchange()
             .expectStatus().isOk
             .expectBody()
-            .jsonPath("$.applicationId").isEqualTo(application.id.toString())
+            .jsonPath("$.merchantId").isEqualTo(merchant.id.toString())
             .jsonPath("$.merchantName").isEqualTo("Test GmbH")
-            .jsonPath("$.contactInfo.email").isEqualTo("test@test.de")
             .jsonPath("$.logoUrl").isEqualTo("https://signed.example/merchants/logo/test.webp")
     }
 
     @Test
     fun `GET merchant by id returns 404 when not found`() {
         val unknownId = UUID.randomUUID()
-        whenever(merchantApplicationRepository.findById(unknownId))
+        whenever(merchantRepository.findById(unknownId))
             .thenReturn(Optional.empty())
 
         webTestClient.get()
@@ -144,24 +104,18 @@ class MerchantContractTest : ContractVerifierBase() {
 
     @Test
     fun `PUT merchant updates editable fields and status`() {
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-CONTRACT2",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Before GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-CONTRACT-002",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Old Strasse 1"
-            ),
-            primaryContact = PrimaryContact(fullName = "Before User", email = "before@test.de", phoneNumber = "+49301230000")
+        val merchant = Merchant(
+            merchantName = "Before GmbH",
+            businessType = "RETAIL",
+            operatingCountry = "DE",
         )
-        whenever(merchantApplicationRepository.findById(application.id))
-            .thenReturn(Optional.of(application))
-        whenever(merchantApplicationRepository.save(any<MerchantApplication>()))
+        whenever(merchantRepository.findById(merchant.id))
+            .thenReturn(Optional.of(merchant))
+        whenever(merchantRepository.save(any<Merchant>()))
             .thenAnswer { it.arguments[0] }
 
         webTestClient.put()
-            .uri("/v1/merchants/${application.id}")
+            .uri("/v1/merchants/${merchant.id}")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
@@ -184,8 +138,7 @@ class MerchantContractTest : ContractVerifierBase() {
                     "longitude": 13.405,
                     "geofenceRadiusMeters": 150
                   },
-                  "offerings": ["PRE_ORDER", "DEFERRED_PAYMENT"],
-                  "status": "ACTIVE"
+                  "offerings": ["PRE_ORDER", "DEFERRED_PAYMENT"]
                 }
                 """.trimIndent()
             )
@@ -196,89 +149,53 @@ class MerchantContractTest : ContractVerifierBase() {
             .jsonPath("$.merchantStatus").isEqualTo("INACTIVE")
             .jsonPath("$.contactInfo.email").isEqualTo("after@test.de")
             .jsonPath("$.address.addressLine1").isEqualTo("New Strasse 9")
-            .jsonPath("$.status").isEqualTo(MerchantOnboardingStatus.ACTIVE.name)
     }
 
     @Test
     fun `POST merchant logo upload url returns presigned upload details`() {
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-CONTRACT-LOGO",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Logo Merchant",
-                businessType = "RETAIL",
-                registrationNumber = "DE-CONTRACT-LOGO",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Teststrasse 2, Berlin"
-            ),
-            primaryContact = PrimaryContact(fullName = "Logo User", email = "logo@test.de", phoneNumber = "+49301234567")
-        )
-        whenever(merchantApplicationRepository.findById(application.id))
-            .thenReturn(Optional.of(application))
+        val merchant = Merchant(merchantName = "Logo Merchant", businessType = "RETAIL", operatingCountry = "DE")
+        whenever(merchantRepository.findById(merchant.id)).thenReturn(Optional.of(merchant))
 
         webTestClient.post()
-            .uri("/v1/merchants/${application.id}/logo/upload-url")
+            .uri("/v1/merchants/${merchant.id}/logo/upload-url")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue("""{"contentType":"image/webp"}""")
             .exchange()
             .expectStatus().isOk
             .expectBody()
-            .jsonPath("$.storageKey").isEqualTo("merchants/${application.id}/logo.webp")
-            .jsonPath("$.uploadUrl").isEqualTo("https://upload.example/merchants/${application.id}/logo.webp")
+            .jsonPath("$.storageKey").isEqualTo("merchants/${merchant.id}/logo.webp")
+            .jsonPath("$.uploadUrl").isEqualTo("https://upload.example/merchants/${merchant.id}/logo.webp")
             .jsonPath("$.expiresAt").exists()
     }
 
     @Test
     fun `PUT merchant logo stores canonical storage key`() {
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-CONTRACT-LOGO-SET",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Logo Merchant",
-                businessType = "RETAIL",
-                registrationNumber = "DE-CONTRACT-LOGO-SET",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Teststrasse 3, Berlin"
-            ),
-            primaryContact = PrimaryContact(fullName = "Logo User", email = "logo@test.de", phoneNumber = "+49301234567")
-        )
-        whenever(merchantApplicationRepository.findById(application.id))
-            .thenReturn(Optional.of(application))
-        whenever(merchantApplicationRepository.save(any<MerchantApplication>()))
-            .thenAnswer { it.arguments[0] }
+        val merchant = Merchant(merchantName = "Logo Merchant", businessType = "RETAIL", operatingCountry = "DE")
+        whenever(merchantRepository.findById(merchant.id)).thenReturn(Optional.of(merchant))
+        whenever(merchantRepository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
 
         webTestClient.put()
-            .uri("/v1/merchants/${application.id}/logo")
+            .uri("/v1/merchants/${merchant.id}/logo")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"storageKey":"merchants/${application.id}/logo.webp"}""")
+            .bodyValue("""{"storageKey":"merchants/${merchant.id}/logo.webp"}""")
             .exchange()
             .expectStatus().isOk
             .expectBody()
-            .jsonPath("$.logoStorageKey").isEqualTo("merchants/${application.id}/logo.webp")
+            .jsonPath("$.logoStorageKey").isEqualTo("merchants/${merchant.id}/logo.webp")
     }
 
     @Test
     fun `PUT branch updates branch details and contact`() {
         val merchantId = UUID.randomUUID()
         val branchId = UUID.randomUUID()
-        whenever(merchantApplicationRepository.findById(merchantId)).thenReturn(
-            Optional.of(
-                MerchantApplication(
-                    applicationReference = "BLTZ-BRANCH-TEST",
-                    businessProfile = BusinessProfile(
-                        legalBusinessName = "Test Merchant",
-                        businessType = "RETAIL",
-                        registrationNumber = "DE-BRANCH-TEST",
-                        operatingCountry = "DE",
-                        primaryBusinessAddress = "Teststrasse 1"
-                    ),
-                    primaryContact = PrimaryContact(fullName = "Branch User", email = "branch@test.de", phoneNumber = "+49301234567")
-                )
-            )
+        whenever(merchantRepository.findById(merchantId)).thenReturn(
+            Optional.of(Merchant(id = merchantId, merchantName = "Test Merchant", businessType = "RETAIL", operatingCountry = "DE"))
         )
         whenever(merchantBranchRepository.findById(branchId)).thenReturn(
             Optional.of(
                 com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch(
                     id = branchId,
-                    merchantApplicationId = merchantId,
+                    merchantId = merchantId,
                     name = "Old Branch",
                     address = PostalAddress(
                         addressLine1 = "Old Street 1",
@@ -333,12 +250,12 @@ class MerchantContractTest : ContractVerifierBase() {
     fun `PUT branch image stores storage key and returns signed image url`() {
         val merchantId = UUID.randomUUID()
         val branchId = UUID.randomUUID()
-        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(merchantRepository.existsById(merchantId)).thenReturn(true)
         whenever(merchantBranchRepository.findById(branchId)).thenReturn(
             Optional.of(
                 com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch(
                     id = branchId,
-                    merchantApplicationId = merchantId,
+                    merchantId = merchantId,
                     name = "Image Branch"
                 )
             )
@@ -361,14 +278,14 @@ class MerchantContractTest : ContractVerifierBase() {
         val merchantId = UUID.randomUUID()
         val branchId = UUID.randomUUID()
         val categoryId = UUID.randomUUID()
-        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
-        whenever(merchantBranchRepository.existsByMerchantApplicationIdAndId(merchantId, branchId)).thenReturn(true)
-        whenever(merchantBranchRepository.existsByMerchantApplicationIdAndIdAndActiveTrue(merchantId, branchId)).thenReturn(true)
-        whenever(merchantProductCategoryRepository.existsByIdAndMerchantApplicationId(categoryId, merchantId)).thenReturn(true)
-        whenever(merchantProductCategoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)).thenReturn(
+        whenever(merchantRepository.existsById(merchantId)).thenReturn(true)
+        whenever(merchantBranchRepository.existsByMerchantIdAndId(merchantId, branchId)).thenReturn(true)
+        whenever(merchantBranchRepository.existsByMerchantIdAndIdAndActiveTrue(merchantId, branchId)).thenReturn(true)
+        whenever(merchantProductCategoryRepository.existsByIdAndMerchantId(categoryId, merchantId)).thenReturn(true)
+        whenever(merchantProductCategoryRepository.findByMerchantIdAndId(merchantId, categoryId)).thenReturn(
             com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory(
                 id = categoryId,
-                merchantApplicationId = merchantId,
+                merchantId = merchantId,
                 name = "Drinks"
             )
         )
@@ -405,24 +322,24 @@ class MerchantContractTest : ContractVerifierBase() {
         val merchantId = UUID.randomUUID()
         val branchId = UUID.randomUUID()
         val categoryId = UUID.randomUUID()
-        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(merchantRepository.existsById(merchantId)).thenReturn(true)
         whenever(entityManager.unwrap(Session::class.java)).thenReturn(session)
         whenever(session.enableFilter(any())).thenReturn(hibernateFilter)
         whenever(hibernateFilter.setParameter(any<String>(), any())).thenReturn(hibernateFilter)
         whenever(entityManager.createNativeQuery(any<String>())).thenReturn(nativeQuery)
         whenever(nativeQuery.setParameter(any<String>(), any())).thenReturn(nativeQuery)
         whenever(nativeQuery.singleResult).thenReturn(merchantId.toString())
-        whenever(merchantProductCategoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)).thenReturn(
+        whenever(merchantProductCategoryRepository.findByMerchantIdAndId(merchantId, categoryId)).thenReturn(
             com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory(
                 id = categoryId,
-                merchantApplicationId = merchantId,
+                merchantId = merchantId,
                 name = "Drinks"
             )
         )
         whenever(merchantProductRepository.findAllByMerchantBranchId(branchId)).thenReturn(
             listOf(
                 MerchantProduct(
-                    merchantApplicationId = merchantId,
+                    merchantId = merchantId,
                     merchantBranchId = branchId,
                     name = "Coffee Blend",
                     description = "**Medium roast**",
@@ -450,7 +367,7 @@ class MerchantContractTest : ContractVerifierBase() {
     fun `POST product rejects unsupported image type`() {
         val merchantId = UUID.randomUUID()
         val branchId = UUID.randomUUID()
-        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
+        whenever(merchantRepository.existsById(merchantId)).thenReturn(true)
         val multipart = MultipartBodyBuilder().apply {
             part("name", "Coffee Blend")
             part("branchId", branchId.toString())

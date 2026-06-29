@@ -10,7 +10,7 @@ import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmp
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeBranchAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantEmployeeServiceAssignmentRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
@@ -33,7 +33,7 @@ import java.util.UUID
 @Service
 @Transactional(readOnly = true)
 class AppointmentSchedulingServiceImpl(
-    private val merchantRepo: MerchantApplicationRepository,
+    private val merchantRepo: MerchantRepository,
     private val branchRepo: MerchantBranchRepository,
     private val employeeRepo: MerchantEmployeeRepository,
     private val branchAssignmentRepo: MerchantEmployeeBranchAssignmentRepository,
@@ -57,7 +57,7 @@ class AppointmentSchedulingServiceImpl(
     }
 
     override fun isAppointmentBookingEnabled(merchantId: UUID): Boolean =
-        offeringAssignmentRepo.existsByMerchantApplicationIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")
+        offeringAssignmentRepo.existsByMerchantIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")
 
     override fun loadSchedulingContext(
         branchId: UUID,
@@ -67,7 +67,7 @@ class AppointmentSchedulingServiceImpl(
     ): SchedulingContext {
         val branch = branchRepo.findById(branchId)
             .orElseThrow { NoSuchElementException("Branch $branchId not found") }
-        val merchant = merchantRepo.findById(branch.merchantApplicationId)
+        val merchant = merchantRepo.findById(branch.merchantId)
             .orElseThrow { NoSuchElementException("Merchant not found for branch $branchId") }
 
         check(merchant.merchantStatus == com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus.ACTIVE) {

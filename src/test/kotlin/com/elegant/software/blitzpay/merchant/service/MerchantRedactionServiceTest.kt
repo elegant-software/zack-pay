@@ -1,6 +1,7 @@
 package com.elegant.software.blitzpay.merchant.service
 
-import com.elegant.software.blitzpay.merchant.support.MerchantTestFixtureLoader
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -8,18 +9,22 @@ import kotlin.test.assertTrue
 class MerchantRedactionServiceTest {
 
     private val redactionService = MerchantRedactionService()
-    private val expectations = MerchantTestFixtureLoader.fixture.expectations
 
     @Test
-    fun `redacts contact and registration details`() {
-        val redacted = redactionService.redact(
-            MerchantTestFixtureLoader.merchantApplicationWithDocuments(applicationReference = "MO-REDACT-1")
+    fun `redacts contact details`() {
+        val merchant = Merchant(
+            merchantName = "Acme Corp",
+            businessType = "RETAIL",
+            operatingCountry = "DE",
+            merchantStatus = MerchantOperationalStatus.ACTIVE,
+            publicEmail = "owner@acme.de",
+            publicPhoneNumber = "+4915112345678",
         )
+        val redacted = redactionService.redact(merchant)
 
-        assertEquals(expectations.redactedRegistrationNumber, redacted.registrationNumber)
-        assertEquals(expectations.redactedEmail, redacted.primaryContactEmail)
-        assertTrue(redacted.primaryContactPhone.endsWith(expectations.redactedPhoneSuffix))
-        assertEquals(1, redacted.peopleCount)
-        assertEquals(1, redacted.supportingMaterialCount)
+        assertEquals("o***@acme.de", redacted.contactEmail)
+        assertTrue(redacted.contactPhone!!.endsWith("5678"))
+        assertEquals("Acme Corp", redacted.merchantName)
+        assertEquals("ACTIVE", redacted.merchantStatus)
     }
 }

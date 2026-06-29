@@ -4,7 +4,7 @@ import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.ProductCategoryResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
@@ -18,7 +18,7 @@ import java.util.UUID
 class MerchantProductCategoryService(
     private val categoryRepository: MerchantProductCategoryRepository,
     private val productRepository: MerchantProductRepository,
-    private val merchantApplicationRepository: MerchantApplicationRepository,
+    private val merchantRepository: MerchantRepository,
     private val offeringAssignmentRepository: MerchantOfferingAssignmentRepository,
 ) {
     private val log = LoggerFactory.getLogger(MerchantProductCategoryService::class.java)
@@ -27,7 +27,7 @@ class MerchantProductCategoryService(
         requireMerchantExists(merchantId)
         val normalizedName = normalizeName(request.name)
         require(
-            categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, normalizedName) == null
+            categoryRepository.findByMerchantIdAndNameIgnoreCase(merchantId, normalizedName) == null
         ) {
             "A category named '$normalizedName' already exists for this merchant"
         }
@@ -35,7 +35,7 @@ class MerchantProductCategoryService(
         if (request.estimatedDurationMinutes != null) requireAppointmentBookingEnabled(merchantId)
         val saved = categoryRepository.save(
             MerchantProductCategory(
-                merchantApplicationId = merchantId,
+                merchantId = merchantId,
                 name = normalizedName,
                 estimatedDurationMinutes = request.estimatedDurationMinutes
             )
@@ -47,7 +47,7 @@ class MerchantProductCategoryService(
     @Transactional(readOnly = true)
     fun list(merchantId: UUID): List<ProductCategoryResponse> {
         requireMerchantExists(merchantId)
-        return categoryRepository.findAllByMerchantApplicationId(merchantId)
+        return categoryRepository.findAllByMerchantId(merchantId)
             .sortedBy { it.name.lowercase() }
             .map { it.toResponse() }
     }
@@ -55,16 +55,16 @@ class MerchantProductCategoryService(
     @Transactional(readOnly = true)
     fun findByName(merchantId: UUID, categoryName: String): ProductCategoryResponse? {
         requireMerchantExists(merchantId)
-        return categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, normalizeName(categoryName))
+        return categoryRepository.findByMerchantIdAndNameIgnoreCase(merchantId, normalizeName(categoryName))
             ?.toResponse()
     }
 
     fun update(merchantId: UUID, categoryId: UUID, request: UpdateProductCategoryRequest): ProductCategoryResponse {
         requireMerchantExists(merchantId)
-        val category = categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)
+        val category = categoryRepository.findByMerchantIdAndId(merchantId, categoryId)
             ?: throw NoSuchElementException("Category not found: $categoryId")
         val normalizedName = normalizeName(request.name)
-        val duplicate = categoryRepository.findByMerchantApplicationIdAndNameIgnoreCase(merchantId, normalizedName)
+        val duplicate = categoryRepository.findByMerchantIdAndNameIgnoreCase(merchantId, normalizedName)
         require(duplicate == null || duplicate.id == category.id) {
             "A category named '$normalizedName' already exists for this merchant"
         }
@@ -79,7 +79,7 @@ class MerchantProductCategoryService(
 
     fun delete(merchantId: UUID, categoryId: UUID) {
         requireMerchantExists(merchantId)
-        val category = categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)
+        val category = categoryRepository.findByMerchantIdAndId(merchantId, categoryId)
             ?: throw NoSuchElementException("Category not found: $categoryId")
         val assignedProducts = productRepository.countByProductCategoryIdAndActiveTrue(categoryId)
         check(assignedProducts == 0L) {
@@ -90,13 +90,13 @@ class MerchantProductCategoryService(
     }
 
     private fun requireAppointmentBookingEnabled(merchantId: UUID) {
-        require(offeringAssignmentRepository.existsByMerchantApplicationIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")) {
+        require(offeringAssignmentRepository.existsByMerchantIdAndOfferingCode(merchantId, "APPOINTMENT_BOOKING")) {
             "Estimated service duration requires Appointment Booking to be enabled for this merchant"
         }
     }
 
     private fun requireMerchantExists(merchantId: UUID) {
-        require(merchantApplicationRepository.existsById(merchantId)) {
+        require(merchantRepository.existsById(merchantId)) {
             "Merchant not found: $merchantId"
         }
     }

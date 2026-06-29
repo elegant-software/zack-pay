@@ -12,13 +12,13 @@ data class MerchantCaller(
     val assignments: List<MerchantUserAssignment>,
 ) {
     fun isManagerFor(merchantId: UUID): Boolean =
-        assignments.any { it.merchantApplicationId == merchantId && it.role == MerchantOperationsRole.MERCHANT_MANAGER }
+        assignments.any { it.merchantId == merchantId && it.role == MerchantOperationsRole.MERCHANT_MANAGER }
 
     fun isEmployeeFor(merchantId: UUID): Boolean =
-        assignments.any { it.merchantApplicationId == merchantId && it.role == MerchantOperationsRole.MERCHANT_EMPLOYEE }
+        assignments.any { it.merchantId == merchantId && it.role == MerchantOperationsRole.MERCHANT_EMPLOYEE }
 
     fun employeeIdFor(merchantId: UUID): UUID? =
-        assignments.firstOrNull { it.merchantApplicationId == merchantId && it.role == MerchantOperationsRole.MERCHANT_EMPLOYEE }
+        assignments.firstOrNull { it.merchantId == merchantId && it.role == MerchantOperationsRole.MERCHANT_EMPLOYEE }
             ?.employeeId
 
     fun requireManager(merchantId: UUID) {

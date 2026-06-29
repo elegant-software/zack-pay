@@ -2,7 +2,7 @@ package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.config.GoogleMapsProperties
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -14,7 +14,7 @@ import java.time.Instant
 class MerchantPlaceEnrichmentService(
     private val properties: GoogleMapsProperties,
     private val placeClient: GoogleMapsPlaceClient,
-    private val merchantApplicationRepository: MerchantApplicationRepository,
+    private val merchantRepository: MerchantRepository,
     private val merchantBranchRepository: MerchantBranchRepository
 ) {
     private val log = LoggerFactory.getLogger(MerchantPlaceEnrichmentService::class.java)
@@ -26,11 +26,11 @@ class MerchantPlaceEnrichmentService(
         val merchantLimit = (properties.batchSize / 2).coerceAtLeast(1)
         val branchLimit = (properties.batchSize - merchantLimit).coerceAtLeast(1)
 
-        merchantApplicationRepository.findPlaceIdsNeedingEnrichment(merchantLimit).forEach { merchant ->
+        merchantRepository.findPlaceIdsNeedingEnrichment(merchantLimit).forEach { merchant ->
             val location = merchant.location ?: return@forEach
             val enriched = enrich(location)
             merchant.updateLocation(enriched)
-            merchantApplicationRepository.save(merchant)
+            merchantRepository.save(merchant)
         }
 
         merchantBranchRepository.findPlaceIdsNeedingEnrichment(branchLimit).forEach { branch ->

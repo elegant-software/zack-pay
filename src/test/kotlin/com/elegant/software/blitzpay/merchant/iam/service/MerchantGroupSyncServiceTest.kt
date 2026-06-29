@@ -33,7 +33,7 @@ class MerchantGroupSyncServiceTest {
     private val properties = KeycloakProperties(
         serverUrl = "http://keycloak", realm = "test", adminClientId = "admin", adminClientSecret = "secret"
     )
-    private val merchantRepository = mock<com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository>()
+    private val merchantRepository = mock<com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository>()
     private val branchRepository = mock<com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository>()
     private val service = MerchantGroupSyncService(keycloak, properties, merchantRepository, branchRepository)
 

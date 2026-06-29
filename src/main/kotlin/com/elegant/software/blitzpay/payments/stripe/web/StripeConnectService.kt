@@ -62,7 +62,7 @@ class StripeConnectService(
     private fun buildAccountCreateParams(details: MerchantDetailsResponse): AccountCreateParams {
         val params = AccountCreateParams.builder()
             .setType(AccountCreateParams.Type.EXPRESS)
-            .setEmail(details.contactEmail)
+            .setEmail(details.contactInfo.email)
             .setCapabilities(
                 AccountCreateParams.Capabilities.builder()
                     .setCardPayments(

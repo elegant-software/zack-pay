@@ -1,21 +1,17 @@
 package com.elegant.software.blitzpay.merchant.service
 
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import org.springframework.stereotype.Component
 
 @Component
 class MerchantRedactionService {
 
-    fun redact(application: MerchantApplication): RedactedMerchantApplication = RedactedMerchantApplication(
-        applicationReference = application.applicationReference,
-        legalBusinessName = application.businessProfile.legalBusinessName,
-        registrationNumber = maskRegistrationNumber(application.businessProfile.registrationNumber),
-        primaryContactName = application.primaryContact.fullName,
-        primaryContactEmail = maskEmail(application.primaryContact.email),
-        primaryContactPhone = maskPhone(application.primaryContact.phoneNumber),
-        peopleCount = application.people.size,
-        supportingMaterialCount = application.supportingMaterials.size,
-        status = application.status.name
+    fun redact(merchant: Merchant): RedactedMerchant = RedactedMerchant(
+        merchantCode = merchant.merchantCode,
+        merchantName = merchant.merchantName,
+        contactEmail = merchant.publicEmail?.let { maskEmail(it) },
+        contactPhone = merchant.publicPhoneNumber?.let { maskPhone(it) },
+        merchantStatus = merchant.merchantStatus.name,
     )
 
     private fun maskEmail(email: String): String {
@@ -28,19 +24,12 @@ class MerchantRedactionService {
 
     private fun maskPhone(phone: String): String =
         if (phone.length <= 4) "****" else "${"*".repeat(phone.length - 4)}${phone.takeLast(4)}"
-
-    private fun maskRegistrationNumber(registrationNumber: String): String =
-        if (registrationNumber.length <= 3) "***" else "${registrationNumber.take(3)}***"
 }
 
-data class RedactedMerchantApplication(
-    val applicationReference: String,
-    val legalBusinessName: String,
-    val registrationNumber: String,
-    val primaryContactName: String,
-    val primaryContactEmail: String,
-    val primaryContactPhone: String,
-    val peopleCount: Int,
-    val supportingMaterialCount: Int,
-    val status: String
+data class RedactedMerchant(
+    val merchantCode: String,
+    val merchantName: String,
+    val contactEmail: String?,
+    val contactPhone: String?,
+    val merchantStatus: String,
 )

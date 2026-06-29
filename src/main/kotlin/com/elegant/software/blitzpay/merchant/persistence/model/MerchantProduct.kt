@@ -16,15 +16,15 @@ import java.util.UUID
     name = "tenantFilter",
     parameters = [ParamDef(name = "merchantId", type = UUIDJavaType::class)]
 )
-@Filter(name = "tenantFilter", condition = "merchant_application_id = :merchantId")
+@Filter(name = "tenantFilter", condition = "merchant_id = :merchantId")
 @Entity
 @Table(name = "merchant_products", schema = "blitzpay")
 class MerchantProduct(
     @Id
     val id: UUID = UUID.randomUUID(),
 
-    @Column(name = "merchant_application_id", nullable = false, updatable = false)
-    val merchantApplicationId: UUID,
+    @Column(name = "merchant_id", nullable = false, updatable = false)
+    val merchantId: UUID,
 
     @Column(nullable = false)
     var name: String,

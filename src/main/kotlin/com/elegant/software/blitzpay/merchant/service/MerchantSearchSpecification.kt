@@ -1,11 +1,10 @@
 package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchRequest
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
 import com.elegant.software.blitzpay.merchant.persistence.model.PostalAddress
 import jakarta.persistence.criteria.Predicate
@@ -14,7 +13,7 @@ import java.util.UUID
 
 object MerchantSearchSpecification {
 
-    fun from(request: MerchantSearchRequest): Specification<MerchantApplication> =
+    fun from(request: MerchantSearchRequest): Specification<Merchant> =
         Specification { root, query, cb ->
             val predicates = mutableListOf<Predicate>()
 
@@ -24,23 +23,18 @@ object MerchantSearchSpecification {
                 val normalizedCodeLike = "%${q.lowercase().replace("-", "")}%"
                 val textPreds = mutableListOf<Predicate>()
 
-                // Code and reference fields: matched at any length
+                // Code fields: matched at any length
                 textPreds += cb.like(cb.lower(root.get("merchantCode")), like)
                 textPreds += cb.like(
                     cb.lower(cb.function("replace", String::class.java, root.get<String>("merchantCode"), cb.literal("-"), cb.literal(""))),
                     normalizedCodeLike
                 )
-                textPreds += cb.like(cb.lower(root.get("applicationReference")), like)
                 textPreds += cb.like(cb.lower(root.get("publicEmail")), like)
 
                 if (q.length >= 3) {
-                    // Name fields
                     textPreds += cb.like(cb.lower(root.get("merchantName")), like)
-                    val biz = root.get<BusinessProfile>("businessProfile")
-                    textPreds += cb.like(cb.lower(biz.get("legalBusinessName")), like)
-                    textPreds += cb.like(cb.lower(biz.get("primaryBusinessAddress")), like)
 
-                    // Address columns on merchant_applications
+                    // Address columns on merchants
                     val addr = root.get<PostalAddress>("address")
                     textPreds += cb.like(cb.lower(addr.get("addressLine1")), like)
                     textPreds += cb.like(cb.lower(addr.get("city")), like)
@@ -50,10 +44,10 @@ object MerchantSearchSpecification {
                     // Branch name + address via EXISTS subquery (avoids duplicate merchant rows)
                     val branchSubq = query.subquery(UUID::class.java)
                     val branch = branchSubq.from(MerchantBranch::class.java)
-                    branchSubq.select(branch.get("merchantApplicationId"))
+                    branchSubq.select(branch.get("merchantId"))
                     val branchAddr = branch.get<PostalAddress>("address")
                     branchSubq.where(
-                        cb.equal(branch.get<UUID>("merchantApplicationId"), root.get<UUID>("id")),
+                        cb.equal(branch.get<UUID>("merchantId"), root.get<UUID>("id")),
                         cb.or(
                             cb.like(cb.lower(branch.get("branchCode")), like),
                             cb.like(
@@ -70,9 +64,9 @@ object MerchantSearchSpecification {
                     // Product name via EXISTS subquery
                     val productSubq = query.subquery(UUID::class.java)
                     val product = productSubq.from(MerchantProduct::class.java)
-                    productSubq.select(product.get("merchantApplicationId"))
+                    productSubq.select(product.get("merchantId"))
                     productSubq.where(
-                        cb.equal(product.get<UUID>("merchantApplicationId"), root.get<UUID>("id")),
+                        cb.equal(product.get<UUID>("merchantId"), root.get<UUID>("id")),
                         cb.like(cb.lower(product.get("name")), like)
                     )
                     textPreds += cb.exists(productSubq)
@@ -81,10 +75,8 @@ object MerchantSearchSpecification {
                 predicates += cb.or(*textPreds.toTypedArray())
             }
 
-            // businessType is stored as a plain String column in BusinessProfile
             if (!request.businessTypes.isNullOrEmpty()) {
-                predicates += root.get<BusinessProfile>("businessProfile")
-                    .get<String>("businessType").`in`(request.businessTypes)
+                predicates += root.get<String>("businessType").`in`(request.businessTypes)
             }
 
             if (!request.merchantMobilities.isNullOrEmpty()) {
@@ -92,8 +84,8 @@ object MerchantSearchSpecification {
             }
 
             if (!request.statuses.isNullOrEmpty()) {
-                val statusList = request.statuses.map { MerchantOnboardingStatus.valueOf(it) }
-                predicates += root.get<MerchantOnboardingStatus>("status").`in`(statusList)
+                val statusList = request.statuses.map { MerchantOperationalStatus.valueOf(it) }
+                predicates += root.get<MerchantOperationalStatus>("merchantStatus").`in`(statusList)
             }
 
             if (predicates.isEmpty()) cb.conjunction() else cb.and(*predicates.toTypedArray())

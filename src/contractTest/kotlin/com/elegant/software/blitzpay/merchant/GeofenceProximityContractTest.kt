@@ -1,14 +1,12 @@
 package com.elegant.software.blitzpay.merchant
 
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOfferingAssignment
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProviderAccount
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
 import com.elegant.software.blitzpay.merchant.persistence.model.ProximityEvent
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,25 +22,19 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
     private val merchantId = UUID.randomUUID()
     private val branchId = UUID.randomUUID()
 
-    private val activeMerchant = MerchantApplication(
+    private val activeMerchant = Merchant(
         id = merchantId,
-        applicationReference = "BLTZ-GEO-001",
-        businessProfile = BusinessProfile(
-            legalBusinessName = "Geo Merchant GmbH",
-            businessType = "RETAIL",
-            registrationNumber = "GEO001",
-            operatingCountry = "DE",
-            primaryBusinessAddress = "Berlin"
-        ),
-        primaryContact = PrimaryContact("Max Geo", "max@geo.de", "+49111"),
-        status = MerchantOnboardingStatus.ACTIVE,
+        merchantName = "Geo Merchant GmbH",
+        businessType = "RETAIL",
+        operatingCountry = "DE",
+        merchantStatus = MerchantOperationalStatus.ACTIVE,
     ).also {
         it.updateLocation(MerchantLocation(48.8566, 2.3522, 150))
     }
 
     private val activeBranch = MerchantBranch(
         id = branchId,
-        merchantApplicationId = merchantId,
+        merchantId = merchantId,
         name = "Geo Branch",
         active = true,
         location = MerchantLocation(48.8600, 2.3400, 100),
@@ -50,14 +42,14 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
 
     @BeforeEach
     fun setupGeofenceContracts() {
-        whenever(merchantApplicationRepository.findAllByStatus(MerchantOnboardingStatus.ACTIVE))
+        whenever(merchantRepository.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE))
             .thenReturn(listOf(activeMerchant))
-        whenever(merchantApplicationRepository.findAllById(any<Set<UUID>>()))
+        whenever(merchantRepository.findAllById(any<Set<UUID>>()))
             .thenReturn(listOf(activeMerchant))
         whenever(merchantBranchRepository.findAllByActiveTrue()).thenReturn(listOf(activeBranch))
-        whenever(merchantApplicationRepository.findById(merchantId)).thenReturn(Optional.of(activeMerchant))
+        whenever(merchantRepository.findById(merchantId)).thenReturn(Optional.of(activeMerchant))
         whenever(merchantBranchRepository.findById(branchId)).thenReturn(Optional.of(activeBranch))
-        whenever(merchantBranchRepository.findAllByMerchantApplicationIdAndActiveTrue(merchantId))
+        whenever(merchantBranchRepository.findAllByMerchantIdAndActiveTrue(merchantId))
             .thenReturn(listOf(activeBranch))
         whenever(proximityEventRepository.existsByRegionIdAndEventTypeAndUserSubjectAndReceivedAtAfter(
             any(), any(), any(), any()
@@ -66,8 +58,8 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
             any(), any(), any(), any()
         )).thenReturn(false)
         whenever(proximityEventRepository.save(any<ProximityEvent>())).thenAnswer { it.arguments[0] }
-        whenever(merchantProviderAccountRepository.findAllByMerchantApplicationId(merchantId))
-            .thenReturn(listOf(MerchantProviderAccount(merchantApplicationId = merchantId, pspCode = "STRIPE", enabled = true)))
+        whenever(merchantProviderAccountRepository.findAllByMerchantId(merchantId))
+            .thenReturn(listOf(MerchantProviderAccount(merchantId = merchantId, pspCode = "STRIPE", enabled = true)))
     }
 
     // ── GET /v1/geofence/regions ─────────────────────────────────────────────
@@ -101,7 +93,7 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
 
     @Test
     fun `GET geofence regions returns empty list when no active located entities`() {
-        whenever(merchantApplicationRepository.findAllByStatus(MerchantOnboardingStatus.ACTIVE))
+        whenever(merchantRepository.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE))
             .thenReturn(emptyList())
         whenever(merchantBranchRepository.findAllByActiveTrue()).thenReturn(emptyList())
 
@@ -217,7 +209,7 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
 
     @Test
     fun `POST proximity returns deferredPaymentAvailable true when merchant has DEFERRED_PAYMENT offering`() {
-        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(merchantId))
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(merchantId))
             .thenReturn(listOf(MerchantOfferingAssignment(merchantId, "DEFERRED_PAYMENT")))
 
         webTestClient.post()
@@ -240,7 +232,7 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
 
     @Test
     fun `POST proximity returns deferredPaymentAvailable false when merchant has no DEFERRED_PAYMENT offering`() {
-        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(merchantId))
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(merchantId))
             .thenReturn(listOf(MerchantOfferingAssignment(merchantId, "PRE_ORDER")))
 
         webTestClient.post()
@@ -300,23 +292,17 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
 
     @Test
     fun `GET merchants nearby returns merchant when only branch location matches radius`() {
-        val merchantWithoutLocation = MerchantApplication(
+        val merchantWithoutLocation = Merchant(
             id = merchantId,
-            applicationReference = "BLTZ-GEO-002",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Branch Only Merchant GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "GEO002",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Berlin"
-            ),
-            primaryContact = PrimaryContact("Max Geo", "max@geo.de", "+49111"),
-            status = MerchantOnboardingStatus.ACTIVE,
+            merchantName = "Branch Only Merchant GmbH",
+            businessType = "RETAIL",
+            operatingCountry = "DE",
+            merchantStatus = MerchantOperationalStatus.ACTIVE,
         )
 
         whenever(merchantBranchRepository.findAllByActiveTrue())
             .thenReturn(listOf(activeBranch))
-        whenever(merchantApplicationRepository.findAllById(any<Set<UUID>>()))
+        whenever(merchantRepository.findAllById(any<Set<UUID>>()))
             .thenReturn(listOf(merchantWithoutLocation))
 
         webTestClient.get()

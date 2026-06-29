@@ -55,7 +55,7 @@ class UserManagementService(
         if (request.branchId != null) {
             val branch = merchantLookup.findBranch(request.branchId)
                 ?: throw IllegalArgumentException("branch not found: ${request.branchId}")
-            require(branch.merchantApplicationId == request.merchantId) {
+            require(branch.merchantId == request.merchantId) {
                 "branch ${request.branchId} does not belong to merchant ${request.merchantId}"
             }
         }
@@ -64,7 +64,7 @@ class UserManagementService(
             "MERCHANT_EMPLOYEE assignment requires a branchId"
         }
 
-        if (assignmentRepository.existsByKeycloakUserIdAndMerchantApplicationIdAndBranchId(
+        if (assignmentRepository.existsByKeycloakUserIdAndMerchantIdAndBranchId(
                 userId, request.merchantId, request.branchId
             )
         ) {
@@ -89,7 +89,7 @@ class UserManagementService(
         val assignment = assignmentRepository.save(
             MerchantUserAssignment(
                 keycloakUserId = userId,
-                merchantApplicationId = request.merchantId,
+                merchantId = request.merchantId,
                 branchId = request.branchId,
                 role = request.role,
                 employeeId = request.employeeId,
@@ -111,7 +111,7 @@ class UserManagementService(
             "assignment $assignmentId does not belong to user $userId"
         }
 
-        val groupId = resolveTargetGroupId(assignment.merchantApplicationId, assignment.branchId)
+        val groupId = resolveTargetGroupId(assignment.merchantId, assignment.branchId)
         val userResource = keycloak.realm(keycloakProperties.realm).users().get(userId.toString())
         userResource.leaveGroup(groupId)
         log.info("keycloak group revoked userId={} groupId={}", userId, groupId)
@@ -187,12 +187,12 @@ class UserManagementService(
         branchName: String? = null,
     ): MerchantUserAssignmentResponse {
         val resolvedMerchantName = merchantName
-            ?: merchantLookup.findMerchant(merchantApplicationId)?.name
-            ?: merchantApplicationId.toString()
+            ?: merchantLookup.findMerchant(merchantId)?.name
+            ?: merchantId.toString()
         val resolvedBranchName = branchName ?: branchId?.let { merchantLookup.findBranch(it)?.name }
         return MerchantUserAssignmentResponse(
             id = id,
-            merchantId = merchantApplicationId,
+            merchantId = merchantId,
             merchantName = resolvedMerchantName,
             branchId = branchId,
             branchName = resolvedBranchName,
@@ -210,7 +210,7 @@ class UserManagementService(
         if (merchantId == null && branchId == null) return null
 
         val branch = branchId?.let { merchantLookup.findBranch(it) }
-        val resolvedMerchantId = merchantId ?: branch?.merchantApplicationId
+        val resolvedMerchantId = merchantId ?: branch?.merchantId
         val merchantName = group.firstAttribute(KeycloakGroupNames.ATTR_MERCHANT_NAME)
             ?: resolvedMerchantId?.let { merchantLookup.findMerchant(it)?.name }
             ?: return null
