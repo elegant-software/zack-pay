@@ -2,7 +2,7 @@ package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.config.GoogleMapsProperties
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantLocation
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -11,7 +11,7 @@ import kotlin.test.assertNotNull
 
 class MerchantPlaceEnrichmentServiceTest {
     private val properties = GoogleMapsProperties(enabled = true)
-    private val merchantRepository = mock<MerchantApplicationRepository>()
+    private val merchantRepository = mock<MerchantRepository>()
     private val branchRepository = mock<MerchantBranchRepository>()
 
     @Test
@@ -26,7 +26,7 @@ class MerchantPlaceEnrichmentServiceTest {
                         reviewCount = 42
                     )
             },
-            merchantApplicationRepository = merchantRepository,
+            merchantRepository = merchantRepository,
             merchantBranchRepository = branchRepository
         )
 
@@ -48,7 +48,7 @@ class MerchantPlaceEnrichmentServiceTest {
                     error("upstream unavailable")
                 }
             },
-            merchantApplicationRepository = merchantRepository,
+            merchantRepository = merchantRepository,
             merchantBranchRepository = branchRepository
         )
 

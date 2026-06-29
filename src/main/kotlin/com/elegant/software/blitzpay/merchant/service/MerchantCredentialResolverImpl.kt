@@ -23,7 +23,7 @@ class MerchantCredentialResolverImpl(
 ) : MerchantCredentialResolver {
 
     override fun resolveStripe(merchantId: UUID, branchId: UUID?): StripeCredentials? {
-        if (!providerAccountRepository.existsByMerchantApplicationIdAndPspCodeAndEnabledTrue(merchantId, "STRIPE")) {
+        if (!providerAccountRepository.existsByMerchantIdAndPspCodeAndEnabledTrue(merchantId, "STRIPE")) {
             return null
         }
         if (stripeSecretKey.isNotBlank() && stripePublishableKey.isNotBlank()) {
@@ -36,7 +36,7 @@ class MerchantCredentialResolverImpl(
     }
 
     override fun resolveBraintree(merchantId: UUID, branchId: UUID?): BraintreeCredentials? {
-        if (!providerAccountRepository.existsByMerchantApplicationIdAndPspCodeAndEnabledTrue(merchantId, "PAYPAL")) {
+        if (!providerAccountRepository.existsByMerchantIdAndPspCodeAndEnabledTrue(merchantId, "PAYPAL")) {
             return null
         }
         if (btMerchantId.isNotBlank() && btPublicKey.isNotBlank() && btPrivateKey.isNotBlank()) {

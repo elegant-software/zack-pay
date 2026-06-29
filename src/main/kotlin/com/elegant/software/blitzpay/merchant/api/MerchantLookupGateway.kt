@@ -9,4 +9,4 @@ interface MerchantLookupGateway {
 }
 
 data class MerchantReference(val id: UUID, val name: String)
-data class BranchReference(val id: UUID, val merchantApplicationId: UUID, val name: String?)
+data class BranchReference(val id: UUID, val merchantId: UUID, val name: String?)

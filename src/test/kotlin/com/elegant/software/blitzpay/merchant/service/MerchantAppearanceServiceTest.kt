@@ -1,13 +1,11 @@
 package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.CreateAppearanceRequest
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranchAppearance
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchAppearanceRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.junit.jupiter.api.Test
@@ -26,13 +24,13 @@ import kotlin.test.assertFailsWith
 class MerchantAppearanceServiceTest {
     private val appearances = mock<MerchantBranchAppearanceRepository>()
     private val branches = mock<MerchantBranchRepository>()
-    private val merchants = mock<MerchantApplicationRepository>()
+    private val merchants = mock<MerchantRepository>()
     private val service = MerchantAppearanceService(appearances, branches, merchants)
     private val merchantId = UUID.randomUUID()
     private val branchId = UUID.randomUUID()
     private val branch = MerchantBranch(
         id = branchId,
-        merchantApplicationId = merchantId,
+        merchantId = merchantId,
         name = "Mobile Branch",
     )
 
@@ -73,11 +71,11 @@ class MerchantAppearanceServiceTest {
         return CreateAppearanceRequest(52.52, 13.405, start, start.plus(6, ChronoUnit.HOURS), "Lunch stop")
     }
 
-    private fun merchant(mobility: MerchantMobility) = MerchantApplication(
+    private fun merchant(mobility: MerchantMobility) = Merchant(
         id = merchantId,
-        applicationReference = "BLTZ-APP",
-        businessProfile = BusinessProfile("Mobile GmbH", "RETAIL", "REG", "DE", "Berlin"),
-        primaryContact = PrimaryContact("Owner", "owner@example.com", "+49123"),
+        merchantName = "Mobile GmbH",
+        businessType = "RETAIL",
+        operatingCountry = "DE",
         merchantMobility = mobility,
     )
 }

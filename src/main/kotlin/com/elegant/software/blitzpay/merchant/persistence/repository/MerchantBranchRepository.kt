@@ -9,17 +9,17 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 interface MerchantBranchRepository : JpaRepository<MerchantBranch, UUID> {
-    fun findByNameAndMerchantApplicationIdAndActiveTrue(name: String, merchantApplicationId: UUID): MerchantBranch?
-    fun findByNameAndMerchantApplicationId(name: String, merchantApplicationId: UUID): MerchantBranch?
+    fun findByNameAndMerchantIdAndActiveTrue(name: String, merchantId: UUID): MerchantBranch?
+    fun findByNameAndMerchantId(name: String, merchantId: UUID): MerchantBranch?
 
-    fun findAllByMerchantApplicationId(merchantApplicationId: UUID): List<MerchantBranch>
-    fun findAllByMerchantApplicationIdAndActiveTrue(merchantApplicationId: UUID): List<MerchantBranch>
+    fun findAllByMerchantId(merchantId: UUID): List<MerchantBranch>
+    fun findAllByMerchantIdAndActiveTrue(merchantId: UUID): List<MerchantBranch>
     fun findAllByActiveTrue(): List<MerchantBranch>
-    fun findAllByMerchantApplicationIdInAndActiveTrue(merchantIds: Collection<UUID>): List<MerchantBranch>
+    fun findAllByMerchantIdInAndActiveTrue(merchantIds: Collection<UUID>): List<MerchantBranch>
     fun findByIdAndActiveTrue(id: UUID): MerchantBranch?
-    fun existsByMerchantApplicationIdAndIdAndActiveTrue(merchantApplicationId: UUID, id: UUID): Boolean
-    fun existsByMerchantApplicationIdAndId(merchantApplicationId: UUID, id: UUID): Boolean
-    fun deleteAllByMerchantApplicationId(merchantApplicationId: UUID)
+    fun existsByMerchantIdAndIdAndActiveTrue(merchantId: UUID, id: UUID): Boolean
+    fun existsByMerchantIdAndId(merchantId: UUID, id: UUID): Boolean
+    fun deleteAllByMerchantId(merchantId: UUID)
 
     @Modifying
     @Transactional

@@ -48,7 +48,7 @@ class OrderServiceTest {
     private val branchId = UUID.fromString("33333333-3333-3333-3333-333333333333")
     private val activeBranchInfo = ActiveBranchInfo(
         branchId = branchId,
-        merchantApplicationId = merchantId,
+        merchantId = merchantId,
         location = BranchLocationInfo(latitude = 52.52, longitude = 13.405, geofenceRadiusMeters = 250.0),
     )
 

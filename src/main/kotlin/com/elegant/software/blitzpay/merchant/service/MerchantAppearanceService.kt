@@ -9,7 +9,7 @@ import com.elegant.software.blitzpay.merchant.api.CreateAppearanceRequest
 import com.elegant.software.blitzpay.merchant.api.CurrentlyHappeningResponse
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranchAppearance
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchAppearanceRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.springframework.data.domain.Page
@@ -31,7 +31,7 @@ import kotlin.math.sqrt
 class MerchantAppearanceService(
     private val appearanceRepository: MerchantBranchAppearanceRepository,
     private val branchRepository: MerchantBranchRepository,
-    private val merchantRepository: MerchantApplicationRepository,
+    private val merchantRepository: MerchantRepository,
 ) {
 
     fun create(merchantId: UUID, branchId: UUID, request: CreateAppearanceRequest): AppearanceResponse {
@@ -56,7 +56,7 @@ class MerchantAppearanceService(
 
         val branch = branchRepository.findById(branchId)
             .orElseThrow { NoSuchElementException("Branch not found: $branchId") }
-        require(branch.merchantApplicationId == merchantId) { "Branch does not belong to merchant" }
+        require(branch.merchantId == merchantId) { "Branch does not belong to merchant" }
 
         val overlapping = appearanceRepository.findOverlapping(branchId, request.startTime, request.endTime)
         require(overlapping.isEmpty()) {
@@ -173,7 +173,7 @@ class MerchantAppearanceService(
             val branch = appearance.branch
                 ?: branchRepository.findById(appearance.branchId).orElse(null)
                 ?: return@mapNotNull null
-            val merchant = merchantRepository.findById(branch.merchantApplicationId).orElse(null)
+            val merchant = merchantRepository.findById(branch.merchantId).orElse(null)
                 ?: return@mapNotNull null
 
             val effectiveLat = appearance.effectiveLatitude
@@ -188,7 +188,7 @@ class MerchantAppearanceService(
             ActiveAppearanceItem(
                 appearanceId = appearance.id,
                 merchantId = merchant.id,
-                merchantName = merchant.merchantName.ifBlank { merchant.businessProfile.legalBusinessName },
+                merchantName = merchant.merchantName,
                 branchId = branch.id,
                 branchName = branch.name,
                 name = appearance.name,
@@ -219,7 +219,7 @@ class MerchantAppearanceService(
     private fun requireBranchBelongsToMerchant(merchantId: UUID, branchId: UUID) {
         val branch = branchRepository.findById(branchId)
             .orElseThrow { NoSuchElementException("Branch not found: $branchId") }
-        require(branch.merchantApplicationId == merchantId) { "Branch does not belong to merchant" }
+        require(branch.merchantId == merchantId) { "Branch does not belong to merchant" }
     }
 
     private fun requireAppearance(appearanceId: UUID, branchId: UUID): MerchantBranchAppearance {

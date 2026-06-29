@@ -6,8 +6,8 @@ import com.elegant.software.blitzpay.merchant.api.MerchantActivated
 import com.elegant.software.blitzpay.merchant.api.MerchantNameUpdated
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupNames
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.resource.GroupsResource
@@ -22,7 +22,7 @@ import java.util.UUID
 class MerchantGroupSyncService(
     private val keycloak: Keycloak,
     private val properties: KeycloakProperties,
-    private val merchantRepository: MerchantApplicationRepository,
+    private val merchantRepository: MerchantRepository,
     private val branchRepository: MerchantBranchRepository,
 ) {
     private val log = LoggerFactory.getLogger(MerchantGroupSyncService::class.java)
@@ -41,14 +41,14 @@ class MerchantGroupSyncService(
     }
 
     fun syncAll(): SyncResult {
-        val merchants = merchantRepository.findAllByStatus(MerchantOnboardingStatus.ACTIVE)
+        val merchants = merchantRepository.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)
         var merchantsSynced = 0
         var branchesSynced = 0
         val failures = mutableListOf<String>()
 
         for (merchant in merchants) {
             try {
-                ensureMerchantGroupExists(merchant.id, merchant.businessProfile.legalBusinessName)
+                ensureMerchantGroupExists(merchant.id, merchant.merchantName)
                 merchantsSynced++
             } catch (e: Exception) {
                 log.error("sync failed for merchant {}", merchant.id, e)
@@ -56,10 +56,10 @@ class MerchantGroupSyncService(
                 continue
             }
 
-            val branches = branchRepository.findAllByMerchantApplicationIdAndActiveTrue(merchant.id)
+            val branches = branchRepository.findAllByMerchantIdAndActiveTrue(merchant.id)
             for (branch in branches) {
                 try {
-                    ensureBranchGroupExists(merchant.id, merchant.businessProfile.legalBusinessName, branch.id, branch.name)
+                    ensureBranchGroupExists(merchant.id, merchant.merchantName, branch.id, branch.name)
                     branchesSynced++
                 } catch (e: Exception) {
                     log.error("sync failed for branch {} merchant {}", branch.id, merchant.id, e)

@@ -5,7 +5,7 @@ import com.elegant.software.blitzpay.merchant.api.ProductResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
@@ -23,7 +23,7 @@ import java.util.UUID
 class MerchantProductService(
     private val productRepository: MerchantProductRepository,
     private val categoryRepository: MerchantProductCategoryRepository,
-    private val merchantApplicationRepository: MerchantApplicationRepository,
+    private val merchantRepository: MerchantRepository,
     private val merchantBranchRepository: MerchantBranchRepository,
     private val entityManager: EntityManager,
     private val storageService: StorageService
@@ -65,7 +65,7 @@ class MerchantProductService(
         val imageStorageKey = image?.let { uploadImage(merchantId, productId, it, request.branchId) }
         val product = MerchantProduct(
             id = productId,
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = request.name.trim(),
             description = ProductImagePolicy.normalizeDescription(request.description),
             unitPrice = request.unitPrice,
@@ -114,7 +114,7 @@ class MerchantProductService(
             productRepository.findById(productId)
                 .orElseThrow { NoSuchElementException("Product not found: $productId") }
                 .also {
-                    if (it.merchantApplicationId != merchantId) throw NoSuchElementException("Product not found: $productId")
+                    if (it.merchantId != merchantId) throw NoSuchElementException("Product not found: $productId")
                 }
         }
         return product.toResponse()
@@ -124,7 +124,7 @@ class MerchantProductService(
     fun findByName(merchantId: UUID, merchantBranchId: UUID, productName: String): ProductResponse? {
         requireMerchantExists(merchantId)
         enableTenantFilter(merchantId)
-        return productRepository.findByNameAndMerchantApplicationIdAndMerchantBranchIdAndActiveTrue(
+        return productRepository.findByNameAndMerchantIdAndMerchantBranchIdAndActiveTrue(
             productName,
             merchantId,
             merchantBranchId
@@ -135,7 +135,7 @@ class MerchantProductService(
     fun findByNameIncludingInactive(merchantId: UUID, merchantBranchId: UUID, productName: String): ProductResponse? {
         requireMerchantExists(merchantId)
         enableTenantFilter(merchantId)
-        return productRepository.findByNameAndMerchantApplicationIdAndMerchantBranchId(
+        return productRepository.findByNameAndMerchantIdAndMerchantBranchId(
             productName,
             merchantId,
             merchantBranchId
@@ -146,7 +146,7 @@ class MerchantProductService(
     fun findByProductCode(merchantId: UUID, branchId: UUID, productCode: Long): ProductResponse? {
         requireMerchantExists(merchantId)
         return productRepository.findByMerchantBranchIdAndProductCode(branchId, productCode)
-            ?.takeIf { it.merchantApplicationId == merchantId }
+            ?.takeIf { it.merchantId == merchantId }
             ?.toResponse()
     }
 
@@ -232,7 +232,7 @@ class MerchantProductService(
     }
 
     private fun requireMerchantExists(merchantId: UUID) {
-        require(merchantApplicationRepository.existsById(merchantId)) {
+        require(merchantRepository.existsById(merchantId)) {
             "Merchant not found: $merchantId"
         }
     }
@@ -252,14 +252,14 @@ class MerchantProductService(
     }
 
     private fun validateBranch(merchantId: UUID, branchId: UUID) {
-        require(merchantBranchRepository.existsByMerchantApplicationIdAndId(merchantId, branchId)) {
+        require(merchantBranchRepository.existsByMerchantIdAndId(merchantId, branchId)) {
             "Merchant branch not found or does not belong to merchant: $branchId"
         }
     }
 
     private fun validateCategory(merchantId: UUID, categoryId: UUID?): UUID? {
         if (categoryId == null) return null
-        require(categoryRepository.existsByIdAndMerchantApplicationId(categoryId, merchantId)) {
+        require(categoryRepository.existsByIdAndMerchantId(categoryId, merchantId)) {
             "Category not found or does not belong to merchant: $categoryId"
         }
         return categoryId
@@ -326,7 +326,7 @@ class MerchantProductService(
     private fun MerchantProduct.toResponse() = ProductResponse(
         categoryId = productCategoryId,
         categoryName = productCategoryId?.let {
-            categoryRepository.findByMerchantApplicationIdAndId(merchantApplicationId, it)?.name
+            categoryRepository.findByMerchantIdAndId(merchantId, it)?.name
         },
         productCode = productCode,
         productId = id,

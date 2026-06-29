@@ -4,7 +4,7 @@ import com.elegant.software.blitzpay.merchant.api.CreateProductRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import com.elegant.software.blitzpay.storage.StorageService
@@ -31,7 +31,7 @@ class MerchantProductServiceTest {
 
     private val productRepository = mock<MerchantProductRepository>()
     private val categoryRepository = mock<MerchantProductCategoryRepository>()
-    private val merchantApplicationRepository = mock<MerchantApplicationRepository>()
+    private val merchantRepository = mock<MerchantRepository>()
     private val merchantBranchRepository = mock<com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository>()
     private val entityManager = mock<EntityManager>()
     private val storageService = mock<StorageService>()
@@ -42,7 +42,7 @@ class MerchantProductServiceTest {
     private val service = MerchantProductService(
         productRepository,
         categoryRepository,
-        merchantApplicationRepository,
+        merchantRepository,
         merchantBranchRepository,
         entityManager,
         storageService
@@ -59,10 +59,10 @@ class MerchantProductServiceTest {
         whenever(entityManager.createNativeQuery(any<String>())).thenReturn(nativeQuery)
         whenever(nativeQuery.setParameter(any<String>(), any())).thenReturn(nativeQuery)
         whenever(nativeQuery.singleResult).thenReturn(merchantId.toString())
-        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
-        whenever(merchantBranchRepository.existsByMerchantApplicationIdAndId(merchantId, branchId)).thenReturn(true)
-        whenever(merchantBranchRepository.existsByMerchantApplicationIdAndIdAndActiveTrue(merchantId, branchId)).thenReturn(true)
-        whenever(categoryRepository.existsByIdAndMerchantApplicationId(categoryId, merchantId)).thenReturn(true)
+        whenever(merchantRepository.existsById(merchantId)).thenReturn(true)
+        whenever(merchantBranchRepository.existsByMerchantIdAndId(merchantId, branchId)).thenReturn(true)
+        whenever(merchantBranchRepository.existsByMerchantIdAndIdAndActiveTrue(merchantId, branchId)).thenReturn(true)
+        whenever(categoryRepository.existsByIdAndMerchantId(categoryId, merchantId)).thenReturn(true)
         whenever(storageService.presignDownload(any(), any())).thenAnswer { "https://signed.example/${it.arguments[0]}" }
     }
 
@@ -163,8 +163,8 @@ class MerchantProductServiceTest {
             categoryId = categoryId
         )
         whenever(productRepository.save(any<MerchantProduct>())).thenAnswer { it.arguments[0] }
-        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)).thenReturn(
-            MerchantProductCategory(merchantApplicationId = merchantId, id = categoryId, name = "Drinks")
+        whenever(categoryRepository.findByMerchantIdAndId(merchantId, categoryId)).thenReturn(
+            MerchantProductCategory(merchantId = merchantId, id = categoryId, name = "Drinks")
         )
 
         val response = service.create(merchantId, request)
@@ -206,7 +206,7 @@ class MerchantProductServiceTest {
     @Test
     fun `create with duplicate branch product code updates existing product instead of creating duplicate`() {
         val existing = MerchantProduct(
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             merchantBranchId = branchId,
             name = "Existing Coffee",
             unitPrice = BigDecimal("9.00"),
@@ -231,7 +231,7 @@ class MerchantProductServiceTest {
 
     @Test
     fun `create with category from different merchant throws`() {
-        whenever(categoryRepository.existsByIdAndMerchantApplicationId(categoryId, merchantId)).thenReturn(false)
+        whenever(categoryRepository.existsByIdAndMerchantId(categoryId, merchantId)).thenReturn(false)
         val request = CreateProductRequest(
             name = "Coffee",
             branchId = branchId,
@@ -249,7 +249,7 @@ class MerchantProductServiceTest {
         val productId = UUID.randomUUID()
         val product = MerchantProduct(
             id = productId,
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Coffee",
             unitPrice = BigDecimal("10.00"),
             imageStorageKey = "old-key",
@@ -282,15 +282,15 @@ class MerchantProductServiceTest {
         val productId = UUID.randomUUID()
         val product = MerchantProduct(
             id = productId,
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Coffee",
             unitPrice = BigDecimal("10.00"),
             merchantBranchId = branchId
         )
         whenever(productRepository.findByIdAndMerchantBranchId(productId, branchId)).thenReturn(Optional.of(product))
         whenever(productRepository.save(any<MerchantProduct>())).thenAnswer { it.arguments[0] }
-        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)).thenReturn(
-            MerchantProductCategory(merchantApplicationId = merchantId, id = categoryId, name = "Drinks")
+        whenever(categoryRepository.findByMerchantIdAndId(merchantId, categoryId)).thenReturn(
+            MerchantProductCategory(merchantId = merchantId, id = categoryId, name = "Drinks")
         )
 
         val response = service.update(
@@ -314,7 +314,7 @@ class MerchantProductServiceTest {
         val targetProductId = UUID.randomUUID()
         val source = MerchantProduct(
             id = productId,
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Source Coffee",
             unitPrice = BigDecimal("10.00"),
             merchantBranchId = branchId,
@@ -322,7 +322,7 @@ class MerchantProductServiceTest {
         )
         val target = MerchantProduct(
             id = targetProductId,
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Target Coffee",
             unitPrice = BigDecimal("11.00"),
             merchantBranchId = branchId,
@@ -393,7 +393,7 @@ class MerchantProductServiceTest {
     @Test
     fun `list returns signed image urls from storage keys`() {
         val product = MerchantProduct(
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Coffee",
             unitPrice = BigDecimal("10.00"),
             imageStorageKey = "merchants/$merchantId/branches/$branchId/products/product/image.jpg",
@@ -409,7 +409,7 @@ class MerchantProductServiceTest {
     @Test
     fun `list returns inactive products for the branch`() {
         val inactiveProduct = MerchantProduct(
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Archived Coffee",
             unitPrice = BigDecimal("10.00"),
             active = false,
@@ -427,14 +427,14 @@ class MerchantProductServiceTest {
     @Test
     fun `list with category filter uses category scoped repository method`() {
         val product = MerchantProduct(
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Coffee",
             unitPrice = BigDecimal("10.00"),
             merchantBranchId = branchId,
             productCategoryId = categoryId
         )
-        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)).thenReturn(
-            MerchantProductCategory(merchantApplicationId = merchantId, id = categoryId, name = "Drinks")
+        whenever(categoryRepository.findByMerchantIdAndId(merchantId, categoryId)).thenReturn(
+            MerchantProductCategory(merchantId = merchantId, id = categoryId, name = "Drinks")
         )
         whenever(productRepository.findAllByMerchantBranchIdAndProductCategoryId(branchId, categoryId))
             .thenReturn(listOf(product))
@@ -448,15 +448,15 @@ class MerchantProductServiceTest {
     @Test
     fun `list with category filter returns inactive products`() {
         val product = MerchantProduct(
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Archived Coffee",
             unitPrice = BigDecimal("10.00"),
             active = false,
             merchantBranchId = branchId,
             productCategoryId = categoryId
         )
-        whenever(categoryRepository.findByMerchantApplicationIdAndId(merchantId, categoryId)).thenReturn(
-            MerchantProductCategory(merchantApplicationId = merchantId, id = categoryId, name = "Drinks")
+        whenever(categoryRepository.findByMerchantIdAndId(merchantId, categoryId)).thenReturn(
+            MerchantProductCategory(merchantId = merchantId, id = categoryId, name = "Drinks")
         )
         whenever(productRepository.findAllByMerchantBranchIdAndProductCategoryId(branchId, categoryId))
             .thenReturn(listOf(product))
@@ -474,7 +474,7 @@ class MerchantProductServiceTest {
         val productId = UUID.randomUUID()
         val product = MerchantProduct(
             id = productId,
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Coffee",
             unitPrice = BigDecimal("10.00"),
             merchantBranchId = branchId
@@ -492,7 +492,7 @@ class MerchantProductServiceTest {
         val productId = UUID.randomUUID()
         val product = MerchantProduct(
             id = productId,
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Coffee",
             unitPrice = BigDecimal("10.00"),
             imageStorageKey = "missing",
@@ -511,7 +511,7 @@ class MerchantProductServiceTest {
         val productId = UUID.randomUUID()
         val product = MerchantProduct(
             id = productId,
-            merchantApplicationId = merchantId,
+            merchantId = merchantId,
             name = "Archived Coffee",
             unitPrice = BigDecimal("10.00"),
             active = false,
@@ -526,7 +526,7 @@ class MerchantProductServiceTest {
 
     @Test
     fun `create fails when merchant does not exist`() {
-        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(false)
+        whenever(merchantRepository.existsById(merchantId)).thenReturn(false)
         val request = CreateProductRequest(name = "Coffee", branchId = branchId, unitPrice = BigDecimal("10.00"))
 
         assertFailsWith<IllegalArgumentException> {

@@ -1,12 +1,10 @@
 package com.elegant.software.blitzpay.merchant
 
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranchAppearance
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantUserAssignment
 import org.junit.jupiter.api.BeforeEach
@@ -26,12 +24,12 @@ class MerchantAppearanceContractTest : ContractVerifierBase() {
     private val branchId = UUID.randomUUID()
     private val userId = UUID.randomUUID()
     private val start = Instant.now().plus(1, ChronoUnit.HOURS)
-    private val branch = MerchantBranch(id = branchId, merchantApplicationId = merchantId, name = "Market Stop")
-    private val merchant = MerchantApplication(
+    private val branch = MerchantBranch(id = branchId, merchantId = merchantId, name = "Market Stop")
+    private val merchant = Merchant(
         id = merchantId,
-        applicationReference = "BLTZ-MOBILE",
-        businessProfile = BusinessProfile("Mobile GmbH", "RETAIL", "REG", "DE", "Berlin"),
-        primaryContact = PrimaryContact("Owner", "owner@example.com", "+49123"),
+        merchantName = "Mobile GmbH",
+        businessType = "RETAIL",
+        operatingCountry = "DE",
         merchantMobility = MerchantMobility.MOBILE,
     )
     private val appearance = MerchantBranchAppearance(
@@ -45,10 +43,10 @@ class MerchantAppearanceContractTest : ContractVerifierBase() {
 
     @BeforeEach
     fun setup() {
-        whenever(merchantApplicationRepository.findById(merchantId)).thenReturn(Optional.of(merchant))
+        whenever(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant))
         whenever(merchantBranchRepository.findById(branchId)).thenReturn(Optional.of(branch))
         whenever(merchantUserAssignmentRepository.findAllByKeycloakUserId(userId)).thenReturn(
-            listOf(MerchantUserAssignment(keycloakUserId = userId, merchantApplicationId = merchantId, role = MerchantOperationsRole.MERCHANT_MANAGER))
+            listOf(MerchantUserAssignment(keycloakUserId = userId, merchantId = merchantId, role = MerchantOperationsRole.MERCHANT_MANAGER))
         )
         whenever(merchantBranchAppearanceRepository.findOverlapping(any(), any(), any())).thenReturn(emptyList())
         whenever(merchantBranchAppearanceRepository.save(any<MerchantBranchAppearance>())).thenAnswer { it.getArgument(0) }

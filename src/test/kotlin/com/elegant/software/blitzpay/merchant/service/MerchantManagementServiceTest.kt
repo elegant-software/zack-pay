@@ -3,20 +3,15 @@ package com.elegant.software.blitzpay.merchant.service
 import com.elegant.software.blitzpay.merchant.api.MerchantNameUpdated
 import com.elegant.software.blitzpay.merchant.api.MerchantOfferingResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateMerchantRequest
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOffering
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOfferingAssignment
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
-import com.elegant.software.blitzpay.merchant.persistence.model.MonitoringRecord
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MonitoringRecordRepository
 import com.elegant.software.blitzpay.storage.StorageService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -33,9 +28,8 @@ import kotlin.test.assertEquals
 
 class MerchantManagementServiceTest {
 
-    private val repository = mock<MerchantApplicationRepository>()
+    private val repository = mock<MerchantRepository>()
     private val branchRepository = mock<MerchantBranchRepository>()
-    private val monitoringRecordRepository = mock<MonitoringRecordRepository>()
     private val merchantOfferingRepository = mock<MerchantOfferingRepository>()
     private val merchantOfferingAssignmentRepository = mock<MerchantOfferingAssignmentRepository>()
     private val storageService = mock<StorageService>()
@@ -43,207 +37,98 @@ class MerchantManagementServiceTest {
     private val service = MerchantManagementService(
         repository,
         branchRepository,
-        monitoringRecordRepository,
         merchantOfferingRepository,
         merchantOfferingAssignmentRepository,
         storageService,
         eventPublisher
     )
 
+    private fun merchant(name: String = "Old Name GmbH") = Merchant(
+        merchantName = name,
+        businessType = "RETAIL",
+        operatingCountry = "DE",
+    )
+
     @Test
     fun `update merchant changes editable fields and status`() {
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-123",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Old Name GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-123",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Old Address 1"
-            ),
-            primaryContact = PrimaryContact(
-                fullName = "Old Contact",
-                email = "old@example.com",
-                phoneNumber = "+49111111111"
-            ),
-            status = MerchantOnboardingStatus.DRAFT
-        )
-        whenever(repository.findById(application.id)).thenReturn(Optional.of(application))
-        whenever(repository.save(any<MerchantApplication>())).thenAnswer { it.getArgument<MerchantApplication>(0) }
-        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(application.id)).thenReturn(
-            emptyList(),
-            listOf(
-                MerchantOfferingAssignment(application.id, "PRE_ORDER"),
-                MerchantOfferingAssignment(application.id, "DEFERRED_PAYMENT"),
-            )
-        )
+        val m = merchant()
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
+        whenever(repository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(m.id)).thenReturn(emptyList())
 
         val response = service.update(
-            application.id,
+            m.id,
             UpdateMerchantRequest(
                 merchantName = "New Name GmbH",
                 merchantStatus = MerchantOperationalStatus.INACTIVE,
-                status = MerchantOnboardingStatus.ACTIVE
             )
         )
 
-        assertEquals("New Name GmbH", response.legalBusinessName)
         assertEquals("New Name GmbH", response.merchantName)
         assertEquals(MerchantOperationalStatus.INACTIVE, response.merchantStatus)
-        assertEquals(MerchantOnboardingStatus.ACTIVE, response.status)
     }
 
     @Test
     fun `update merchant changes merchant mobility`() {
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-MOB",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Mobile Merchant GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-MOB",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Mobility Street 1"
-            ),
-            primaryContact = PrimaryContact(
-                fullName = "Mobility Owner",
-                email = "mobility@example.com",
-                phoneNumber = "+4912340000"
-            ),
-            merchantMobility = MerchantMobility.BRICK_AND_MORTAR
-        )
-        whenever(repository.findById(application.id)).thenReturn(Optional.of(application))
-        whenever(repository.save(any<MerchantApplication>())).thenAnswer { it.getArgument<MerchantApplication>(0) }
-        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(application.id)).thenReturn(emptyList())
+        val m = merchant("Mobile Merchant GmbH")
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
+        whenever(repository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(m.id)).thenReturn(emptyList())
 
         val response = service.update(
-            application.id,
+            m.id,
             UpdateMerchantRequest(merchantMobility = MerchantMobility.MOBILE)
         )
 
-        assertEquals(MerchantMobility.MOBILE, application.merchantMobility)
+        assertEquals(MerchantMobility.MOBILE, m.merchantMobility)
         assertEquals(MerchantMobility.MOBILE, response.merchantMobility)
     }
 
     @Test
     fun `update publishes MerchantNameUpdated when name changes`() {
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-EVT",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Old Name GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-EVT",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Event Street 1"
-            ),
-            primaryContact = PrimaryContact(
-                fullName = "Contact",
-                email = "evt@example.com",
-                phoneNumber = "+490000"
-            )
-        )
-        whenever(repository.findById(application.id)).thenReturn(Optional.of(application))
-        whenever(repository.save(any<MerchantApplication>())).thenAnswer { it.getArgument<MerchantApplication>(0) }
-        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(application.id)).thenReturn(emptyList())
+        val m = merchant("Old Name GmbH")
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
+        whenever(repository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(m.id)).thenReturn(emptyList())
 
-        service.update(
-            application.id,
-            UpdateMerchantRequest(
-                legalBusinessName = "New Name GmbH",
-                primaryBusinessAddress = "Event Street 1",
-                contactFullName = "Contact",
-                contactEmail = "evt@example.com",
-                contactPhoneNumber = "+490000",
-            )
-        )
+        service.update(m.id, UpdateMerchantRequest(merchantName = "New Name GmbH"))
 
         val captor = argumentCaptor<MerchantNameUpdated>()
         verify(eventPublisher).publishEvent(captor.capture())
-        assertEquals(application.id, captor.firstValue.merchantId)
+        assertEquals(m.id, captor.firstValue.merchantId)
         assertEquals("New Name GmbH", captor.firstValue.newName)
     }
 
     @Test
     fun `update does not publish MerchantNameUpdated when name unchanged`() {
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-SAME",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Same Name GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-SAME",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Same Street 1"
-            ),
-            primaryContact = PrimaryContact(
-                fullName = "Contact",
-                email = "same@example.com",
-                phoneNumber = "+490000"
-            )
-        )
-        whenever(repository.findById(application.id)).thenReturn(Optional.of(application))
-        whenever(repository.save(any<MerchantApplication>())).thenAnswer { it.getArgument<MerchantApplication>(0) }
-        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(application.id)).thenReturn(emptyList())
+        val m = merchant("Same Name GmbH")
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
+        whenever(repository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(m.id)).thenReturn(emptyList())
 
-        service.update(
-            application.id,
-            UpdateMerchantRequest(
-                legalBusinessName = "Same Name GmbH",
-                primaryBusinessAddress = "Same Street 1",
-                contactFullName = "Contact",
-                contactEmail = "same@example.com",
-                contactPhoneNumber = "+490000",
-            )
-        )
+        service.update(m.id, UpdateMerchantRequest(merchantName = "Same Name GmbH"))
 
         verify(eventPublisher, never()).publishEvent(any<MerchantNameUpdated>())
     }
 
     @Test
-    fun `deleteMerchantApplication deletes branches before the application`() {
-        val applicationId = UUID.randomUUID()
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-DEL",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "To Delete GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-999",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Delete Street 1"
-            ),
-            primaryContact = PrimaryContact(
-                fullName = "Delete Me",
-                email = "delete@example.com",
-                phoneNumber = "+49000000000"
-            )
-        )
-        whenever(repository.findById(applicationId)).thenReturn(Optional.of(application))
+    fun `deleteMerchant deletes branches before the merchant`() {
+        val m = merchant("To Delete GmbH")
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
 
-        service.deleteMerchantApplication(applicationId)
+        service.deleteMerchant(m.id)
 
         inOrder(branchRepository, repository) {
-            verify(branchRepository).deleteAllByMerchantApplicationId(applicationId)
-            verify(repository).delete(application)
+            verify(branchRepository).deleteAllByMerchantId(m.id)
+            verify(repository).delete(m)
         }
     }
 
     @Test
-    fun `update merchant syncs offerings with deferred payment dependency`() {
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-OFFER",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Offer Merchant",
-                businessType = "RETAIL",
-                registrationNumber = "DE-OFFER",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Offer Street 1"
-            ),
-            primaryContact = PrimaryContact(
-                fullName = "Owner",
-                email = "owner@example.com",
-                phoneNumber = "+491234"
-            )
-        )
-        whenever(repository.findById(application.id)).thenReturn(Optional.of(application))
-        whenever(repository.save(any<MerchantApplication>())).thenAnswer { it.getArgument<MerchantApplication>(0) }
+    fun `update merchant syncs offerings`() {
+        val m = merchant("Offer Merchant")
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
+        whenever(repository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
         whenever(merchantOfferingRepository.findAllByActiveTrueOrderByDisplayNameAsc()).thenReturn(
             listOf(
                 MerchantOffering("PRE_ORDER", "Pre-Order"),
@@ -251,46 +136,14 @@ class MerchantManagementServiceTest {
                 MerchantOffering("DEFERRED_PAYMENT", "Deferred Payment"),
             )
         )
-        whenever(merchantOfferingAssignmentRepository.findAllByMerchantApplicationId(application.id)).thenReturn(emptyList())
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(m.id)).thenReturn(emptyList())
 
         val response = service.update(
-            application.id,
-            UpdateMerchantRequest(
-                merchantName = "Offer Merchant",
-                offerings = setOf("PRE_ORDER", "DEFERRED_PAYMENT")
-            )
+            m.id,
+            UpdateMerchantRequest(offerings = setOf("PRE_ORDER", "DEFERRED_PAYMENT"))
         )
 
         verify(merchantOfferingAssignmentRepository).saveAll(any<List<MerchantOfferingAssignment>>())
         assertEquals("Offer Merchant", response.merchantName)
-    }
-
-    @Test
-    fun `deleteMerchantApplication deletes monitoring record before the application`() {
-        val applicationId = UUID.randomUUID()
-        val monitoringRecord = MonitoringRecord(lastTriggerReason = "test")
-        val application = MerchantApplication(
-            applicationReference = "BLTZ-MON",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Monitored GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-888",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Monitor Street 1"
-            ),
-            primaryContact = PrimaryContact(
-                fullName = "Monitored",
-                email = "mon@example.com",
-                phoneNumber = "+49111111111"
-            )
-        ).also { it.monitoringRecord = monitoringRecord }
-        whenever(repository.findById(applicationId)).thenReturn(Optional.of(application))
-
-        service.deleteMerchantApplication(applicationId)
-
-        inOrder(monitoringRecordRepository, repository) {
-            verify(monitoringRecordRepository).deleteById(monitoringRecord.id)
-            verify(repository).delete(application)
-        }
     }
 }

@@ -1,6 +1,6 @@
 package com.elegant.software.blitzpay.merchant.web
 
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
@@ -20,7 +20,7 @@ import java.util.UUID
 @Tag(name = "Appointment Policy", description = "Merchant-level appointment scheduling configuration")
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchants/{merchantId}/appointment-policy", version = "1")
 class MerchantAppointmentPolicyController(
-    private val merchantRepo: MerchantApplicationRepository,
+    private val merchantRepo: MerchantRepository,
     private val callerResolver: MerchantCallerResolver,
 ) {
 

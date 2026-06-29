@@ -5,9 +5,10 @@ import com.elegant.software.blitzpay.merchant.api.MerchantContext
 import com.elegant.software.blitzpay.merchant.api.ProximityEventRequest
 import com.elegant.software.blitzpay.merchant.api.ProximityResponse
 import com.elegant.software.blitzpay.merchant.config.GeofenceProperties
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.ProximityEvent
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProviderAccountRepository
@@ -25,7 +26,7 @@ import kotlin.math.sin
 @Service
 class ProximityService(
     private val proximityEventRepository: ProximityEventRepository,
-    private val merchantApplicationRepository: MerchantApplicationRepository,
+    private val merchantRepository: MerchantRepository,
     private val merchantBranchRepository: MerchantBranchRepository,
     private val merchantOfferingAssignmentRepository: MerchantOfferingAssignmentRepository,
     private val providerAccountRepository: MerchantProviderAccountRepository,
@@ -91,7 +92,7 @@ class ProximityService(
             }
 
         val branches = merchantBranchRepository
-            .findAllByMerchantApplicationIdAndActiveTrue(merchant.id)
+            .findAllByMerchantIdAndActiveTrue(merchant.id)
             .map { branch ->
                 BranchContext(
                     branchId = branch.id,
@@ -111,18 +112,18 @@ class ProximityService(
             }
             .sortedWith(compareBy(nullsLast()) { it.distanceMeters })
 
-        val logoUrl = merchant.businessProfile.logoStorageKey?.let {
+        val logoUrl = merchant.logoStorageKey?.let {
             runCatching { storageService.presignDownload(it) }.getOrNull()
         }
 
         val enabledOfferingCodes = merchantOfferingAssignmentRepository
-            .findAllByMerchantApplicationId(merchant.id)
+            .findAllByMerchantId(merchant.id)
             .map { it.offeringCode }
             .toSet()
         val deferredPaymentAvailable = "DEFERRED_PAYMENT" in enabledOfferingCodes
 
         val activePspCodes = providerAccountRepository
-            .findAllByMerchantApplicationId(merchant.id)
+            .findAllByMerchantId(merchant.id)
             .filter { it.enabled }
             .map { it.pspCode }
             .toSet()
@@ -135,7 +136,7 @@ class ProximityService(
             action = action,
             merchant = MerchantContext(
                 merchantId = merchant.id,
-                name = merchant.businessProfile.legalBusinessName,
+                name = merchant.merchantName,
                 logoUrl = logoUrl,
                 activePspCodes = activePspCodes,
                 deferredPaymentAvailable = deferredPaymentAvailable,
@@ -203,7 +204,7 @@ class ProximityService(
             )
         }
 
-        val matchingMerchant = merchantApplicationRepository.findAllByStatus(com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus.ACTIVE)
+        val matchingMerchant = merchantRepository.findAllByMerchantStatus(MerchantOperationalStatus.ACTIVE)
             .asSequence()
             .filter { it.location != null }
             .map { merchant ->
@@ -243,12 +244,12 @@ class ProximityService(
         return false
     }
 
-    private fun resolveMerchant(regionType: String, sourceId: UUID): MerchantApplication? {
+    private fun resolveMerchant(regionType: String, sourceId: UUID): Merchant? {
         return when (regionType) {
-            "MERCHANT" -> merchantApplicationRepository.findById(sourceId).orElse(null)
+            "MERCHANT" -> merchantRepository.findById(sourceId).orElse(null)
             "BRANCH" -> {
                 val branch = merchantBranchRepository.findById(sourceId).orElse(null) ?: return null
-                merchantApplicationRepository.findById(branch.merchantApplicationId).orElse(null)
+                merchantRepository.findById(branch.merchantId).orElse(null)
             }
             else -> null
         }

@@ -3,7 +3,7 @@ package com.elegant.software.blitzpay.merchant.service
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchRequest
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchResponse
 import com.elegant.software.blitzpay.merchant.api.MerchantSearchResultItem
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantApplicationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class MerchantSearchService(
-    private val repository: MerchantApplicationRepository,
+    private val repository: MerchantRepository,
 ) {
 
     @Transactional(readOnly = true)
@@ -27,15 +27,14 @@ class MerchantSearchService(
         return MerchantSearchResponse(
             results = result.content.map { m ->
                 MerchantSearchResultItem(
-                    applicationId = m.id,
-                    merchantName = m.merchantName.ifBlank { m.businessProfile.legalBusinessName },
-                    legalBusinessName = m.businessProfile.legalBusinessName,
+                    merchantId = m.id,
+                    merchantName = m.merchantName,
                     merchantCode = m.merchantCode,
                     city = m.address?.city,
                     country = m.address?.country,
-                    businessType = m.businessProfile.businessType,
+                    businessType = m.businessType,
                     merchantMobility = m.merchantMobility,
-                    status = m.status.name,
+                    merchantStatus = m.merchantStatus.name,
                     lastUpdatedAt = m.lastUpdatedAt,
                 )
             },

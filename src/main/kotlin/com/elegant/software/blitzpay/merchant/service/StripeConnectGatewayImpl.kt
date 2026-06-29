@@ -27,9 +27,9 @@ class StripeConnectGatewayImpl(
 
     override fun save(merchantId: UUID, connectedAccountId: String) {
         val providerAccount = providerAccountRepository
-            .findByMerchantApplicationIdAndPspCode(merchantId, "STRIPE")
+            .findByMerchantIdAndPspCode(merchantId, "STRIPE")
             ?: providerAccountRepository.save(MerchantProviderAccount(
-                merchantApplicationId = merchantId,
+                merchantId = merchantId,
                 pspCode = "STRIPE",
                 enabled = true,
             ))
@@ -135,7 +135,7 @@ class StripeConnectGatewayImpl(
 
     private fun findStripeProviderAccount(merchantId: UUID): MerchantStripeProviderAccount? {
         val providerAccount = providerAccountRepository
-            .findByMerchantApplicationIdAndPspCode(merchantId, "STRIPE") ?: return null
+            .findByMerchantIdAndPspCode(merchantId, "STRIPE") ?: return null
         return stripeProviderAccountRepository.findById(providerAccount.id).orElse(null)
     }
 }

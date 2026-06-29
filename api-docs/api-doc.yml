@@ -21,8 +21,6 @@ tags:
   description: Admin appearance history across a MOBILE merchant
 - name: Appearances
   description: Discover currently active mobile merchant appearances
-- name: Merchant Onboarding
-  description: Endpoints for merchant onboarding and lifecycle
 - name: Proximity
   description: Mobile geofence enter and exit event recording
 - name: Admin Appointments
@@ -70,6 +68,8 @@ tags:
   description: Merchant-level appointment scheduling configuration
 - name: Stripe Connect
   description: Stripe Connect Express account onboarding for merchants
+- name: Merchants
+  description: Endpoints for merchant management
 - name: Appearances
   description: Manage scheduled location appearances for MOBILE merchants
 - name: Orders
@@ -708,8 +708,8 @@ paths:
   /{version}/merchants/{id}:
     get:
       tags:
-      - Merchant Onboarding
-      summary: Get merchant application details
+      - Merchants
+      summary: Get merchant details
       operationId: get_3
       parameters:
       - name: id
@@ -727,7 +727,7 @@ paths:
                 $ref: "#/components/schemas/MerchantDetailsResponse"
     put:
       tags:
-      - Merchant Onboarding
+      - Merchants
       summary: Update editable merchant details and optional status
       operationId: update_3
       parameters:
@@ -753,10 +753,10 @@ paths:
   /{version}/merchants/{id}/logo:
     put:
       tags:
-      - Merchant Onboarding
+      - Merchants
       summary: Set merchant logo
       description: "Records the S3 storage key of a logo already uploaded by the client.\
-        \ Expected key format: merchants/{applicationId}/logo.{ext}"
+        \ Expected key format: merchants/{merchantId}/logo.{ext}"
       operationId: setLogo
       parameters:
       - name: id
@@ -778,29 +778,11 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MerchantSummary"
-  /{version}/webhooks/truelayer:
-    post:
-      tags:
-      - tl-webhook-controller
-      operationId: receive
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: string
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
   /{version}/webhooks/stripe:
     post:
       tags:
       - stripe-webhook-controller
-      operationId: receive_1
+      operationId: receive
       parameters:
       - name: Stripe-Signature
         in: header
@@ -1123,30 +1105,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/CreateIntentResponse"
-  /{version}/payments/request:
-    post:
-      tags:
-      - payment-request-controller
-      operationId: createPaymentRequest
-      parameters:
-      - name: Authorization
-        in: header
-        required: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PaymentRequested"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
   /{version}/payments/braintree/client-token:
     post:
       tags:
@@ -1289,9 +1247,8 @@ paths:
   /{version}/merchants:
     post:
       tags:
-      - Merchant Onboarding
-      summary: "Register a new merchant (directly ACTIVE, duplicate registration number\
-        \ rejected with 409)"
+      - Merchants
+      summary: Register a new merchant (directly ACTIVE)
       operationId: create_1
       requestBody:
         content:
@@ -2146,7 +2103,7 @@ paths:
   /{version}/merchants/{id}/logo/upload-url:
     post:
       tags:
-      - Merchant Onboarding
+      - Merchants
       summary: Create a merchant logo upload URL
       description: "Generates a presigned upload URL for a merchant logo. Supported\
         \ content types: image/jpeg, image/png, image/webp."
@@ -2171,26 +2128,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MerchantLogoUploadResponse"
-  /{version}/merchants/{id}/activate:
-    post:
-      tags:
-      - Merchant Onboarding
-      summary: Directly activate a merchant application (skips onboarding flow)
-      operationId: activate_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/MerchantSummary"
   /{version}/merchants/search:
     post:
       tags:
@@ -4620,6 +4557,17 @@ components:
           type:
           - string
           - "null"
+        xHandle:
+          type:
+          - string
+          - "null"
+          writeOnly: true
+        instagramHandle:
+          type:
+          - string
+          - "null"
+        xhandle:
+          type: string
     MerchantLocationInfo:
       type: object
       properties:
@@ -4702,19 +4650,7 @@ components:
           items:
             type: string
           uniqueItems: true
-        legalBusinessName:
-          type:
-          - string
-          - "null"
-        primaryBusinessAddress:
-          type:
-          - string
-          - "null"
         website:
-          type:
-          - string
-          - "null"
-        contactFullName:
           type:
           - string
           - "null"
@@ -4726,22 +4662,6 @@ components:
           type:
           - string
           - "null"
-        status:
-          type:
-          - string
-          - "null"
-          enum:
-          - DRAFT
-          - SUBMITTED
-          - VERIFICATION
-          - SCREENING
-          - RISK_REVIEW
-          - DECISION_PENDING
-          - SETUP
-          - ACTIVE
-          - MONITORING
-          - ACTION_REQUIRED
-          - REJECTED
         merchantMobility:
           type:
           - string
@@ -4756,11 +4676,9 @@ components:
     MerchantDetailsResponse:
       type: object
       properties:
-        applicationId:
+        merchantId:
           type: string
           format: uuid
-        applicationReference:
-          type: string
         merchantCode:
           type: string
         merchantName:
@@ -4770,45 +4688,14 @@ components:
           enum:
           - ACTIVE
           - INACTIVE
-        registrationNumber:
-          type: string
         businessType:
           type: string
         operatingCountry:
-          type: string
-        legalBusinessName:
-          type: string
-        primaryBusinessAddress:
           type: string
         website:
           type:
           - string
           - "null"
-        contactFullName:
-          type: string
-        contactEmail:
-          type: string
-        contactPhoneNumber:
-          type: string
-        status:
-          type: string
-          enum:
-          - DRAFT
-          - SUBMITTED
-          - VERIFICATION
-          - SCREENING
-          - RISK_REVIEW
-          - DECISION_PENDING
-          - SETUP
-          - ACTIVE
-          - MONITORING
-          - ACTION_REQUIRED
-          - REJECTED
-        submittedAt:
-          type:
-          - string
-          - "null"
-          format: date-time
         lastUpdatedAt:
           type: string
           format: date-time
@@ -4844,24 +4731,16 @@ components:
           - "null"
       required:
       - address
-      - applicationId
-      - applicationReference
       - businessType
-      - contactEmail
-      - contactFullName
       - contactInfo
-      - contactPhoneNumber
       - lastUpdatedAt
-      - legalBusinessName
       - merchantCode
+      - merchantId
       - merchantMobility
       - merchantName
       - merchantStatus
       - offerings
       - operatingCountry
-      - primaryBusinessAddress
-      - registrationNumber
-      - status
     SetLogoRequest:
       type: object
       properties:
@@ -4872,11 +4751,9 @@ components:
     MerchantSummary:
       type: object
       properties:
-        applicationId:
+        merchantId:
           type: string
           format: uuid
-        applicationReference:
-          type: string
         merchantCode:
           type: string
         merchantName:
@@ -4886,27 +4763,6 @@ components:
           enum:
           - ACTIVE
           - INACTIVE
-        registrationNumber:
-          type: string
-        status:
-          type: string
-          enum:
-          - DRAFT
-          - SUBMITTED
-          - VERIFICATION
-          - SCREENING
-          - RISK_REVIEW
-          - DECISION_PENDING
-          - SETUP
-          - ACTIVE
-          - MONITORING
-          - ACTION_REQUIRED
-          - REJECTED
-        submittedAt:
-          type:
-          - string
-          - "null"
-          format: date-time
         lastUpdatedAt:
           type: string
           format: date-time
@@ -4920,15 +4776,12 @@ components:
             type: string
           uniqueItems: true
       required:
-      - applicationId
-      - applicationReference
       - lastUpdatedAt
       - merchantCode
+      - merchantId
       - merchantName
       - merchantStatus
       - offerings
-      - registrationNumber
-      - status
     VoiceTranscriptionResponse:
       type: object
       properties:
@@ -5453,39 +5306,6 @@ components:
       - paymentIntent
       - paymentRequestId
       - publishableKey
-    PaymentRequested:
-      type: object
-      properties:
-        paymentRequestId:
-          type:
-          - string
-          - "null"
-          format: uuid
-        orderId:
-          type: string
-        amountMinorUnits:
-          type: integer
-          format: int64
-        currency:
-          type: string
-        userDisplayName:
-          type: string
-        userEmail:
-          type:
-          - string
-          - "null"
-        redirectReturnUri:
-          type: string
-        payerRef:
-          type:
-          - string
-          - "null"
-      required:
-      - amountMinorUnits
-      - currency
-      - orderId
-      - redirectReturnUri
-      - userDisplayName
     ClientTokenRequest:
       type: object
       properties:
@@ -5872,6 +5692,36 @@ components:
       type: object
       properties:
         merchantName:
+          type: string
+        businessType:
+          type: string
+        operatingCountry:
+          type: string
+        mobility:
+          type:
+          - string
+          - "null"
+          enum:
+          - BRICK_AND_MORTAR
+          - MOBILE
+        website:
+          type:
+          - string
+          - "null"
+        contactEmail:
+          type:
+          - string
+          - "null"
+        contactPhoneNumber:
+          type:
+          - string
+          - "null"
+        xHandle:
+          type:
+          - string
+          - "null"
+          writeOnly: true
+        instagramHandle:
           type:
           - string
           - "null"
@@ -5894,36 +5744,12 @@ components:
           items:
             type: string
           uniqueItems: true
-        legalBusinessName:
-          type:
-          - string
-          - "null"
-        businessType:
+        xhandle:
           type: string
-        registrationNumber:
-          type: string
-        operatingCountry:
-          type: string
-        primaryBusinessAddress:
-          type:
-          - string
-          - "null"
-        contactFullName:
-          type:
-          - string
-          - "null"
-        contactEmail:
-          type:
-          - string
-          - "null"
-        contactPhoneNumber:
-          type:
-          - string
-          - "null"
       required:
       - businessType
+      - merchantName
       - operatingCountry
-      - registrationNumber
     StartOnboardingRequest:
       type: object
       properties:
@@ -6542,12 +6368,10 @@ components:
     MerchantSearchResultItem:
       type: object
       properties:
-        applicationId:
+        merchantId:
           type: string
           format: uuid
         merchantName:
-          type: string
-        legalBusinessName:
           type: string
         merchantCode:
           type: string
@@ -6566,20 +6390,19 @@ components:
           enum:
           - BRICK_AND_MORTAR
           - MOBILE
-        status:
+        merchantStatus:
           type: string
         lastUpdatedAt:
           type: string
           format: date-time
       required:
-      - applicationId
       - businessType
       - lastUpdatedAt
-      - legalBusinessName
       - merchantCode
+      - merchantId
       - merchantMobility
       - merchantName
-      - status
+      - merchantStatus
     CreateMerchantOrderRequest:
       type: object
       properties:
@@ -7732,8 +7555,8 @@ components:
       type: oauth2
       flows:
         authorizationCode:
-          authorizationUrl: https://keycloak.elegantsoftware.de/realms/blitzpay/protocol/openid-connect/auth
-          tokenUrl: https://keycloak.elegantsoftware.de/realms/blitzpay/protocol/openid-connect/token
+          authorizationUrl: https://auth.elegantsoftware.de/realms/blitzpay/protocol/openid-connect/auth
+          tokenUrl: https://auth.elegantsoftware.de/realms/blitzpay/protocol/openid-connect/token
           scopes:
             openid: OpenID Connect
             profile: User profile

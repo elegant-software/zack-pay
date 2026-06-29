@@ -3,11 +3,9 @@ package com.elegant.software.blitzpay.merchant
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
 import com.elegant.software.blitzpay.merchant.api.BranchCreated
 import com.elegant.software.blitzpay.merchant.api.MerchantActivated
-import com.elegant.software.blitzpay.merchant.persistence.model.BusinessProfile
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOnboardingStatus
-import com.elegant.software.blitzpay.merchant.persistence.model.PrimaryContact
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
@@ -32,10 +30,7 @@ class MerchantIamContractTest : ContractVerifierBase() {
 
     @Test
     fun `merchant registration publishes MerchantActivated event`() {
-        whenever(merchantApplicationRepository.existsByBusinessProfileRegistrationNumberAndStatusIn(any(), any()))
-            .thenReturn(false)
-        whenever(merchantApplicationRepository.save(any<MerchantApplication>()))
-            .thenAnswer { it.arguments[0] }
+        whenever(merchantRepository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
         publishedEventSink.clear()
 
         webTestClient.post()
@@ -46,7 +41,6 @@ class MerchantIamContractTest : ContractVerifierBase() {
                 {
                   "merchantName": "IAM Test GmbH",
                   "businessType": "RETAIL",
-                  "registrationNumber": "DE-IAM-001",
                   "operatingCountry": "DE"
                 }
                 """.trimIndent()
@@ -54,7 +48,7 @@ class MerchantIamContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isCreated
             .expectBody()
-            .jsonPath("$.status").isEqualTo(MerchantOnboardingStatus.ACTIVE.name)
+            .jsonPath("$.merchantStatus").isEqualTo(MerchantOperationalStatus.ACTIVE.name)
 
         val event = publishedEventSink.first(MerchantActivated::class.java)
         assertNotNull(event)
@@ -64,24 +58,15 @@ class MerchantIamContractTest : ContractVerifierBase() {
     @Test
     fun `branch creation publishes BranchCreated event`() {
         val merchantId = UUID.randomUUID()
-        val merchant = MerchantApplication(
-            applicationReference = "BLTZ-IAM",
-            businessProfile = BusinessProfile(
-                legalBusinessName = "Branch IAM GmbH",
-                businessType = "RETAIL",
-                registrationNumber = "DE-IAM-002",
-                operatingCountry = "DE",
-                primaryBusinessAddress = "Branch Street 1"
-            ),
-            primaryContact = PrimaryContact(
-                fullName = "Branch Contact",
-                email = "branch-iam@test.de",
-                phoneNumber = "+49000000000"
-            ),
-            status = MerchantOnboardingStatus.ACTIVE
+        val merchant = Merchant(
+            id = merchantId,
+            merchantName = "Branch IAM GmbH",
+            businessType = "RETAIL",
+            operatingCountry = "DE",
+            merchantStatus = MerchantOperationalStatus.ACTIVE,
         )
-        whenever(merchantApplicationRepository.existsById(merchantId)).thenReturn(true)
-        whenever(merchantApplicationRepository.findById(merchantId)).thenReturn(java.util.Optional.of(merchant))
+        whenever(merchantRepository.existsById(merchantId)).thenReturn(true)
+        whenever(merchantRepository.findById(merchantId)).thenReturn(java.util.Optional.of(merchant))
         whenever(merchantBranchRepository.save(any<MerchantBranch>())).thenAnswer { it.arguments[0] }
         publishedEventSink.clear()
 

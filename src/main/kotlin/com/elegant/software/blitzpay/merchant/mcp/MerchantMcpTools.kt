@@ -1,9 +1,8 @@
 package com.elegant.software.blitzpay.merchant.mcp
 
 import com.elegant.software.blitzpay.merchant.api.CreateBranchRequest
-import com.elegant.software.blitzpay.merchant.api.MerchantBusinessProfileRequest
+import com.elegant.software.blitzpay.merchant.api.MerchantContactInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
-import com.elegant.software.blitzpay.merchant.api.MerchantPrimaryContactRequest
 import com.elegant.software.blitzpay.merchant.api.MerchantVerticalResponse
 import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateMerchantRequest
@@ -66,7 +65,7 @@ class MerchantMcpTools(
 
         RECOMMENDED WORKFLOW ORDER
         ══════════════════════════
-        1. merchant_upsert             — create or update the merchant (returns applicationId); set mobility if MOBILE
+        1. merchant_upsert             — create or update the merchant (returns merchantId); set mobility if MOBILE
         2. branches_bulk_upsert        — create or update all branches with full attributes
         3. categories_bulk_create      — (optional) pre-create all categories in one call
         4. products_bulk_upsert        — create all products, referencing categoryName
@@ -106,18 +105,18 @@ class MerchantMcpTools(
             "Pass mobility = \"MOBILE\" for food trucks, street sellers, circuses, pop-up theatres, or any merchant that operates from variable locations. " +
             "Omit mobility (or pass \"BRICK_AND_MORTAR\") for fixed-location merchants. " +
             "Optionally uploads a logo via logoBase64 and logoContentType only; use a clear, high-quality merchant logo in JPEG, PNG, or WebP format. " +
-            "Returns full merchant details; use the returned applicationId as merchantId in subsequent branch and product calls.",
+            "Returns full merchant details; use the returned merchantId as merchantId in subsequent branch and product calls.",
         annotations = McpTool.McpAnnotations(title = "Merchant Upsert")
     )
     fun upsertMerchant(
         merchantName: String,
-        registrationNumber: String? = null,
         businessType: String? = null,
         operatingCountry: String = "US",
-        primaryBusinessAddress: String? = null,
-        contactFullName: String? = null,
+        website: String? = null,
         contactEmail: String? = null,
         contactPhoneNumber: String? = null,
+        xHandle: String? = null,
+        instagramHandle: String? = null,
         defaultBranchName: String = "Main Branch",
         logoBase64: String? = null,
         logoContentType: String? = null,
@@ -127,40 +126,48 @@ class MerchantMcpTools(
         val merchantId: UUID
 
         if (existing == null) {
-            val normalizedRegistrationNumber = registrationNumber?.trim()?.takeIf { it.isNotEmpty() }
-                ?: "MCP-${UUID.randomUUID().toString().replace("-", "").take(12).uppercase()}"
-            val resolvedEmail = contactEmail?.trim()?.takeIf { it.isNotEmpty() }
-                ?: "${merchantName.lowercase().replace(Regex("[^a-z0-9]+"), ".").trim('.')}.merchant@example.com"
-            val created = merchantRegistrationService.registerDraft(
+            val created = merchantRegistrationService.register(
                 RegisterMerchantRequest(
-                    businessProfile = MerchantBusinessProfileRequest(
-                        legalBusinessName = merchantName,
-                        businessType = businessType ?: "RETAIL",
-                        registrationNumber = normalizedRegistrationNumber,
-                        operatingCountry = operatingCountry,
-                        primaryBusinessAddress = primaryBusinessAddress ?: "Unknown",
-                        merchantMobility = mobility?.let(MerchantMobility::valueOf),
-                    ),
-                    primaryContact = MerchantPrimaryContactRequest(
-                        fullName = contactFullName ?: "Merchant Owner",
-                        email = resolvedEmail,
-                        phoneNumber = contactPhoneNumber ?: "0000000000"
-                    )
+                    merchantName = merchantName,
+                    businessType = businessType ?: "RETAIL",
+                    operatingCountry = operatingCountry,
+                    mobility = mobility?.let(MerchantMobility::valueOf),
                 )
             )
             merchantId = created.id
-        } else {
-            merchantId = existing.id
-            val current = merchantManagementService.get(merchantId)
             merchantManagementService.update(
                 merchantId,
                 UpdateMerchantRequest(
-                    legalBusinessName = merchantName,
+                    website = website,
+                    contactEmail = contactEmail,
+                    contactPhoneNumber = contactPhoneNumber,
+                    contactInfo = if (xHandle != null || instagramHandle != null) MerchantContactInfo(
+                        website = website,
+                        email = contactEmail,
+                        phoneNumber = contactPhoneNumber,
+                        xHandle = xHandle,
+                        instagramHandle = instagramHandle,
+                    ) else null,
+                    merchantMobility = mobility?.let(MerchantMobility::valueOf),
+                )
+            )
+        } else {
+            merchantId = existing.id
+            merchantManagementService.update(
+                merchantId,
+                UpdateMerchantRequest(
+                    merchantName = merchantName,
                     businessType = businessType,
-                    primaryBusinessAddress = primaryBusinessAddress ?: current.primaryBusinessAddress,
-                    contactFullName = contactFullName ?: current.contactFullName,
-                    contactEmail = contactEmail ?: current.contactEmail,
-                    contactPhoneNumber = contactPhoneNumber ?: current.contactPhoneNumber,
+                    website = website,
+                    contactEmail = contactEmail,
+                    contactPhoneNumber = contactPhoneNumber,
+                    contactInfo = if (xHandle != null || instagramHandle != null) MerchantContactInfo(
+                        website = website,
+                        email = contactEmail,
+                        phoneNumber = contactPhoneNumber,
+                        xHandle = xHandle,
+                        instagramHandle = instagramHandle,
+                    ) else null,
                     merchantMobility = mobility?.let(MerchantMobility::valueOf),
                 )
             )

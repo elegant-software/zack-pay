@@ -1,14 +1,14 @@
 package com.elegant.software.blitzpay.merchant.service
 
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantApplication
+import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import org.springframework.stereotype.Component
 
 @Component
 class MerchantAccessPolicy {
 
-    fun requireReadAccess(actor: MerchantActor, application: MerchantApplication) {
-        require(canRead(actor, application)) {
-            "Actor ${actor.actorId} is not allowed to read application ${application.applicationReference}"
+    fun requireReadAccess(actor: MerchantActor, merchant: Merchant) {
+        require(canRead(actor, merchant)) {
+            "Actor ${actor.actorId} is not allowed to read merchant ${merchant.merchantCode}"
         }
     }
 
@@ -18,10 +18,10 @@ class MerchantAccessPolicy {
         }
     }
 
-    private fun canRead(actor: MerchantActor, application: MerchantApplication): Boolean =
+    private fun canRead(actor: MerchantActor, merchant: Merchant): Boolean =
         when (actor.role) {
             MerchantActorRole.MERCHANT_APPLICANT ->
-                actor.merchantApplicationReference == application.applicationReference
+                actor.merchantApplicationReference == merchant.merchantCode
             MerchantActorRole.OPERATIONS_REVIEWER,
             MerchantActorRole.COMPLIANCE_REVIEWER,
             MerchantActorRole.SYSTEM -> true
