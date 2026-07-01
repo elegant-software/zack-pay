@@ -5,6 +5,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
@@ -23,6 +24,10 @@ interface AppStackProps extends cdk.StackProps {
 }
 
 export class AppStack extends cdk.Stack {
+  readonly alb: elbv2.ApplicationLoadBalancer;
+  readonly service: ecs.FargateService;
+  readonly appLogGroup: logs.LogGroup;
+
   constructor(scope: Construct, id: string, props: AppStackProps) {
     super(scope, id, props);
 
@@ -44,6 +49,12 @@ export class AppStack extends cdk.Stack {
       ],
     }));
 
+    this.appLogGroup = new logs.LogGroup(this, 'AppLogGroup', {
+      logGroupName: '/zackpay/app',
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     const taskDef = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       memoryLimitMiB: 2048,
       cpu: 512,
@@ -55,7 +66,7 @@ export class AppStack extends cdk.Stack {
     taskDef.addContainer('App', {
       image: ecs.ContainerImage.fromEcrRepository(props.repository, 'latest'),
       portMappings: [{ containerPort: 8080 }],
-      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'zackpay' }),
+      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'zackpay', logGroup: this.appLogGroup }),
       environment: {
         SPRING_PROFILES_ACTIVE: 'aws-staging',
         STORAGE_BUCKET: props.storageBucket.bucketName,
@@ -79,7 +90,7 @@ export class AppStack extends cdk.Stack {
 
     const sg = new ec2.SecurityGroup(this, 'AppSg', { vpc: props.vpc });
 
-    const service = new ecs.FargateService(this, 'Service', {
+    this.service = new ecs.FargateService(this, 'Service', {
       cluster: props.cluster,
       taskDefinition: taskDef,
       desiredCount: 1,
@@ -87,7 +98,7 @@ export class AppStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroups: [sg],
       circuitBreaker: { rollback: true },
-      healthCheckGracePeriod: cdk.Duration.seconds(480),
+      healthCheckGracePeriod: cdk.Duration.seconds(120),
     });
 
     const cert = new acm.Certificate(this, 'Cert', {
@@ -95,33 +106,40 @@ export class AppStack extends cdk.Stack {
       validation: acm.CertificateValidation.fromDns(),
     });
 
-    const alb = new elbv2.ApplicationLoadBalancer(this, 'Alb', {
+    this.alb = new elbv2.ApplicationLoadBalancer(this, 'Alb', {
       vpc: props.vpc,
       internetFacing: true,
     });
 
-    alb.addListener('Http', { port: 80 }).addAction('RedirectToHttps', {
+    this.alb.addListener('Http', { port: 80 }).addAction('RedirectToHttps', {
       action: elbv2.ListenerAction.redirect({ protocol: 'HTTPS', port: '443', permanent: true }),
     });
 
-    const listener = alb.addListener('Https', {
+    const listener = this.alb.addListener('Https', {
       port: 443,
       certificates: [cert],
     });
     listener.addTargets('App', {
       port: 8080,
-      targets: [service],
-      healthCheck: { path: '/actuator/health', healthyThresholdCount: 2 },
+      targets: [this.service],
+      healthCheck: {
+        path: '/actuator/health',
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 3,
+        interval: cdk.Duration.seconds(15),
+        timeout: cdk.Duration.seconds(5),
+      },
     });
 
     // Allow ALB → app; restrict direct internet access to Fargate tasks
     sg.addIngressRule(
-      ec2.Peer.securityGroupId(alb.connections.securityGroups[0].securityGroupId),
+      ec2.Peer.securityGroupId(this.alb.connections.securityGroups[0].securityGroupId),
       ec2.Port.tcp(8080),
     );
 
     new cdk.CfnOutput(this, 'AppUrl', { value: 'https://api.elegantsoftware.de' });
-    new cdk.CfnOutput(this, 'AlbDns', { value: alb.loadBalancerDnsName });
+    new cdk.CfnOutput(this, 'AlbDns', { value: this.alb.loadBalancerDnsName });
     new cdk.CfnOutput(this, 'CertArn', { value: cert.certificateArn });
   }
 }
+

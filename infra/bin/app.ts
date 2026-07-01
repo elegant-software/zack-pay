@@ -5,6 +5,7 @@ import { DataStack } from '../lib/data-stack';
 import { SecretsStack } from '../lib/secrets-stack';
 import { EcrStack } from '../lib/ecr-stack';
 import { AppStack } from '../lib/app-stack';
+import { DashboardStack } from '../lib/dashboard-stack';
 import { BastionStack } from '../lib/bastion-stack';
 import { KeycloakStack } from '../lib/keycloak-stack';
 import { CiCdStack } from '../lib/cicd-stack';
@@ -33,7 +34,7 @@ new KeycloakStack(app, 'ZackPayKeycloak', {
   keycloakAdminSecret: secrets.keycloakAdminSecret,
 });
 
-new AppStack(app, 'ZackPayApp', {
+const appStack = new AppStack(app, 'ZackPayApp', {
   env,
   vpc: network.vpc,
   cluster: network.cluster,
@@ -44,6 +45,13 @@ new AppStack(app, 'ZackPayApp', {
   braintreeSecret: secrets.braintreeSecret,
   keycloakSecret: secrets.keycloakSecret,
   expoSecret: secrets.expoSecret,
+});
+
+new DashboardStack(app, 'ZackPayDashboard', {
+  env,
+  alb: appStack.alb,
+  service: appStack.service,
+  appLogGroup: appStack.appLogGroup,
 });
 
 // CloudFront cert must be in us-east-1; crossRegionReferences lets CDK wire the ARN via SSM.
