@@ -161,7 +161,7 @@ CREATE POLICY merchant_tenant_isolation
 -- changeset mehdi:20260629-006-migrate-merchant-application-offerings
 -- Update merchant_application_offerings to point to merchants table
 ALTER TABLE blitzpay.merchant_application_offerings
-    DROP CONSTRAINT IF EXISTS merchant_application_offerings_pkey;
+    DROP CONSTRAINT IF EXISTS pk_merchant_application_offerings;
 ALTER TABLE blitzpay.merchant_application_offerings RENAME COLUMN merchant_application_id TO merchant_id;
 ALTER TABLE blitzpay.merchant_application_offerings
     ADD CONSTRAINT pk_merchant_application_offerings PRIMARY KEY (merchant_id, offering_code),
