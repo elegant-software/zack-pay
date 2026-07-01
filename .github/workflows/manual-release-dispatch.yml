@@ -38,6 +38,8 @@ jobs:
       release_boundary: ${{ inputs.release_boundary }}
       base_branch: ${{ inputs.base_branch }}
       automation_ref: main
+      version_suffix: ${{ inputs.base_branch != 'main' && '-alpha' || '' }}
+      prerelease: ${{ inputs.base_branch != 'main' }}
     secrets:
       RELEASE_PUBLISH_TOKEN: ${{ secrets.RELEASE_PUBLISH_TOKEN }}
       AUTOMATION_READ_TOKEN: ${{ secrets.AUTOMATION_READ_TOKEN }}
