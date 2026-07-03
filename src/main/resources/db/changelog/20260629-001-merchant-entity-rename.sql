@@ -213,6 +213,8 @@ CREATE INDEX idx_mua_merchant_id ON blitzpay.merchant_user_assignments(merchant_
 -- changeset mehdi:20260629-009-drop-old-merchant-tables
 -- Drop old merchant onboarding tables that are no longer needed
 ALTER TABLE blitzpay.merchant_applications DROP CONSTRAINT IF EXISTS fk_merchant_applications_monitoring;
+ALTER TABLE blitzpay.merchant_application_offerings
+    DROP CONSTRAINT IF EXISTS merchant_application_offerings_merchant_application_id_fkey;
 DROP TABLE IF EXISTS blitzpay.merchant_review_decisions;
 DROP TABLE IF EXISTS blitzpay.merchant_people;
 DROP TABLE IF EXISTS blitzpay.merchant_supporting_materials;
