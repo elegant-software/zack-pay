@@ -1,6 +1,6 @@
 # =============================================================================
 # Keycloak Ingress
-# Route: keycloak.elegantsoftware.de -> keycloak service (namespace: keycloak)
+# Route: keycloak.zackpay.de -> keycloak service (namespace: keycloak)
 # =============================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -14,10 +14,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - keycloak.elegantsoftware.de
-      secretName: wildcard-elegantsoftware-de-tls
+        - keycloak.zackpay.de
+      secretName: wildcard-zackpay-de-tls
   rules:
-    - host: keycloak.elegantsoftware.de
+    - host: keycloak.zackpay.de
       http:
         paths:
           - path: /
@@ -30,7 +30,7 @@ spec:
 ---
 # =============================================================================
 # Headlamp Ingress
-# Route: headlamp.elegantsoftware.de -> headlamp service (namespace: headlamp)
+# Route: headlamp.zackpay.de -> headlamp service (namespace: headlamp)
 # =============================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -44,10 +44,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - headlamp.elegantsoftware.de
-      secretName: wildcard-elegantsoftware-de-tls
+        - headlamp.zackpay.de
+      secretName: wildcard-zackpay-de-tls
   rules:
-    - host: headlamp.elegantsoftware.de
+    - host: headlamp.zackpay.de
       http:
         paths:
           - path: /
@@ -60,7 +60,7 @@ spec:
 ---
 # =============================================================================
 # Backstage Ingress (via OAuth2 Proxy)
-# Route: backstage.elegantsoftware.de -> backstage-oauth2-proxy (namespace: backstage)
+# Route: backstage.zackpay.de -> backstage-oauth2-proxy (namespace: backstage)
 # =============================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -75,10 +75,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - backstage.elegantsoftware.de
-      secretName: wildcard-elegantsoftware-de-tls
+        - backstage.zackpay.de
+      secretName: wildcard-zackpay-de-tls
   rules:
-    - host: backstage.elegantsoftware.de
+    - host: backstage.zackpay.de
       http:
         paths:
           - path: /

@@ -9,7 +9,7 @@ image:
     - ghcr-pull-secret
 
 ingress:
-  hostname: api-blitzpay.elegantsoftware.de
+  hostname: api-blitzpay.zackpay.de
   tlsSecretName: wildcard-elegantsoftware-de-tls
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -19,7 +19,7 @@ ingress:
 config:
   springProfilesActive: prod
   tracingEnabled: "true"
-  frontendOrigin: https://blitzpay-admin-dashboard.elegantsoftware.de
+  frontendOrigin: https://blitzpay-admin-dashboard.zackpay.de
   truelayerApiBase: https://api.truelayer.com
   truelayerEnv: live  # true layer treats this as "production" environment
   truelayerHttpLogs: "false"

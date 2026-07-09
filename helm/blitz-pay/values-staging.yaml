@@ -8,8 +8,8 @@ image:
     - ghcr-pull-secret
 
 ingress:
-  hostname: api-blitzpay-staging.elegantsoftware.de
-  tlsSecretName: wildcard-elegantsoftware-de-tls
+  hostname: api-blitzpay-staging.zackpay.de
+  tlsSecretName: wildcard-zackpay-de-tls
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -19,12 +19,12 @@ ingress:
 config:
   springProfilesActive: staging
   tracingEnabled: "true"
-  frontendOrigin: https://blitzpay-admin-dashboard.elegantsoftware.de
+  frontendOrigin: https://blitzpay-admin-dashboard.zackpay.de
   truelayerApiBase: https://api.truelayer-sandbox.com
   truelayerEnv: sandbox
   truelayerHttpLogs: "true"
   truelayerWebhookJku: https://api.staging.blitz-pay.com/.well-known/jwks.json
   whisperBaseUrl: http://whisper:8000/v1
-  stripeConnectReturnUrl: https://api-blitzpay-staging.elegantsoftware.de/stripe-connect/return
-  stripeConnectApiBaseUrl: https://api-blitzpay-staging.elegantsoftware.de
+  stripeConnectReturnUrl: https://api-blitzpay-staging.zackpay.de/stripe-connect/return
+  stripeConnectApiBaseUrl: https://api-blitzpay-staging.zackpay.de
   stripeConnectAppDeepLink: ""

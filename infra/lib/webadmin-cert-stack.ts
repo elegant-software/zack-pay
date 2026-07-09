@@ -10,7 +10,7 @@ export class WebAdminCertStack extends cdk.Stack {
     super(scope, id, props);
 
     this.cert = new acm.Certificate(this, 'Cert', {
-      domainName: 'admin.elegantsoftware.de',
+      domainName: 'admin.zackpay.de',
       validation: acm.CertificateValidation.fromDns(),
     });
   }

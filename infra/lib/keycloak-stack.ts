@@ -35,7 +35,7 @@ export class KeycloakStack extends cdk.Stack {
         KC_DB_URL: `jdbc:postgresql://${props.db.dbInstanceEndpointAddress}:5432/keycloak`,
         KC_PROXY_HEADERS: 'xforwarded',
         KC_HTTP_ENABLED: 'true',
-        KC_HOSTNAME: 'https://auth.elegantsoftware.de',
+        KC_HOSTNAME: 'https://auth.zackpay.de',
         // ponytail: single node — skip JGroups clustering (saves ~20s stale JDBC_PING discovery)
         KC_CACHE: 'local',
         KC_HEALTH_ENABLED: 'true',
@@ -62,7 +62,7 @@ export class KeycloakStack extends cdk.Stack {
     });
 
     const cert = new acm.Certificate(this, 'Cert', {
-      domainName: 'auth.elegantsoftware.de',
+      domainName: 'auth.zackpay.de',
       validation: acm.CertificateValidation.fromDns(),
     });
 
@@ -93,7 +93,7 @@ export class KeycloakStack extends cdk.Stack {
       ec2.Port.tcp(8080),
     );
 
-    new cdk.CfnOutput(this, 'KeycloakUrl', { value: `https://auth.elegantsoftware.de` });
+    new cdk.CfnOutput(this, 'KeycloakUrl', { value: `https://auth.zackpay.de` });
     new cdk.CfnOutput(this, 'AlbDns', { value: alb.loadBalancerDnsName });
     new cdk.CfnOutput(this, 'CertArn', { value: cert.certificateArn });
   }

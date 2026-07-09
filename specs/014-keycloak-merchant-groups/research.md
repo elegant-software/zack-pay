@@ -91,7 +91,7 @@
 **Rationale**: Keycloak's Admin REST API requires a Bearer token from the `master` realm (or the target realm's admin service account). The client credentials flow is the standard machine-to-machine pattern; token lifetime is configurable in Keycloak. The WebClient filter refreshes the token transparently on 401 responses. No user interaction is required.
 
 **New environment variables**:
-- `KEYCLOAK_SERVER_URL` — base URL of the Keycloak server (e.g., `https://keycloak.elegantsoftware.de`)
+- `KEYCLOAK_SERVER_URL` — base URL of the Keycloak server (e.g., `https://keycloak.zackpay.de`)
 - `KEYCLOAK_REALM` — realm containing merchant/branch groups (e.g., `blitzpay`)
 - `KEYCLOAK_ADMIN_CLIENT_ID` — admin service account client ID
 - `KEYCLOAK_ADMIN_CLIENT_SECRET` — admin service account client secret

@@ -8,7 +8,7 @@ import { Construct } from 'constructs';
 interface DashboardStackProps extends cdk.StackProps {
   alb: elbv2.ApplicationLoadBalancer;
   service: ecs.FargateService;
-  appLogGroup: logs.LogGroup;
+  appLogGroup: logs.ILogGroup;
 }
 
 export class DashboardStack extends cdk.Stack {

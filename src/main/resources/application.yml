@@ -5,7 +5,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: "${KEYCLOAK_IAM_SERVER_URL:https://auth.elegantsoftware.de}/realms/${KEYCLOAK_IAM_REALM:blitzpay}"
+          issuer-uri: "${KEYCLOAK_IAM_SERVER_URL:https://auth.zackpay.de}/realms/${KEYCLOAK_IAM_REALM:blitzpay}"
   profiles:
     default: local
   main:
@@ -237,7 +237,7 @@ blitzpay:
 
 keycloak:
   iam:
-    server-url: ${KEYCLOAK_IAM_SERVER_URL:https://auth.elegantsoftware.de}
+    server-url: ${KEYCLOAK_IAM_SERVER_URL:https://auth.zackpay.de}
     realm: ${KEYCLOAK_IAM_REALM:blitzpay}
     admin-client-id: ${KEYCLOAK_IAM_ADMIN_CLIENT_ID:}
     admin-client-secret: ${KEYCLOAK_IAM_ADMIN_CLIENT_SECRET:}

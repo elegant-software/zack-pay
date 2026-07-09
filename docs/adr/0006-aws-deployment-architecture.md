@@ -29,7 +29,7 @@ The application integrates with AWS services via **Spring Cloud AWS 4.0.2** rath
 
 ## AWS S3 over self-hosted MinIO
 
-The storage backend migrates from a self-hosted MinIO instance (`minio.elegantsoftware.de`) to AWS S3 in `eu-central-1`. MinIO was the interim solution before AWS deployment; S3 eliminates the MinIO operational overhead and is the natural fit for ECS Fargate. Locally, Floci emulates S3 via Docker Compose. The `blitzpay.storage.endpoint/accessKey/secretKey/pathStyleAccess/region` properties are removed; only `blitzpay.storage.bucket` remains.
+The storage backend migrates from a self-hosted MinIO instance (`minio.zackpay.de`) to AWS S3 in `eu-central-1`. MinIO was the interim solution before AWS deployment; S3 eliminates the MinIO operational overhead and is the natural fit for ECS Fargate. Locally, Floci emulates S3 via Docker Compose. The `blitzpay.storage.endpoint/accessKey/secretKey/pathStyleAccess/region` properties are removed; only `blitzpay.storage.bucket` remains.
 
 ## Secrets Manager for runtime secrets
 

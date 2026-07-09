@@ -27,7 +27,7 @@ export class WebAdminStack extends cdk.Stack {
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
       },
-      domainNames: ['admin.elegantsoftware.de'],
+      domainNames: ['admin.zackpay.de'],
       certificate: props.cert,
       defaultRootObject: 'index.html',
       // SPA routing: let Angular's router handle 403/404
@@ -37,7 +37,7 @@ export class WebAdminStack extends cdk.Stack {
       ],
     });
 
-    new cdk.CfnOutput(this, 'AdminUrl', { value: 'https://admin.elegantsoftware.de' });
+    new cdk.CfnOutput(this, 'AdminUrl', { value: 'https://admin.zackpay.de' });
     new cdk.CfnOutput(this, 'CdnDomain', { value: this.distribution.distributionDomainName });
     new cdk.CfnOutput(this, 'BucketName', { value: this.bucket.bucketName });
     new cdk.CfnOutput(this, 'DistributionId', { value: this.distribution.distributionId });

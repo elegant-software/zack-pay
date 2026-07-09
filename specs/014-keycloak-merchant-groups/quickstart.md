@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Keycloak running (locally via Docker or the cluster at `keycloak.elegantsoftware.de`)
+- Keycloak running (locally via Docker or the cluster at `keycloak.zackpay.de`)
 - A realm created (e.g., `blitzpay`)
 - An admin service account (Client ID + Secret) with `realm-management` roles
 
@@ -11,7 +11,7 @@
 Add to your local `.env` or export before running:
 
 ```bash
-export KEYCLOAK_IAM_SERVER_URL=https://keycloak.elegantsoftware.de
+export KEYCLOAK_IAM_SERVER_URL=https://keycloak.zackpay.de
 export KEYCLOAK_IAM_REALM=blitzpay
 export KEYCLOAK_IAM_ADMIN_CLIENT_ID=blitzpay-admin
 export KEYCLOAK_IAM_ADMIN_CLIENT_SECRET=<secret>
