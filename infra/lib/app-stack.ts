@@ -26,7 +26,7 @@ interface AppStackProps extends cdk.StackProps {
 export class AppStack extends cdk.Stack {
   readonly alb: elbv2.ApplicationLoadBalancer;
   readonly service: ecs.FargateService;
-  readonly appLogGroup: logs.LogGroup;
+  readonly appLogGroup: logs.ILogGroup;
 
   constructor(scope: Construct, id: string, props: AppStackProps) {
     super(scope, id, props);
@@ -49,11 +49,8 @@ export class AppStack extends cdk.Stack {
       ],
     }));
 
-    this.appLogGroup = new logs.LogGroup(this, 'AppLogGroup', {
-      logGroupName: '/zackpay/app',
-      retention: logs.RetentionDays.ONE_MONTH,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-    });
+    // ponytail: group already exists in AWS (RETAIN survived a prior stack delete) — import, don't recreate
+    this.appLogGroup = logs.LogGroup.fromLogGroupName(this, 'AppLogGroup', '/zackpay/app');
 
     const taskDef = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       memoryLimitMiB: 2048,
@@ -71,9 +68,9 @@ export class AppStack extends cdk.Stack {
         SPRING_PROFILES_ACTIVE: 'aws-staging',
         STORAGE_BUCKET: props.storageBucket.bucketName,
         SPRING_DATASOURCE_URL: `jdbc:postgresql://${props.db.dbInstanceEndpointAddress}:5432/zackpay`,
-        KEYCLOAK_IAM_SERVER_URL: 'https://auth.elegantsoftware.de',
+        KEYCLOAK_IAM_SERVER_URL: 'https://auth.zackpay.de',
         KEYCLOAK_IAM_REALM: 'blitzpay',
-        FRONTEND_ORIGIN: 'https://admin.elegantsoftware.de',
+        FRONTEND_ORIGIN: 'https://admin.zackpay.de',
       },
       secrets: {
         SPRING_DATASOURCE_USERNAME: ecs.Secret.fromSecretsManager(dbSecret, 'username'),
@@ -98,11 +95,13 @@ export class AppStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroups: [sg],
       circuitBreaker: { rollback: true },
-      healthCheckGracePeriod: cdk.Duration.seconds(120),
+      // ponytail: cold start (Secrets Manager fetches + Spring AI/MCP + Modulith scan) takes ~230s;
+      // 120s grace period was tripping the deployment circuit breaker on every deploy. Bump ceiling if boot grows further.
+      healthCheckGracePeriod: cdk.Duration.seconds(300),
     });
 
     const cert = new acm.Certificate(this, 'Cert', {
-      domainName: 'api.elegantsoftware.de',
+      domainName: 'api.zackpay.de',
       validation: acm.CertificateValidation.fromDns(),
     });
 
@@ -137,7 +136,7 @@ export class AppStack extends cdk.Stack {
       ec2.Port.tcp(8080),
     );
 
-    new cdk.CfnOutput(this, 'AppUrl', { value: 'https://api.elegantsoftware.de' });
+    new cdk.CfnOutput(this, 'AppUrl', { value: 'https://api.zackpay.de' });
     new cdk.CfnOutput(this, 'AlbDns', { value: this.alb.loadBalancerDnsName });
     new cdk.CfnOutput(this, 'CertArn', { value: cert.certificateArn });
   }
