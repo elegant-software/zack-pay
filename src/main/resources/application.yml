@@ -10,12 +10,6 @@ spring:
     default: local
   main:
     web-application-type: servlet
-  config:
-    import:
-      - optional:aws-secretsmanager:/zackpay/stripe
-      - optional:aws-secretsmanager:/zackpay/braintree
-      - optional:aws-secretsmanager:/zackpay/keycloak
-      - optional:aws-secretsmanager:/zackpay/expo
   reactor:
     context-propagation: auto
   datasource:

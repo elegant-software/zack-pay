@@ -1,3 +1,12 @@
+# AWS-only: Secrets Manager needs a region, which k8s pods don't have
+spring:
+  config:
+    import:
+      - optional:aws-secretsmanager:/zackpay/stripe
+      - optional:aws-secretsmanager:/zackpay/braintree
+      - optional:aws-secretsmanager:/zackpay/keycloak
+      - optional:aws-secretsmanager:/zackpay/expo
+
 management:
   endpoints:
     web:
