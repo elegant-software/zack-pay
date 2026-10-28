@@ -21,6 +21,7 @@ env:
 
 jobs:
   build-and-push:
+    if: false  # ponytail: AWS pipeline paused; delete this line to re-enable
     name: Build & push Docker image
     runs-on: ubuntu-latest
     steps:

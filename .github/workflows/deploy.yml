@@ -50,6 +50,7 @@ jobs:
           kubectl config set-cluster deploy-cluster \
             --server="$K8S_SERVER" \
             --certificate-authority="$HOME/.kube/ca.crt" \
+            --tls-server-name=kubernetes \
             --embed-certs=true
 
           kubectl config set-credentials deploy-user \

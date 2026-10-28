@@ -21,6 +21,7 @@ env:
 
 jobs:
   deploy:
+    if: false  # ponytail: AWS pipeline paused; delete this line to re-enable
     name: Deploy ${{ inputs.image-tag }}
     runs-on: ubuntu-latest
     steps:
