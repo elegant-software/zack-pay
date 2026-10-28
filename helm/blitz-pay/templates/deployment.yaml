@@ -43,6 +43,18 @@ spec:
                 name: {{ include "blitz-pay.fullname" . }}-config
             - secretRef:
                 name: {{ .Values.secrets.name }}
+          env:
+            # k8s uses in-cluster minio instead of AWS S3 (see application-staging.yml)
+            - name: SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: root-user
+            - name: SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: root-password
           volumeMounts:
             - name: truelayer-private-key
               mountPath: {{ .Values.privateKey.mountPath }}

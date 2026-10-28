@@ -1,3 +1,14 @@
+# k8s staging: S3 = minio; credentials come from the minio-credentials secret (helm deployment env).
+# Public host, not the in-cluster service: presigned URLs must be reachable by clients.
+spring:
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+      s3:
+        endpoint: ${STORAGE_ENDPOINT:https://minio.zackpay.de}
+        path-style-access-enabled: true
+
 management:
   endpoints:
     web:
