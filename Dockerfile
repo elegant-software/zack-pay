@@ -22,4 +22,5 @@ COPY --from=build /workspace/build/libs/app.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# JVM defaults to 25% of the container limit (256MB on 1Gi) — too small, startup GC-thrashes
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
