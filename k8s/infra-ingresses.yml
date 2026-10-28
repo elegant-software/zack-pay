@@ -1,6 +1,6 @@
 # =============================================================================
 # Keycloak Ingress
-# Route: keycloak.zackpay.de -> keycloak service (namespace: keycloak)
+# Route: auth.zackpay.de -> keycloak service (namespace: keycloak)
 # =============================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -14,10 +14,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - keycloak.zackpay.de
+        - auth.zackpay.de
       secretName: wildcard-zackpay-de-tls
   rules:
-    - host: keycloak.zackpay.de
+    - host: auth.zackpay.de
       http:
         paths:
           - path: /
