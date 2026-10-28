@@ -21,7 +21,7 @@ class SecurityConfig {
             .authorizeHttpRequests { auth ->
                 auth
                     // K8s liveness/readiness probes — cannot carry tokens
-                    .requestMatchers("/actuator/health").permitAll()
+                    .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     // Payment provider webhooks — signature-verified in the controller
                     .requestMatchers("/*/webhooks/**").permitAll()
                     // Stripe Connect OAuth return redirect — browser redirect, no token available
