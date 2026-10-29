@@ -32,6 +32,9 @@ fullnameOverride: ""
 #   BRAINTREE_MERCHANT_ID         - Braintree merchant ID
 #   BRAINTREE_PUBLIC_KEY          - Braintree public key
 #   BRAINTREE_PRIVATE_KEY         - Braintree private key
+#   KEYCLOAK_IAM_ADMIN_CLIENT_ID     - Keycloak service-account client (realm-management: manage-users, query-groups)
+#   KEYCLOAK_IAM_ADMIN_CLIENT_SECRET - Keycloak service-account client secret
+#                                      Without these, merchant/branch creation fails with 401.
 #
 # Note: TRUELAYER_PRIVATE_KEY_PATH is NOT in this secret — it is the in-container
 # file path and is set automatically in the ConfigMap. The PEM file content is in
@@ -52,7 +55,9 @@ fullnameOverride: ""
 #     --from-literal=STRIPE_CONNECT_WEBHOOK_SECRET="<stripe-connect-webhook-secret>" \
 #     --from-literal=BRAINTREE_MERCHANT_ID="<braintree-merchant-id>" \
 #     --from-literal=BRAINTREE_PUBLIC_KEY="<braintree-public-key>" \
-#     --from-literal=BRAINTREE_PRIVATE_KEY="<braintree-private-key>"
+#     --from-literal=BRAINTREE_PRIVATE_KEY="<braintree-private-key>" \
+#     --from-literal=KEYCLOAK_IAM_ADMIN_CLIENT_ID="<keycloak-admin-client-id>" \
+#     --from-literal=KEYCLOAK_IAM_ADMIN_CLIENT_SECRET="<keycloak-admin-client-secret>"
 secrets:
   name: blitz-pay-secrets
 

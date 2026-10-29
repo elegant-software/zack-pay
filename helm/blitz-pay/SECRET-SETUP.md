@@ -21,7 +21,9 @@ kubectl create secret generic blitz-pay-secrets \
   --from-literal=TRUELAYER_CLIENT_SECRET="<sandbox-client-secret>" \
   --from-literal=TRUELAYER_KEY_ID="<key-id>" \
   --from-literal=TRUELAYER_MERCHANT_ACCOUNT_ID="<merchant-id>" \
-  --from-literal=TRUELAYER_ACCESS_TOKEN="<sandbox-access-token>"
+  --from-literal=TRUELAYER_ACCESS_TOKEN="<sandbox-access-token>" \
+  --from-literal=KEYCLOAK_IAM_ADMIN_CLIENT_ID="<keycloak-admin-client-id>" \
+  --from-literal=KEYCLOAK_IAM_ADMIN_CLIENT_SECRET="<keycloak-admin-client-secret>"
 ```
 
 ### Production
@@ -36,8 +38,21 @@ kubectl create secret generic blitz-pay-secrets \
   --from-literal=TRUELAYER_CLIENT_SECRET="<prod-client-secret>" \
   --from-literal=TRUELAYER_KEY_ID="<prod-key-id>" \
   --from-literal=TRUELAYER_MERCHANT_ACCOUNT_ID="<prod-merchant-id>" \
-  --from-literal=TRUELAYER_ACCESS_TOKEN="<prod-access-token>"
+  --from-literal=TRUELAYER_ACCESS_TOKEN="<prod-access-token>" \
+  --from-literal=KEYCLOAK_IAM_ADMIN_CLIENT_ID="<keycloak-admin-client-id>" \
+  --from-literal=KEYCLOAK_IAM_ADMIN_CLIENT_SECRET="<keycloak-admin-client-secret>"
 ```
+
+> **Keycloak**: `KEYCLOAK_IAM_ADMIN_CLIENT_*` is the service-account client in the
+> `blitzpay` realm (realm-management roles `manage-users`, `query-groups`). Merchant and
+> branch creation sync Keycloak groups and fail with 401 if these are missing. Add to an
+> existing secret with:
+>
+> ```bash
+> kubectl -n <namespace> patch secret blitz-pay-secrets --type merge -p \
+>   '{"stringData":{"KEYCLOAK_IAM_ADMIN_CLIENT_ID":"<id>","KEYCLOAK_IAM_ADMIN_CLIENT_SECRET":"<secret>"}}'
+> kubectl -n <namespace> rollout restart deploy/blitz-pay
+> ```
 
 > **Note**: `TRUELAYER_PRIVATE_KEY_PATH` is **not** in this secret. It is the
 > in-container file path (non-sensitive) and is set automatically by the ConfigMap.
