@@ -64,6 +64,9 @@ URL-path versioning (`/v1/...`) uses a custom `PathOnlyApiVersionResolver` that 
 
 Because Kotlin lacks `package-info.java`, module metadata is declared via a dedicated type annotated with `@org.springframework.modulith.PackageInfo`. Use this for `@ApplicationModule` and `@NamedInterface` declarations.
 
+## CORS / Frontend Origin
+`blitzpay.cors.allowed-origins` comes from `FRONTEND_ORIGIN`: set via `config.frontendOrigin` in `helm/blitz-pay/values-*.yaml` (k8s) and in `infra/lib/app-stack.ts` (AWS). Whenever the admin dashboard's domain changes, update these to match, or every browser call fails with a 403 on the CORS preflight. Full cross-repo checklist: `CLAUDE.md` in `blitzpay-admin-dashboard`, section "Changing Domains / URLs".
+
 ## Testing
 
 - **Unit tests** (`src/test/kotlin`) — JUnit 5 + Mockito Kotlin. JSON fixtures in `src/test/resources/testdata/` loaded via `TestFixtureLoader`.

@@ -33,6 +33,9 @@ This file defines collaboration and contribution conventions for agents working 
 - Do not overwrite user-authored changes without confirmation.
 - Confirm risky operations before proceeding.
 
+## CORS / Frontend Origin
+`blitzpay.cors.allowed-origins` comes from `FRONTEND_ORIGIN`: set via `config.frontendOrigin` in `helm/blitz-pay/values-*.yaml` (k8s) and in `infra/lib/app-stack.ts` (AWS). Whenever the admin dashboard's domain changes, update these to match, or every browser call fails with a 403 on the CORS preflight. Full cross-repo checklist: `CLAUDE.md` in `blitzpay-admin-dashboard`, section "Changing Domains / URLs".
+
 ## Reference Documents
 
 For coding conventions, architecture patterns, and technology-specific best practices, see the reference table in [`CONSTITUTION.md`](CONSTITUTION.md#coding-convention-references).

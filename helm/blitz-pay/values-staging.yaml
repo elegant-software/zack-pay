@@ -19,7 +19,7 @@ ingress:
 config:
   springProfilesActive: staging
   tracingEnabled: "true"
-  frontendOrigin: https://blitzpay-admin-dashboard.zackpay.de
+  frontendOrigin: https://admin.zackpay.de
   truelayerApiBase: https://api.truelayer-sandbox.com
   truelayerEnv: sandbox
   truelayerHttpLogs: "true"

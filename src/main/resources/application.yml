@@ -185,6 +185,7 @@ blitzpay:
   cors:
     allowed-origins:
       - ${FRONTEND_ORIGIN:http://localhost:4200}
+      - http://localhost:4200
     allowed-methods:
       - GET
       - POST
