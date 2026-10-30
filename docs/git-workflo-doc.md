@@ -10,39 +10,39 @@ All workflows in this project are **thin delegators** — they define triggers a
 
 | File | Trigger | Purpose |
 |---|---|---|
-| `ci.yml` | `push`/`PR` → `main`, `develop` | Run tests + Qodana + SBOM upload |
-| `cd.yml` | GitHub Release published/pre-released | Build Docker image and push to registry |
-| `deploy.yml` | `workflow_dispatch` | Deploy a specific image tag to staging or production via Helm |
-| `auto-label.yml` | PR opened/synchronize/reopened | Auto-apply labels based on `.github/labels.yml` |
+| `ci-build.yml` | `push`/`PR` → `main`, `develop` | Run tests + Qodana + SBOM upload |
+| `cd-build-image.yml` | GitHub Release published/pre-released | Build Docker image and push to registry |
+| `cd-deploy-k8s.yml` | `workflow_dispatch` | Deploy a specific image tag to staging or production via Helm |
+| `pr-auto-label.yml` | PR opened/synchronize/reopened | Auto-apply labels based on `.github/labels.yml` |
 | `release-notes.yml` | PR merged into `main` | Bump semver, generate release notes, create GitHub Release |
-| `cleanup-release-tags.yml` | Daily `02:15` + `workflow_dispatch` | Delete old releases and tags |
-| `cleanup-github-workflows.yml` | Daily `02:15` + `workflow_dispatch` | Delete old/failed workflow runs |
+| `cleanup-releases-tags.yml` | Daily `02:15` + `workflow_dispatch` | Delete old releases and tags |
+| `cleanup-workflow-runs.yml` | Daily `02:15` + `workflow_dispatch` | Delete old/failed workflow runs |
 
 ---
 
 ## Workflows in Detail
 
-### CI Pipeline (`ci.yml`)
+### CI · Build & Test (`ci-build.yml`)
 
-**Triggers:** `push` and `pull_request` on `main` and `develop`. Also callable via `workflow_call` (used by `cd.yml`).
+**Triggers:** `push` and `pull_request` on `main` and `develop`. Also callable via `workflow_call` (used by `cd-build-image.yml`).
 
 **Concurrency:** Cancels in-progress runs for the same branch/PR on new pushes.
 
 **Jobs (in order):**
 1. `test` — delegates to `backend-gradle-test.yml`; runs `./gradlew test` (unit tests only; integration test task set to `help` = no-op).
-2. `qodana_code_quality` — runs after `test`; delegates to `backend-qa-qodana-code-quality.yml`; posts results to PR checks.
+2. `qodana` — runs after `test`; delegates to `backend-qa-qodana-code-quality.yml`; posts results to PR checks.
 3. `sbom-upload` — runs after `test`; uploads SBOM to Dependency-Track via `backnd-qa-dependency-track-upload.yml`.
 
 **Repository variable used:** `JAVA_VERSION` (`vars.JAVA_VERSION`) — set this at the repo level to control the JDK.
 
 ---
 
-### CD Pipeline (`cd.yml`)
+### CD · Build Image (GHCR) (`cd-build-image.yml`)
 
 **Trigger:** GitHub Release events — `published` or `prereleased`. This means a release must first be created by `release-notes.yml` before a Docker image is built.
 
 **Jobs:**
-1. `build` — calls `ci.yml` locally (runs full test suite).
+1. `build` — calls `ci-build.yml` locally (runs full test suite).
 2. `release` — delegates to `backend-build.yml`; builds and pushes the Docker image to the configured registry.
 
 **Key inputs forwarded:**
@@ -54,7 +54,7 @@ All workflows in this project are **thin delegators** — they define triggers a
 
 ---
 
-### Deploy to Kubernetes (`deploy.yml`)
+### CD · Deploy to Kubernetes (`cd-deploy-k8s.yml`)
 
 **Trigger:** Manual only (`workflow_dispatch`).
 
@@ -80,7 +80,7 @@ All workflows in this project are **thin delegators** — they define triggers a
 
 ---
 
-### Auto-Label Pull Requests (`auto-label.yml`)
+### PR · Auto-Label (`pr-auto-label.yml`)
 
 **Trigger:** PR opened, synchronize, or reopened (any branch).
 
@@ -105,7 +105,7 @@ Multiple labels are applied when multiple patterns match.
 
 ---
 
-### Release Notes (`release-notes.yml`)
+### Release · Notes (`release-notes.yml`)
 
 **Trigger:** PR merged (closed + `merged == true`) into `main`.
 
@@ -117,13 +117,13 @@ Multiple labels are applied when multiple patterns match.
 3. Generates Markdown release notes grouped by label category.
 4. Updates `version` in `build.gradle.kts` and pushes a `chore: release vX.Y.Z [skip ci]` commit.
 5. Creates an annotated Git tag (`vX.Y.Z`).
-6. Creates a GitHub Release — this in turn triggers `cd.yml` to build and push the Docker image.
+6. Creates a GitHub Release — this in turn triggers `cd-build-image.yml` to build and push the Docker image.
 
 > **Important for agents:** The release flow is fully automated. Never manually create Git tags or GitHub Releases unless recovering from a broken pipeline run. Doing so can produce duplicate tags or skip the `build.gradle.kts` version bump.
 
 ---
 
-### Cleanup — Releases & Tags (`cleanup-release-tags.yml`)
+### Cleanup · Releases & Tags (`cleanup-releases-tags.yml`)
 
 **Trigger:** Daily at `02:15 UTC` and `workflow_dispatch`.
 
@@ -133,7 +133,7 @@ Multiple labels are applied when multiple patterns match.
 
 ---
 
-### Cleanup — Workflow Runs (`cleanup-github-workflows.yml`)
+### Cleanup · Workflow Runs (`cleanup-workflow-runs.yml`)
 
 **Trigger:** Daily at `02:15 UTC` and `workflow_dispatch`.
 
@@ -149,10 +149,10 @@ Badges in `README.md` use `?event=` or `?branch=` to target the correct run hist
 
 | Workflow | Badge param | Reason |
 |---|---|---|
-| `ci.yml` | `?branch=main` | Push-triggered; scope to main for production signal |
-| `cd.yml` | `?branch=main` | Release-triggered; last run always on main |
-| `deploy.yml` | `?event=workflow_dispatch` | Manual only; no branch context |
-| `auto-label.yml` | `?event=pull_request` | PR-only trigger |
+| `ci-build.yml` | `?branch=main` | Push-triggered; scope to main for production signal |
+| `cd-build-image.yml` | `?branch=main` | Release-triggered; last run always on main |
+| `cd-deploy-k8s.yml` | `?event=workflow_dispatch` | Manual only; no branch context |
+| `pr-auto-label.yml` | `?event=pull_request` | PR-only trigger |
 | `release-notes.yml` | `?event=pull_request` | PR-only trigger (merged PRs) |
 
 Cleanup workflows are intentionally not badged — they add noise without contributor signal.
@@ -163,13 +163,13 @@ Cleanup workflows are intentionally not badged — they add noise without contri
 
 | Name | Type | Used by | Description |
 |---|---|---|---|
-| `APP_NAME` | Variable | `cd.yml`, `deploy.yml` | Application name — must match `rootProject.name` in `settings.gradle.kts` |
-| `JAVA_VERSION` | Variable | `ci.yml`, `cd.yml` | JDK version for Gradle builds |
-| `CONTAINER_REGISTRY` | Variable | `cd.yml` | Registry host + org, e.g. `ghcr.io/elegant-software` |
-| `OTLP_LOGS_ENDPOINT` | Variable (Environment-level) | `deploy.yml` | OTLP logs endpoint injected into Helm ConfigMap as `OTLP_LOGS_ENDPOINT` |
-| `QODANA_TOKEN` | Secret | `ci.yml` | Qodana Cloud token for code quality reports |
-| `DTRACK_URL` | Secret | `ci.yml` | Dependency-Track base URL (optional) |
-| `DTRACK_API_KEY` | Secret | `ci.yml` | Dependency-Track API key (optional) |
+| `APP_NAME` | Variable | `cd-build-image.yml`, `cd-deploy-k8s.yml` | Application name — must match `rootProject.name` in `settings.gradle.kts` |
+| `JAVA_VERSION` | Variable | `ci-build.yml`, `cd-build-image.yml` | JDK version for Gradle builds |
+| `CONTAINER_REGISTRY` | Variable | `cd-build-image.yml` | Registry host + org, e.g. `ghcr.io/elegant-software` |
+| `OTLP_LOGS_ENDPOINT` | Variable (Environment-level) | `cd-deploy-k8s.yml` | OTLP logs endpoint injected into Helm ConfigMap as `OTLP_LOGS_ENDPOINT` |
+| `QODANA_TOKEN` | Secret | `ci-build.yml` | Qodana Cloud token for code quality reports |
+| `DTRACK_URL` | Secret | `ci-build.yml` | Dependency-Track base URL (optional) |
+| `DTRACK_API_KEY` | Secret | `ci-build.yml` | Dependency-Track API key (optional) |
 
 To set all of these at once, run:
 ```bash

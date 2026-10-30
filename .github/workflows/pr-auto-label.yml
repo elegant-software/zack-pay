@@ -1,4 +1,4 @@
-name: Auto-Label Pull Requests
+name: PR · Auto-Label
 
 on:
   pull_request:

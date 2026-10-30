@@ -1,4 +1,4 @@
-name: Cleanup old/failed workflow
+name: Cleanup · Workflow Runs
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       older_than_days:
-        description: "Delete releases/tags older than this many days"
+        description: "Delete workflow runs older than this many days"
         required: true
         default: "14"
       dry_run:
@@ -16,6 +16,7 @@ on:
 
 jobs:
   cleanup:
+    name: Delete Old Workflow Runs
     permissions:
       actions: write
       contents: write

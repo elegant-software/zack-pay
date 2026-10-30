@@ -105,7 +105,7 @@ Keep both stages pinned to the same major version as `javaVersion` in
 
 ## 5. Pass `-x test` in the Dockerfile Build Step
 
-Tests run in CI (`ci.yml`) before the Docker image is built (`cd.yml`). Re-running tests
+Tests run in CI (`ci-build.yml`) before the Docker image is built (`cd-build-image.yml`). Re-running tests
 inside Docker adds build time without adding safety — CI already caught failures.
 
 ```dockerfile

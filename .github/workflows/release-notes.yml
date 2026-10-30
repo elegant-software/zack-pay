@@ -1,4 +1,4 @@
-name: Release Notes (on main branch merge)
+name: Release · Notes
 
 on:
   pull_request:
@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   release-notes:
+    name: Generate Release Notes
     if: ${{ github.event.pull_request.merged == true }}
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/release-notes.yml@main
     secrets:

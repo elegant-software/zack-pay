@@ -1,4 +1,4 @@
-name: Cleanup GHCR Images
+name: Cleanup · GHCR Images
 
 on:
   schedule:
@@ -7,6 +7,7 @@ on:
 
 jobs:
   cleanup:
+    name: Delete Untagged Images
     runs-on: ubuntu-latest
     permissions:
       packages: write

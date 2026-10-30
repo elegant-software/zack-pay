@@ -1,12 +1,12 @@
 # BlitzPay
 
 <!-- Build & Test -->
-[![CI](https://github.com/medimohammadise/blitz-pay/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/medimohammadise/blitz-pay/actions/workflows/ci.yml)
-[![CD](https://github.com/medimohammadise/blitz-pay/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/medimohammadise/blitz-pay/actions/workflows/cd.yml)
-[![Deploy](https://github.com/medimohammadise/blitz-pay/actions/workflows/deploy.yml/badge.svg?event=workflow_dispatch)](https://github.com/medimohammadise/blitz-pay/actions/workflows/deploy.yml)
+[![CI](https://github.com/medimohammadise/blitz-pay/actions/workflows/ci-build.yml/badge.svg?branch=main)](https://github.com/medimohammadise/blitz-pay/actions/workflows/ci-build.yml)
+[![CD](https://github.com/medimohammadise/blitz-pay/actions/workflows/cd-build-image.yml/badge.svg?branch=main)](https://github.com/medimohammadise/blitz-pay/actions/workflows/cd-build-image.yml)
+[![Deploy](https://github.com/medimohammadise/blitz-pay/actions/workflows/cd-deploy-k8s.yml/badge.svg?event=workflow_dispatch)](https://github.com/medimohammadise/blitz-pay/actions/workflows/cd-deploy-k8s.yml)
 
 <!-- PR Automation & Release -->
-[![Auto-Label Pull Requests](https://github.com/medimohammadise/blitz-pay/actions/workflows/auto-label.yml/badge.svg?event=pull_request)](https://github.com/medimohammadise/blitz-pay/actions/workflows/auto-label.yml)
+[![Auto-Label Pull Requests](https://github.com/medimohammadise/blitz-pay/actions/workflows/pr-auto-label.yml/badge.svg?event=pull_request)](https://github.com/medimohammadise/blitz-pay/actions/workflows/pr-auto-label.yml)
 [![Release Notes](https://github.com/medimohammadise/blitz-pay/actions/workflows/release-notes.yml/badge.svg?event=pull_request)](https://github.com/medimohammadise/blitz-pay/actions/workflows/release-notes.yml)
 [![Latest Release](https://img.shields.io/github/v/release/medimohammadise/blitz-pay)](https://github.com/medimohammadise/blitz-pay/releases)
 

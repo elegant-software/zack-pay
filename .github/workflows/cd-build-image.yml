@@ -1,4 +1,4 @@
-name: CD pipeline
+name: CD · Build Image (GHCR)
 run-name: Release build ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
 
 on:
@@ -17,15 +17,15 @@ on:
 
 jobs:
   ci:
-    name: CI for release ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+    name: CI ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
     permissions:
       actions: write
       contents: write
       checks: write
       pull-requests: write
-    uses: ./.github/workflows/ci.yml
+    uses: ./.github/workflows/ci-build.yml
   release:
-    name: Release build ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+    name: Build Image ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
     permissions:
       contents: read
       packages: write
