@@ -76,7 +76,10 @@
       "Bash(grep -v \"^--$\")",
       "Bash(xargs sed -i '' 's/businessType = \"LLC\"/businessType = \"RETAIL\"/g')",
       "Bash(xargs sed -i '' 's/businessType = \"LIMITED_COMPANY\"/businessType = \"RETAIL\"/g')",
-      "Bash(xargs sed -i '' 's/\"businessType\": \"LLC\"/\"businessType\": \"RETAIL\"/g')"
+      "Bash(xargs sed -i '' 's/\"businessType\": \"LLC\"/\"businessType\": \"RETAIL\"/g')",
+      "mcp__fcb86e08-2adb-4231-ba91-26c9af690fdd__notion-fetch",
+      "mcp__fcb86e08-2adb-4231-ba91-26c9af690fdd__notion-update-page",
+      "WebFetch(domain:www.infoq.com)"
     ]
   },
   "hooks": {
