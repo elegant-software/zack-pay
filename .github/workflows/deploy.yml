@@ -19,6 +19,9 @@ jobs:
   deploy:
     runs-on: self-hosted
     environment: ${{ inputs.environment }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
     permissions:
       contents: read
     env:
@@ -74,6 +77,7 @@ jobs:
             --values $HELM_CHART/values-$ENV_SUFFIX.yaml
             --set image.tag=${{ inputs.image-tag }}
             --wait
+            --atomic
             --timeout 5m
           )
 
