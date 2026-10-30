@@ -1,5 +1,4 @@
 import org.springframework.boot.gradle.tasks.bundling.BootJar
-import org.jooq.meta.jaxb.Property
 
 
 plugins {
@@ -12,7 +11,6 @@ plugins {
     alias(libs.plugins.cyclonedx) apply false
     alias(libs.plugins.dependency.track) apply false
     alias(libs.plugins.spring.cloud.contract)
-    alias(libs.plugins.studer.jooq)
     `maven-publish`
 }
 
@@ -46,6 +44,8 @@ val contractTestSourceSet = sourceSets.maybeCreate("contractTest").apply {
     compileClasspath += sourceSets["main"].output + configurations["testCompileClasspath"]
     runtimeClasspath += output + compileClasspath + configurations["testRuntimeClasspath"]
 }
+
+val jooqCodegenSourceSet = sourceSets.create("jooqCodegen")
 
 repositories {
     mavenLocal()
@@ -140,8 +140,14 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
 
-    jooqGenerator("org.jooq:jooq-meta-extensions:${libs.versions.jooq.get()}")
-    jooqGenerator("org.slf4j:slf4j-simple:2.0.18")
+    // ----------------------------
+    // jOOQ codegen (`./gradlew generateJooq`) — not part of the app
+    // ----------------------------
+    "jooqCodegenImplementation"("org.jooq:jooq-codegen")
+    "jooqCodegenImplementation"("org.liquibase:liquibase-core")
+    "jooqCodegenImplementation"("org.testcontainers:testcontainers-postgresql")
+    "jooqCodegenRuntimeOnly"("org.postgresql:postgresql")
+    "jooqCodegenRuntimeOnly"("org.slf4j:slf4j-simple:2.0.18")
 
     // ----------------------------
     // Tests (shared)
@@ -160,72 +166,19 @@ dependencies {
     testImplementation(libs.mockito.kotlin)
 }
 
-jooq {
-    version.set(libs.versions.jooq.get())
+// Generated jOOQ sources are committed under src/generated/jooq, so compiling (incl. the Docker build)
+// needs no database. After changing a migration that touches a table used by jOOQ queries, run
+// `./gradlew generateJooq` (requires Docker) and commit the result; CI fails if it is stale.
+extra["jooq.version"] = libs.versions.jooq.get()
+val generatedJooqDir = "src/generated/jooq"
+sourceSets["main"].java.srcDir(generatedJooqDir)
 
-    // Minimal DDL for tables needed by the dashboard queries that live outside the
-    // original reporting schema. Inline rather than including full migration files
-    // to avoid PostgreSQL-specific syntax (RLS, ENABLE ROW LEVEL SECURITY, etc.)
-    // that jOOQ's DDLDatabase cannot parse.
-    val dashboardExtensionDdl = """
-        CREATE TABLE blitzpay.merchants (
-            id              UUID        NOT NULL PRIMARY KEY,
-            merchant_status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
-            created_at      TIMESTAMPTZ NOT NULL
-        );
-        CREATE TABLE blitzpay.merchant_branches (
-            id                      UUID        NOT NULL PRIMARY KEY,
-            merchant_id             UUID        NOT NULL,
-            active                  BOOLEAN     NOT NULL DEFAULT TRUE,
-            created_at              TIMESTAMPTZ NOT NULL
-        );
-        CREATE TABLE blitzpay.appointments (
-            id          UUID        NOT NULL PRIMARY KEY,
-            merchant_id UUID        NOT NULL,
-            branch_id   UUID        NOT NULL,
-            status      VARCHAR(32) NOT NULL DEFAULT 'BOOKED',
-            created_at  TIMESTAMPTZ NOT NULL
-        );
-        ALTER TABLE blitzpay.order_orders
-            ADD COLUMN order_type VARCHAR(32) NOT NULL DEFAULT 'PRE_ORDER';
-    """.trimIndent()
-
-    val reportingSchemaSql = listOf(
-        "20260417-001-create-blitzpay-schema.sql",
-        "20260430-001-create-order-tables.sql",
-        "20260610-001-payment-settlements.sql",
-        "20260610-002-payment-settlement-reconciliation.sql",
-    ).joinToString("\n") { file("src/main/resources/db/changelog/$it").readText() } +
-        "\n" + dashboardExtensionDdl
-
-    configurations {
-        create("main") {
-            generateSchemaSourceOnCompilation.set(true)
-            jooqConfiguration.apply {
-                generator.apply {
-                    database.apply {
-                        name = "org.jooq.meta.extensions.ddl.DDLDatabase"
-                        properties.addAll(listOf(
-                            Property().withKey("sql").withValue(reportingSchemaSql),
-                            Property().withKey("dialect").withValue("POSTGRES"),
-                            Property().withKey("defaultNameCase").withValue("lower"),
-                        ))
-                        inputSchema = "blitzpay"
-                    }
-                    generate.apply {
-                        isDeprecated = false
-                        isRecords = true
-                        isImmutablePojos = false
-                        isFluentSetters = false
-                    }
-                    target.apply {
-                        packageName = "com.elegant.software.blitzpay.jooq"
-                        directory = "build/generated/jooq/main"
-                    }
-                }
-            }
-        }
-    }
+tasks.register<JavaExec>("generateJooq") {
+    group = "build"
+    description = "Applies the Liquibase changelog to a PostgreSQL Testcontainer and regenerates jOOQ sources from it."
+    classpath = jooqCodegenSourceSet.runtimeClasspath
+    mainClass.set("com.elegant.software.blitzpay.jooqcodegen.JooqCodegenKt")
+    args(file("src/main/resources").absolutePath, file(generatedJooqDir).absolutePath)
 }
 
 dependencyManagement {
