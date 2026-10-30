@@ -40,3 +40,4 @@ jobs:
       image-name: ${{ vars.APP_NAME }}
       image-tag: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
       registry: ${{ vars.CONTAINER_REGISTRY }}
+      platforms: linux/amd64,linux/arm64  # arm64 for oracle-dev (OKE Ampere A1)

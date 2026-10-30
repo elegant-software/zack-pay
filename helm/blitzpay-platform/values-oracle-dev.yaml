@@ -1,0 +1,15 @@
+# oracle-dev: OKE on OCI Always Free (Ampere A1).
+#   helm upgrade --install ... -f values.yaml -f values-oracle-dev.yaml
+# Sized to share one 2 OCPU / 12 GB A1 node with blitz-pay and the admin dashboard
+# (budget table in ../ORACLE-DEV.md).
+
+postgres:
+  storage: 50Gi  # OCI block volume minimum; counts toward the 200 GB free storage
+
+keycloak:
+  hostname: oc-auth.zackpay.de  # must match issuer in application-oracle-dev.yml
+  ingressEnabled: false  # Cloudflare Tunnel routes oc-auth.zackpay.de -> http://keycloak.bonami-dev.svc.cluster.local:8080
+
+# Public traffic + TLS via Cloudflare Tunnel: no OCI LoadBalancer, so nothing billable.
+cloudflared:
+  enabled: true

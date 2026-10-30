@@ -1,0 +1,27 @@
+# oracle-dev: OKE on OCI Always Free (helm/blitz-pay/values-oracle-dev.yaml).
+# S3 = external minio; credentials come from the minio-credentials secret (helm deployment env).
+spring:
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+      s3:
+        endpoint: ${STORAGE_ENDPOINT:https://minio.zackpay.de}
+        path-style-access-enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # In-cluster Keycloak from helm/blitzpay-platform; must match its KC_HOSTNAME
+          issuer-uri: https://oc-auth.zackpay.de/realms/blitzpay
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: metrics,health,prometheus
+        exclude: env
+
+keycloak:
+  iam:
+    server-url: https://oc-auth.zackpay.de

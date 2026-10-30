@@ -1,0 +1,40 @@
+# oracle-dev: OKE on OCI Always Free (Ampere A1). Standalone — does NOT layer on staging/prod:
+#   helm upgrade --install ... -f values.yaml -f values-oracle-dev.yaml
+# Spring side lives in src/main/resources/application-oracle-dev.yml.
+#
+# Always Free A1 budget (2026): 2 OCPU / 12 GB total for the whole tenancy
+# (1,500 OCPU-h + 9,000 GB-h per month), 200 GB block storage incl. boot volumes.
+# The node pool is the real cost cap — keep it at 1x VM.Standard.A1.Flex 2 OCPU/12 GB
+# on a BASIC cluster. Full pod budget: see helm/ORACLE-DEV.md.
+# A1 is arm64: the image must be built for linux/arm64.
+
+replicaCount: 1  # ponytail: 1 replica; rolling update still surges to 2, so requests x2 must fit
+
+image:
+  pullSecrets:
+    - ghcr-pull-secret
+
+# Public traffic arrives through the Cloudflare Tunnel (blitzpay-platform chart):
+#   oc-api.zackpay.de -> http://blitzpay-blitz-pay.bonami-dev.svc.cluster.local:9000. No Ingress, no LoadBalancer.
+ingress:
+  enabled: false
+
+config:
+  springProfilesActive: oracle-dev
+  tracingEnabled: "false"  # no Alloy/observability stack on the free node
+  frontendOrigin: https://oc-admin.zackpay.de
+  truelayerApiBase: https://api.truelayer-sandbox.com
+  truelayerEnv: sandbox
+  truelayerWebhookJku: https://oc-api.zackpay.de/.well-known/jwks.json
+  stripeConnectReturnUrl: https://oc-api.zackpay.de/stripe-connect/return
+  stripeConnectApiBaseUrl: https://oc-api.zackpay.de
+  # SPRING_DATASOURCE_URL in blitz-pay-secrets -> jdbc:postgresql://postgres:5432/blitzpay
+  #   (postgres from the blitzpay-platform chart, same namespace)
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    cpu: 1000m
+    memory: 1536Mi  # JVM heap = 75% (MaxRAMPercentage in Dockerfile)
