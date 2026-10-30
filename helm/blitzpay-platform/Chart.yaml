@@ -1,0 +1,5 @@
+apiVersion: v2
+name: blitzpay-platform
+description: PostgreSQL + Keycloak for blitz-pay, sized for OCI Always Free (Ampere A1)
+type: application
+version: 0.1.0

@@ -1,0 +1,50 @@
+# Default values for blitzpay-platform: PostgreSQL + Keycloak, one pod each.
+# Override per environment, e.g. values-oracle-dev.yaml.
+#
+# Create the secret BEFORE installing:
+#   kubectl create secret generic blitzpay-platform-secrets -n <namespace> \
+#     --from-literal=POSTGRES_PASSWORD='<db-password>' \
+#     --from-literal=KC_BOOTSTRAP_ADMIN_PASSWORD='<keycloak-admin-password>' \
+#     --from-literal=CLOUDFLARE_TUNNEL_TOKEN='<tunnel-token>'   # only when cloudflared.enabled
+secretName: blitzpay-platform-secrets
+
+postgres:
+  image: postgres:16.10  # multi-arch (amd64 + arm64)
+  database: blitzpay     # Keycloak gets its own "keycloak" database, created on first init
+  user: blitzpay
+  storage: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+keycloak:
+  image: quay.io/keycloak/keycloak:26.8.1  # pinned; bump deliberately (Keycloak migrates its DB schema on upgrade)
+  hostname: auth.blitz-pay.local
+  ingressEnabled: true  # false when traffic arrives through cloudflared instead
+  tlsSecretName: ""
+  ingressClassName: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"  # Keycloak's large auth cookies/headers
+  resources:
+    requests:
+      cpu: 250m
+      memory: 768Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi  # image default heap = 70% of this
+
+# Cloudflare Tunnel instead of a LoadBalancer + Ingress (see ../ORACLE-DEV.md).
+cloudflared:
+  enabled: false
+  image: cloudflare/cloudflared:2025.4.0  # multi-arch (amd64 + arm64)
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi

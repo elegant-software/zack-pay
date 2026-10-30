@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      port: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # no surge: a second Keycloak would not fit the node budget
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      initContainers:
+        # Keycloak exits if the DB is unreachable; wait instead of crash-looping on first install.
+        - name: wait-for-postgres
+          image: {{ .Values.postgres.image }}
+          command: ["sh", "-c", "until pg_isready -h postgres -p 5432; do sleep 2; done"]
+      containers:
+        - name: keycloak
+          image: {{ .Values.keycloak.image }}
+          args: ["start"]
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9000
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgres:5432/keycloak
+            - name: KC_DB_USERNAME
+              value: {{ .Values.postgres.user | quote }}
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: POSTGRES_PASSWORD
+            - name: KC_HOSTNAME
+              value: https://{{ .Values.keycloak.hostname }}
+            - name: KC_HTTP_ENABLED
+              value: "true"  # TLS ends at ingress-nginx
+            - name: KC_PROXY_HEADERS
+              value: xforwarded
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: admin
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: KC_BOOTSTRAP_ADMIN_PASSWORD
+          startupProbe:
+            httpGet:
+              path: /health/started
+              port: management
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: management
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: management
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.keycloak.resources | nindent 12 }}
+{{- if .Values.keycloak.ingressEnabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak
+  annotations:
+    {{- toYaml .Values.keycloak.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.keycloak.ingressClassName }}
+  {{- with .Values.keycloak.tlsSecretName }}
+  tls:
+    - hosts:
+        - {{ $.Values.keycloak.hostname }}
+      secretName: {{ . }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.keycloak.hostname }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  name: http
+{{- end }}

@@ -1,0 +1,37 @@
+{{- if .Values.cloudflared.enabled }}
+# Cloudflare Tunnel: outbound-only connection to Cloudflare, so no LoadBalancer, public IP or certificates.
+# Remotely managed: public hostname -> Service routes are configured in the Cloudflare dashboard (ORACLE-DEV.md).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      containers:
+        - name: cloudflared
+          image: {{ .Values.cloudflared.image }}
+          args: ["tunnel", "--no-autoupdate", "--metrics", "0.0.0.0:2000", "run"]
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: CLOUDFLARE_TUNNEL_TOKEN
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: 2000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.cloudflared.resources | nindent 12 }}
+{{- end }}
