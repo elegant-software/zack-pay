@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI · Build & Test
 
 on:
   push:
@@ -26,18 +26,19 @@ permissions:
   checks: write
 jobs:
   test:
-      permissions:
-        contents: read
-        actions: write
-        checks: write
-      uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/backend-gradle-test.yml@main
-      with:
-        gradle-args: ${{ inputs.gradle-args }}
-        unit-test-task: test
-        integration-test-task: help
+    name: Gradle Tests
+    permissions:
+      contents: read
+      actions: write
+      checks: write
+    uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/backend-gradle-test.yml@main
+    with:
+      gradle-args: ${{ inputs.gradle-args }}
+      unit-test-task: test
+      integration-test-task: help
 
-  jooq-codegen-check:
-    name: jOOQ generated sources up to date
+  jooq-check:
+    name: jOOQ Sources Up To Date
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,8 +59,8 @@ jobs:
             exit 1
           }
 
-  qodana_code_quality:
-    name: qodana
+  qodana:
+    name: Qodana Code Quality
     needs: test
     if: false # temporarily disabled to verify watchdog functionality and codana docker issue
     permissions:
@@ -71,7 +72,7 @@ jobs:
     secrets: inherit
 
   sbom-upload:
-    name: dependency track & SBOM upload
+    name: Dependency-Track SBOM Upload
     needs: test
     if: false # temporarily disabled to verify watchdog functionality
     permissions:

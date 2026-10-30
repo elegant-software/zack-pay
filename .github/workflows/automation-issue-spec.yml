@@ -1,4 +1,4 @@
-name: Call Issue Spec Automation
+name: Automation · Issue Spec
 on:
   repository_dispatch:
     types:
@@ -9,6 +9,7 @@ permissions:
   pull-requests: write
   repository-projects: write
 jobs:
-  call-automation:
+  issue-spec:
+    name: Run Issue Spec Automation
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/codex-github-issue-spec-kit-automation.yml@main
     secrets: inherit

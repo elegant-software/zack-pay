@@ -1,4 +1,4 @@
-name: Publish Contract Stubs
+name: CI · Publish Contract Stubs
 
 on:
   push:
@@ -10,6 +10,7 @@ on:
 
 jobs:
   publish-stubs:
+    name: Publish Stubs JAR
     runs-on: ubuntu-latest
     permissions:
       contents: read

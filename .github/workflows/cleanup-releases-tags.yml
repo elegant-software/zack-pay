@@ -1,4 +1,4 @@
-name: Cleanup release and tags
+name: Cleanup · Releases & Tags
 
 on:
   schedule:
@@ -16,6 +16,7 @@ on:
 
 jobs:
   cleanup:
+    name: Delete Old Releases & Tags
     permissions:
       contents: write
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/cleanup-release-tags.yml@main
