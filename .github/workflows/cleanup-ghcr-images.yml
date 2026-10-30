@@ -4,6 +4,16 @@ on:
   schedule:
     - cron: "0 3 * * 0" # every Sunday at 03:00
   workflow_dispatch:
+    inputs:
+      min_versions_to_keep:
+        description: Minimum number of versions to keep
+        required: true
+        type: number
+        default: 5
+      untagged_only:
+        description: Delete only untagged versions
+        type: boolean
+        default: true
 
 jobs:
   cleanup:
@@ -18,5 +28,5 @@ jobs:
         with:
           package-name: blitz-pay
           package-type: container
-          min-versions-to-keep: 5
-          delete-only-untagged-versions: true
+          min-versions-to-keep: ${{ inputs.min_versions_to_keep || 5 }}
+          delete-only-untagged-versions: ${{ github.event_name == 'schedule' || inputs.untagged_only }}

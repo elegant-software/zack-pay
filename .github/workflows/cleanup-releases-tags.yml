@@ -6,13 +6,22 @@ on:
   workflow_dispatch:
     inputs:
       older_than_days:
-        description: "Delete releases/tags older than this many days"
+        description: Delete releases/tags older than this many days
         required: true
-        default: "30"
+        type: number
+        default: 30
       dry_run:
-        description: "Dry run only"
-        required: true
-        default: "true"
+        description: Dry run only (list, don't delete)
+        type: boolean
+        default: true
+      delete_drafts:
+        description: Include draft releases
+        type: boolean
+        default: true
+      delete_prereleases:
+        description: Include pre-releases
+        type: boolean
+        default: true
 
 jobs:
   cleanup:
@@ -21,7 +30,8 @@ jobs:
       contents: write
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/cleanup-release-tags.yml@main
     with:
-      older_than_days: ${{ fromJSON(inputs.older_than_days || '30') }}
-      dry_run: ${{ fromJSON(inputs.dry_run || 'true') }}
-      delete_drafts: true
-      delete_prereleases: true
+      older_than_days: ${{ inputs.older_than_days || 30 }}
+      # scheduled runs have no inputs and stay dry runs
+      dry_run: ${{ github.event_name == 'schedule' || inputs.dry_run }}
+      delete_drafts: ${{ github.event_name == 'schedule' || inputs.delete_drafts }}
+      delete_prereleases: ${{ github.event_name == 'schedule' || inputs.delete_prereleases }}

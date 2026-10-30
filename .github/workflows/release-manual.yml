@@ -16,9 +16,12 @@ on:
         type: string
         default: ''
       base_branch:
-        description: 'Branch to check for changes after the release boundary'
-        required: false
-        type: string
+        description: 'Branch to release from (develop produces an -alpha pre-release)'
+        required: true
+        type: choice
+        options:
+          - main
+          - develop
         default: main
 
 permissions:

@@ -6,13 +6,14 @@ on:
   workflow_dispatch:
     inputs:
       older_than_days:
-        description: "Delete workflow runs older than this many days"
+        description: Delete workflow runs older than this many days
         required: true
-        default: "14"
+        type: number
+        default: 14
       dry_run:
-        description: "Dry run only"
-        required: true
-        default: "true"
+        description: Dry run only (list, don't delete)
+        type: boolean
+        default: true
 
 jobs:
   cleanup:
@@ -22,5 +23,6 @@ jobs:
       contents: write
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/cleanup-github-workflows.yml@main
     with:
-        older_than_days: ${{ fromJSON(inputs.older_than_days || '14') }}
-        dry_run: ${{ fromJSON(inputs.dry_run || 'true') }}
+      older_than_days: ${{ inputs.older_than_days || 14 }}
+      # scheduled runs have no inputs and stay dry runs
+      dry_run: ${{ github.event_name == 'schedule' || inputs.dry_run }}
