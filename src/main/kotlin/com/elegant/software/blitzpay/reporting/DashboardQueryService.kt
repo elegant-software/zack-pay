@@ -1,7 +1,7 @@
 package com.elegant.software.blitzpay.reporting
 
 import com.elegant.software.blitzpay.jooq.Tables.APPOINTMENTS
-import com.elegant.software.blitzpay.jooq.Tables.MERCHANT_APPLICATIONS
+import com.elegant.software.blitzpay.jooq.Tables.MERCHANTS
 import com.elegant.software.blitzpay.jooq.Tables.MERCHANT_BRANCHES
 import com.elegant.software.blitzpay.jooq.Tables.ORDER_ORDERS
 import com.elegant.software.blitzpay.jooq.Tables.PAYMENT_SETTLEMENTS
@@ -247,14 +247,14 @@ class DashboardQueryService(private val dsl: DSLContext) {
         val row = dsl
             .select(
                 count().`as`("total"),
-                count(`when`(MERCHANT_APPLICATIONS.MERCHANT_STATUS.eq("ACTIVE"), inline(1))).`as`("active"),
+                count(`when`(MERCHANTS.MERCHANT_STATUS.eq("ACTIVE"), inline(1))).`as`("active"),
                 count(`when`(
-                    MERCHANT_APPLICATIONS.CREATED_AT.ge(fromOffset)
-                        .and(MERCHANT_APPLICATIONS.CREATED_AT.lt(toOffset)),
+                    MERCHANTS.CREATED_AT.ge(fromOffset)
+                        .and(MERCHANTS.CREATED_AT.lt(toOffset)),
                     inline(1),
                 )).`as`("new_in_period"),
             )
-            .from(MERCHANT_APPLICATIONS)
+            .from(MERCHANTS)
             .fetchOne()
 
         return MerchantCountKpi(

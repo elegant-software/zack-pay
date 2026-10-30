@@ -168,14 +168,14 @@ jooq {
     // to avoid PostgreSQL-specific syntax (RLS, ENABLE ROW LEVEL SECURITY, etc.)
     // that jOOQ's DDLDatabase cannot parse.
     val dashboardExtensionDdl = """
-        CREATE TABLE blitzpay.merchant_applications (
+        CREATE TABLE blitzpay.merchants (
             id              UUID        NOT NULL PRIMARY KEY,
             merchant_status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
             created_at      TIMESTAMPTZ NOT NULL
         );
         CREATE TABLE blitzpay.merchant_branches (
             id                      UUID        NOT NULL PRIMARY KEY,
-            merchant_application_id UUID        NOT NULL,
+            merchant_id             UUID        NOT NULL,
             active                  BOOLEAN     NOT NULL DEFAULT TRUE,
             created_at              TIMESTAMPTZ NOT NULL
         );
