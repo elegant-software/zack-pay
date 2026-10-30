@@ -83,15 +83,56 @@ Liquibase schema change:
 ./gradlew generateJooq
 ```
 
-Generated sources live under `build/generated/jooq/main` and must not be committed.
-Production compilation must consume these generated sources; schema changes are not
-complete until generation and compilation both pass.
+`generateJooq` starts a `postgres:16-alpine` Testcontainer, applies the full Liquibase
+changelog to it, and runs jOOQ codegen against the resulting `blitzpay` schema
+(`src/jooqCodegen/kotlin/.../JooqCodegen.kt`).
 
-The generator parses the authoritative create migrations required by current jOOQ query
-services with jOOQ's PostgreSQL DDL parser. When a query starts using another table, add
-that table's schema-defining migrations to the generator input in `build.gradle.kts`.
-Runtime schema changes still belong exclusively under
-`src/main/resources/db/changelog/`; do not create a duplicate hand-maintained schema.
+Generated sources live under `src/generated/jooq` and **must be committed**, so normal
+compilation (including the Docker image build) needs no database. The CI job
+`jooq-codegen-check` regenerates them and fails if the committed copy is stale.
+Schema changes are not complete until generation, compilation, and the commit of the
+regenerated sources are done.
+
+Only tables listed in `INCLUDED_TABLES` in `JooqCodegen.kt` are generated. When a query
+starts using another table, add it there and regenerate. Runtime schema changes still
+belong exclusively under `src/main/resources/db/changelog/`; do not create a duplicate
+hand-maintained schema.
+
+### Docker for code generation
+
+`generateJooq` needs a Docker daemon reachable by Testcontainers. Testcontainers does
+**not** support `ssh://` Docker contexts, so the active `docker context` is irrelevant;
+it resolves Docker from `DOCKER_*` environment variables, then
+`~/.testcontainers.properties`, then the local socket.
+
+**Remote daemon (e.g. `myserver`, plain TCP on port 2375, no TLS):**
+
+```properties
+# ~/.testcontainers.properties
+docker.host=tcp://myserver:2375
+testcontainers.host.override=myserver
+testcontainers.reuse.enable=true
+ryuk.disabled=true
+```
+
+`testcontainers.host.override` makes the mapped container ports reachable at the remote
+host instead of `localhost`. Or pass the host for a single run:
+
+```bash
+unset DOCKER_TLS_VERIFY DOCKER_CERT_PATH
+DOCKER_HOST=tcp://myserver:2375 ./gradlew generateJooq
+```
+
+**Local Docker Desktop:** start Docker Desktop and remove `docker.host` and
+`testcontainers.host.override` from `~/.testcontainers.properties`.
+
+**Troubleshooting:**
+
+| Error | Cause | Fix |
+|---|---|---|
+| `Could not find a valid Docker environment` … `/var/run/docker.sock` | No local daemon running and no `DOCKER_HOST` / `docker.host` set | Start Docker Desktop or point at the remote daemon (above) |
+| `Enabled TLS verification (DOCKER_TLS_VERIFY=1) but certificate path … doesn't exist` | Stale `DOCKER_TLS_VERIFY` / `DOCKER_CERT_PATH` in the shell (e.g. from `docker-machine env`) | `unset DOCKER_TLS_VERIFY DOCKER_CERT_PATH` — the 2375 daemon is plain TCP |
+| Container starts but JDBC connection times out | `testcontainers.host.override` doesn't match where the daemon runs | Set it to the remote host, or remove it for local Docker |
 
 ## 5. Query Ownership
 
