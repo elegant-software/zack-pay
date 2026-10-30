@@ -1,5 +1,7 @@
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM eclipse-temurin:25-jdk AS build
+# Pinned to the runner's native platform: the jar is platform-independent, so building it
+# under QEMU for arm64 only multiplies build time (~10x) for an identical artifact
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk AS build
 
 WORKDIR /workspace
 
