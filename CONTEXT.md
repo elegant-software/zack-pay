@@ -272,6 +272,42 @@ _Avoid_: service category, service type, offering type
 A merchant-defined item or service that belongs to a Product Category and may be booked as an Appointment.
 _Avoid_: product category, appointment category, service category
 
+**International Menu**:
+A Merchant Offering that lets a Merchant present its Products in Supported Menu Languages beyond the Original Menu Language. Without it, shoppers see only the Original Menu Language.
+_Avoid_: multilingual mode, translation feature, localized catalogue
+
+**Original Menu Language**:
+The single language a Merchant's catalogue is authored in, typically the language of the source menu imported via MCP. Every Product's name and description always exist in this language, and it is the fallback when a shopper's language is not available.
+_Avoid_: default locale, base language, primary language
+
+**Supported Menu Language**:
+An additional language, chosen by the Merchant in the admin dashboard, in which the Merchant offers Product Translations. Never includes the Original Menu Language.
+_Avoid_: enabled locale, translation language, available language
+
+**Menu Language Catalogue**:
+The platform-managed list of languages a Merchant may choose as its Original Menu Language or Supported Menu Languages. Merchants select from it; they cannot add their own languages.
+_Avoid_: locale list, language enum, free-form language code
+
+**Product Translation**:
+A Product's name and description rendered in one Supported Menu Language. It is derived from the Product's Original Menu Language text, which stays the source of truth.
+_Avoid_: localized product, product variant, product copy
+
+**Category Translation**:
+A Product Category's name rendered in one Supported Menu Language, following the same rules as a Product Translation.
+_Avoid_: localized category, category alias
+
+**Translation Origin**:
+Who last authored a Product Translation or Category Translation: `MACHINE` (an LLM agent via MCP) or `MERCHANT` (edited by the Merchant in the admin dashboard). A current `MERCHANT` translation is never overwritten by a machine translation.
+_Avoid_: translation source, reviewed flag, manual flag
+
+**Stale Translation**:
+A Product Translation whose Original Menu Language text has changed since it was translated. It remains visible to shoppers until it is re-translated. Changes to price, image, category or status never make a translation stale.
+_Avoid_: outdated translation, invalid translation, expired translation
+
+**Pending Translation**:
+A Product or Product Category that, for a given Supported Menu Language, has no translation or only a Stale Translation.
+_Avoid_: untranslated product, translation queue, missing locale
+
 **Bookable Product**:
 An active Product available to shoppers for appointment booking at a Branch.
 _Avoid_: inactive product, hidden product, category-only booking
