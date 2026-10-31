@@ -197,6 +197,15 @@ blitzpay:
       - "*"
   storage:
     bucket: ${STORAGE_BUCKET:blitzpay}
+  product-image:
+    quality:
+      enabled: ${PRODUCT_IMAGE_QUALITY_ENABLED:true}
+      min-short-edge: ${PRODUCT_IMAGE_MIN_SHORT_EDGE:400}
+      max-aspect-ratio: ${PRODUCT_IMAGE_MAX_ASPECT_RATIO:4.0}
+      min-sharpness: ${PRODUCT_IMAGE_MIN_SHARPNESS:40}
+      min-brightness: ${PRODUCT_IMAGE_MIN_BRIGHTNESS:20}
+      max-brightness: ${PRODUCT_IMAGE_MAX_BRIGHTNESS:250}
+      min-contrast: ${PRODUCT_IMAGE_MIN_CONTRAST:10}
   google-maps:
     enabled: ${GOOGLE_MAPS_ENABLED:false}
     api-key: ${GOOGLE_MAPS_API_KEY:}

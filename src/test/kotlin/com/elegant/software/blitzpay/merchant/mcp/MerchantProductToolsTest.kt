@@ -14,6 +14,7 @@ import com.elegant.software.blitzpay.merchant.service.MerchantManagementService
 import com.elegant.software.blitzpay.merchant.service.MerchantProductCategoryService
 import com.elegant.software.blitzpay.merchant.service.MerchantProductService
 import com.elegant.software.blitzpay.merchant.service.MerchantRegistrationService
+import com.elegant.software.blitzpay.merchant.config.ProductImageQualityProperties
 import com.elegant.software.blitzpay.merchant.service.MerchantVerticalService
 import com.elegant.software.blitzpay.merchant.service.ProductImageDownloader
 import com.elegant.software.blitzpay.merchant.service.ProductImageProcessor
@@ -69,7 +70,7 @@ class MerchantProductToolsTest {
         merchantProductService = merchantProductService,
         merchantProductCategoryService = merchantProductCategoryService,
         productImageDownloader = productImageDownloader,
-        productImageProcessor = ProductImageProcessor(),
+        productImageProcessor = ProductImageProcessor(ProductImageQualityProperties()),
     )
 
     private val merchantPrompts = MerchantMcpPrompts(
@@ -149,7 +150,13 @@ class MerchantProductToolsTest {
     fun `getOrCreateProductId downloads image from imageUrl`() {
         val merchantId = UUID.randomUUID()
         val branchId = UUID.randomUUID()
-        val bytes = byteArrayOf(1, 2, 3)
+        val random = java.util.Random(7)
+        val bytes = java.io.ByteArrayOutputStream().also { out ->
+            val photo = java.awt.image.BufferedImage(600, 400, java.awt.image.BufferedImage.TYPE_INT_RGB).apply {
+                for (y in 0 until 400) for (x in 0 until 600) setRGB(x, y, random.nextInt())
+            }
+            javax.imageio.ImageIO.write(photo, "png", out)
+        }.toByteArray()
         val image = ProductImageUpload(contentType = "image/png", bytes = bytes)
         whenever(productImageDownloader.download("https://cdn.example.com/latte.png"))
             .thenReturn(RawProductImage(contentType = "image/png", bytes = bytes))

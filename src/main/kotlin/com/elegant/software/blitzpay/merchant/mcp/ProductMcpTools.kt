@@ -335,7 +335,8 @@ class ProductMcpTools(
         const val ImageUrlDescription =
             "PREFERRED image source. Public http(s) URL of a JPEG, PNG, or WebP product image, up to 15 MB; " +
                 "the server downloads it (no auth, cookies, or private/internal hosts) and resizes images over 5 MB. " +
-                "Use whenever the image already exists online (merchant website, CDN, marketplace listing). Do not combine with imageBase64."
+                "Use whenever the image already exists online (merchant website, CDN, marketplace listing). Do not combine with imageBase64. " +
+                "Images under 400 px on the shorter side, blurry, too dark, or blank are rejected with the reason."
         const val ImageBase64Description =
             "Fallback image source, ONLY for a small image (encoded string under ~200 KB, i.e. original under ~150 KB) " +
                 "that has no public URL, e.g. a local file or an image pasted into the chat. Requires imageContentType. " +
