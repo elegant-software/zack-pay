@@ -238,6 +238,11 @@ public class Merchants extends TableImpl<MerchantsRecord> {
      */
     public final TableField<MerchantsRecord, OffsetDateTime> LAST_UPDATED_AT = createField(DSL.name("last_updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false), this, "");
 
+    /**
+     * The column <code>blitzpay.merchants.original_menu_language</code>.
+     */
+    public final TableField<MerchantsRecord, String> ORIGINAL_MENU_LANGUAGE = createField(DSL.name("original_menu_language"), SQLDataType.VARCHAR(8), this, "");
+
     private Merchants(Name alias, Table<MerchantsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

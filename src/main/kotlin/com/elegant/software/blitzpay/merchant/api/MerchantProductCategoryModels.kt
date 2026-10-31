@@ -19,6 +19,7 @@ data class ProductCategoryResponse(
     val estimatedDurationMinutes: Int?,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val language: String? = null,
 )
 
 data class BulkCategoryInput(

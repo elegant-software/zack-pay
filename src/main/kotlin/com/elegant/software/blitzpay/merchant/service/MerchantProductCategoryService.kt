@@ -7,6 +7,7 @@ import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductC
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryTranslationRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -20,6 +21,9 @@ class MerchantProductCategoryService(
     private val productRepository: MerchantProductRepository,
     private val merchantRepository: MerchantRepository,
     private val offeringAssignmentRepository: MerchantOfferingAssignmentRepository,
+    private val categoryTranslationRepository: MerchantProductCategoryTranslationRepository,
+    private val catalogTranslationService: CatalogTranslationService,
+    private val menuLanguageService: MenuLanguageService,
 ) {
     private val log = LoggerFactory.getLogger(MerchantProductCategoryService::class.java)
 
@@ -45,11 +49,18 @@ class MerchantProductCategoryService(
     }
 
     @Transactional(readOnly = true)
-    fun list(merchantId: UUID): List<ProductCategoryResponse> {
+    fun list(merchantId: UUID, language: String? = null): List<ProductCategoryResponse> {
         requireMerchantExists(merchantId)
-        return categoryRepository.findAllByMerchantId(merchantId)
+        val categories = categoryRepository.findAllByMerchantId(merchantId)
+        val original = menuLanguageService.originalLanguage(merchantId)
+        val translatedNames = catalogTranslationService.categoryNames(categories.map { it.id }, language)
+        return categories
+            .map { category ->
+                translatedNames[category.id]
+                    ?.let { category.toResponse().copy(name = it, language = language) }
+                    ?: category.toResponse().copy(language = original)
+            }
             .sortedBy { it.name.lowercase() }
-            .map { it.toResponse() }
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +96,7 @@ class MerchantProductCategoryService(
         check(assignedProducts == 0L) {
             "Cannot delete category '${category.name}': $assignedProducts product(s) are still assigned to it"
         }
+        categoryTranslationRepository.deleteAllByCategoryId(categoryId)
         categoryRepository.deleteById(categoryId)
         log.info("Product category deleted: id={} merchant={}", categoryId, merchantId)
     }

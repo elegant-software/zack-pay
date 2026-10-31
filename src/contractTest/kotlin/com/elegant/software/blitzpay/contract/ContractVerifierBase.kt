@@ -14,7 +14,13 @@ import com.elegant.software.blitzpay.QuickpayApplication
 import com.elegant.software.blitzpay.merchant.service.MerchantProductCategoryService
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantMenuLanguageRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryTranslationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductTranslationRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantSupportedMenuLanguageRepository
+import com.elegant.software.blitzpay.merchant.service.CatalogTranslationService
+import com.elegant.software.blitzpay.merchant.service.MenuLanguageService
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingRepository
@@ -133,6 +139,24 @@ abstract class ContractVerifierBase {
 
     @MockitoBean
     protected lateinit var merchantProductCategoryService: MerchantProductCategoryService
+
+    @MockitoBean
+    protected lateinit var menuLanguageService: MenuLanguageService
+
+    @MockitoBean
+    protected lateinit var merchantMenuLanguageRepository: MerchantMenuLanguageRepository
+
+    @MockitoBean
+    protected lateinit var merchantSupportedMenuLanguageRepository: MerchantSupportedMenuLanguageRepository
+
+    @MockitoBean
+    protected lateinit var merchantProductTranslationRepository: MerchantProductTranslationRepository
+
+    @MockitoBean
+    protected lateinit var merchantProductCategoryTranslationRepository: MerchantProductCategoryTranslationRepository
+
+    @MockitoBean
+    protected lateinit var catalogTranslationService: CatalogTranslationService
 
     @MockitoBean
     protected lateinit var merchantBranchAppearanceRepository: MerchantBranchAppearanceRepository

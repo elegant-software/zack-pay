@@ -35,7 +35,8 @@ data class ProductResponse(
     val categoryName: String? = null,
     val productCode: Long? = null,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
+    val language: String? = null,
 )
 
 data class OrderableMerchantProduct(

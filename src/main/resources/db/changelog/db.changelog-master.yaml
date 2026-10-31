@@ -127,3 +127,5 @@ databaseChangeLog:
       file: db/changelog/20260619-001-invoice-order-columns.sql
   - include:
       file: db/changelog/20260629-001-merchant-entity-rename.sql
+  - include:
+      file: db/changelog/20261031-001-international-menu.sql

@@ -512,6 +512,20 @@ public class MerchantsRecord extends UpdatableRecordImpl<MerchantsRecord> {
         return (OffsetDateTime) get(34);
     }
 
+    /**
+     * Setter for <code>blitzpay.merchants.original_menu_language</code>.
+     */
+    public void setOriginalMenuLanguage(String value) {
+        set(35, value);
+    }
+
+    /**
+     * Getter for <code>blitzpay.merchants.original_menu_language</code>.
+     */
+    public String getOriginalMenuLanguage() {
+        return (String) get(35);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -535,7 +549,7 @@ public class MerchantsRecord extends UpdatableRecordImpl<MerchantsRecord> {
     /**
      * Create a detached, initialised MerchantsRecord
      */
-    public MerchantsRecord(UUID id, String merchantCode, String merchantName, String merchantStatus, String businessType, String operatingCountry, String logoStorageKey, String website, String addressLine1, String addressLine2, String city, String postalCode, String country, String contactEmailPublic, String contactPhonePublic, Double latitude, Double longitude, Integer geofenceRadiusM, String googlePlaceId, String placeFormattedAddress, Double placeRating, Integer placeReviewCount, String placeEnrichmentStatus, String placeEnrichmentError, OffsetDateTime placeEnrichedAt, String merchantMobility, Integer bookingIntervalMinutes, Integer bookingLeadTimeMinutes, Integer bookingHorizonDays, Integer reminderLeadTimeMinutes, BigDecimal defaultVatPercent, String xHandle, String instagramHandle, OffsetDateTime createdAt, OffsetDateTime lastUpdatedAt) {
+    public MerchantsRecord(UUID id, String merchantCode, String merchantName, String merchantStatus, String businessType, String operatingCountry, String logoStorageKey, String website, String addressLine1, String addressLine2, String city, String postalCode, String country, String contactEmailPublic, String contactPhonePublic, Double latitude, Double longitude, Integer geofenceRadiusM, String googlePlaceId, String placeFormattedAddress, Double placeRating, Integer placeReviewCount, String placeEnrichmentStatus, String placeEnrichmentError, OffsetDateTime placeEnrichedAt, String merchantMobility, Integer bookingIntervalMinutes, Integer bookingLeadTimeMinutes, Integer bookingHorizonDays, Integer reminderLeadTimeMinutes, BigDecimal defaultVatPercent, String xHandle, String instagramHandle, OffsetDateTime createdAt, OffsetDateTime lastUpdatedAt, String originalMenuLanguage) {
         super(Merchants.MERCHANTS);
 
         setId(id);
@@ -573,6 +587,7 @@ public class MerchantsRecord extends UpdatableRecordImpl<MerchantsRecord> {
         setInstagramHandle(instagramHandle);
         setCreatedAt(createdAt);
         setLastUpdatedAt(lastUpdatedAt);
+        setOriginalMenuLanguage(originalMenuLanguage);
         resetTouchedOnNotNull();
     }
 }

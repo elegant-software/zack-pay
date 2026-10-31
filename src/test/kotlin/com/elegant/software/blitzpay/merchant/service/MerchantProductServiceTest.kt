@@ -4,6 +4,8 @@ import com.elegant.software.blitzpay.merchant.api.CreateProductRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductTranslation
+import com.elegant.software.blitzpay.merchant.persistence.model.TranslationOrigin
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
@@ -38,6 +40,8 @@ class MerchantProductServiceTest {
     private val session = mock<Session>()
     private val hibernateFilter = mock<Filter>()
     private val nativeQuery = mock<Query>()
+    private val catalogTranslationService = mock<CatalogTranslationService>()
+    private val menuLanguageService = mock<MenuLanguageService>()
 
     private val service = MerchantProductService(
         productRepository,
@@ -45,7 +49,9 @@ class MerchantProductServiceTest {
         merchantRepository,
         merchantBranchRepository,
         entityManager,
-        storageService
+        storageService,
+        catalogTranslationService,
+        menuLanguageService,
     )
     private val merchantId = UUID.randomUUID()
     private val branchId = UUID.randomUUID()
@@ -404,6 +410,33 @@ class MerchantProductServiceTest {
         val response = service.list(merchantId, branchId)
 
         assertEquals("https://signed.example/merchants/$merchantId/branches/$branchId/products/product/image.jpg", response.single().imageUrl)
+    }
+
+    @Test
+    fun `list serves translations with fallback to the original language`() {
+        val translated = MerchantProduct(merchantId = merchantId, name = "Brezel", description = "Frisch", unitPrice = BigDecimal.ONE, merchantBranchId = branchId, productCategoryId = categoryId)
+        val untranslated = MerchantProduct(merchantId = merchantId, name = "Leberkäse", description = "Mit Senf", unitPrice = BigDecimal.TEN, merchantBranchId = branchId)
+        val products = listOf(translated, untranslated)
+        whenever(productRepository.findAllByMerchantBranchId(branchId)).thenReturn(products)
+        whenever(menuLanguageService.originalLanguage(merchantId)).thenReturn("de")
+        whenever(catalogTranslationService.productTexts(products, "en")).thenReturn(
+            mapOf(
+                translated.id to MerchantProductTranslation(
+                    productId = translated.id, language = "en", name = "Pretzel", description = null,
+                    origin = TranslationOrigin.MACHINE, sourceHash = "h",
+                )
+            )
+        )
+        whenever(catalogTranslationService.categoryNames(setOf(categoryId), "en")).thenReturn(mapOf(categoryId to "Bakery"))
+
+        val response = service.list(merchantId, branchId, language = "en").associateBy { it.productId }
+
+        assertEquals("Pretzel", response.getValue(translated.id).name)
+        assertEquals(null, response.getValue(translated.id).description)
+        assertEquals("Bakery", response.getValue(translated.id).categoryName)
+        assertEquals("en", response.getValue(translated.id).language)
+        assertEquals("Leberkäse", response.getValue(untranslated.id).name)
+        assertEquals("de", response.getValue(untranslated.id).language)
     }
 
     @Test

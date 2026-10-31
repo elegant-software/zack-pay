@@ -76,6 +76,9 @@ class Merchant(
     @Column(name = "instagram_handle", length = 128)
     var instagramHandle: String? = null,
 
+    @Column(name = "original_menu_language", length = 8)
+    var originalMenuLanguage: String? = null,
+
     @Column(nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 

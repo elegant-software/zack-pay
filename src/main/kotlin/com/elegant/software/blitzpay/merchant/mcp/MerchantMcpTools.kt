@@ -87,12 +87,23 @@ class MerchantMcpTools(
           1 category  → category_id_by_name_or_create
           2+ categories → categories_bulk_create  (never loop the single-category tool)
 
+        TRANSLATIONS (International Menu)
+        ═════════════════════════════════
+          Products and categories are authored in the merchant's originalMenuLanguage — pass it to merchant_upsert
+          (ISO 639-1, the language of the source menu). Write names/descriptions in that language only.
+          Additional languages (supportedMenuLanguages) are chosen by the merchant in the admin dashboard; MCP cannot set them.
+          Translate only after the products exist:
+            catalog_pending_translation(merchantId, language)  → items to translate (missing or stale)
+            catalog_translations_bulk_upsert(merchantId, language, items)  → save them; repeat until totalPending is 0
+          Items with origin MERCHANT were edited by hand — keep their wording when re-translating.
+
         RECOMMENDED WORKFLOW ORDER
         ══════════════════════════
         1. merchant_upsert             — create or update the merchant (returns merchantId); set mobility if MOBILE
         2. branches_bulk_upsert        — create or update all branches with full attributes
         3. categories_bulk_create      — (optional) pre-create all categories in one call
         4. products_bulk_upsert        — create all products, referencing categoryName
+        5. catalog_pending_translation — (optional) per supported menu language, then catalog_translations_bulk_upsert
 
         IDEMPOTENCY & RESPONSES
         ═══════════════════════
@@ -129,6 +140,7 @@ class MerchantMcpTools(
             "Pass mobility = \"MOBILE\" for food trucks, street sellers, circuses, pop-up theatres, or any merchant that operates from variable locations. " +
             "Omit mobility (or pass \"BRICK_AND_MORTAR\") for fixed-location merchants. " +
             "Optionally uploads a logo via logoBase64 and logoContentType only; use a clear, high-quality merchant logo in JPEG, PNG, or WebP format. " +
+            "Pass originalMenuLanguage (ISO 639-1, e.g. \"de\") for the language the source menu is written in. " +
             "Returns full merchant details; use the returned merchantId as merchantId in subsequent branch and product calls.",
         annotations = McpTool.McpAnnotations(title = "Merchant Upsert")
     )
@@ -145,6 +157,7 @@ class MerchantMcpTools(
         logoBase64: String? = null,
         logoContentType: String? = null,
         mobility: String? = null,
+        originalMenuLanguage: String? = null,
     ): MerchantDetailsResponse {
         val existing = merchantRegistrationService.findByName(merchantName)
         val merchantId: UUID
@@ -173,6 +186,7 @@ class MerchantMcpTools(
                         instagramHandle = instagramHandle,
                     ) else null,
                     merchantMobility = mobility?.let(MerchantMobility::valueOf),
+                    originalMenuLanguage = originalMenuLanguage,
                 )
             )
         } else {
@@ -193,6 +207,7 @@ class MerchantMcpTools(
                         instagramHandle = instagramHandle,
                     ) else null,
                     merchantMobility = mobility?.let(MerchantMobility::valueOf),
+                    originalMenuLanguage = originalMenuLanguage,
                 )
             )
         }

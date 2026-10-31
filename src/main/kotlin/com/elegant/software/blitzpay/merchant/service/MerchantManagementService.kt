@@ -29,6 +29,7 @@ class MerchantManagementService(
     private val merchantOfferingAssignmentRepository: MerchantOfferingAssignmentRepository,
     private val storageService: StorageService,
     private val eventPublisher: ApplicationEventPublisher,
+    private val menuLanguageService: MenuLanguageService,
 ) {
     private val log = LoggerFactory.getLogger(MerchantManagementService::class.java)
 
@@ -86,7 +87,8 @@ class MerchantManagementService(
                 )
             }
         }
-        request.offerings?.let { syncOfferings(merchant.id, it) }
+        menuLanguageService.applyMenuLanguages(merchant, request.originalMenuLanguage, request.supportedMenuLanguages)
+        request.offerings?.let { syncOfferings(merchant, it) }
 
         val saved = repository.save(merchant)
         if (saved.merchantName != previousName) {
@@ -100,6 +102,7 @@ class MerchantManagementService(
         val merchant = repository.findById(merchantId)
             .orElseThrow { NoSuchElementException("Merchant not found: $merchantId") }
         branchRepository.deleteAllByMerchantId(merchantId)
+        menuLanguageService.deleteAllFor(merchantId)
         repository.delete(merchant)
         log.info("merchant deleted id={}", merchantId)
     }
@@ -147,6 +150,8 @@ class MerchantManagementService(
             .toSortedSet(),
         merchantMobility = merchantMobility,
         defaultVatPercent = defaultVatPercent,
+        originalMenuLanguage = originalMenuLanguage,
+        supportedMenuLanguages = menuLanguageService.supportedLanguages(id),
     )
 
     private fun signedUrl(storageKey: String?): String? =
@@ -166,8 +171,10 @@ class MerchantManagementService(
         )
     }
 
-    private fun syncOfferings(merchantId: UUID, offerings: Set<String>) {
+    private fun syncOfferings(merchant: Merchant, offerings: Set<String>) {
+        val merchantId = merchant.id
         val normalized = offerings.map { it.trim().uppercase() }.filter { it.isNotBlank() }.toSet()
+        menuLanguageService.requireInternationalMenuReady(merchant, normalized)
         require(
             "DEFERRED_PAYMENT" !in normalized || normalized.any { it == "PRE_ORDER" || it == "WALK_IN_ORDERING" }
         ) {

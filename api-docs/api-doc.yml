@@ -50,6 +50,8 @@ tags:
   description: Full-text and filter-based merchant search
 - name: Merchant Products
   description: Product catalog management for merchants
+- name: Merchant Catalog Translations
+  description: Product and category translations for the International Menu
 - name: Branch Opening Hours
   description: Manage branch recurring opening hours and date-specific exceptions
 - name: User Management
@@ -62,6 +64,8 @@ tags:
   description: Manage branches under a merchant
 - name: Merchant Provider Accounts
   description: Manage which Payment Service Providers are enabled for a merchant
+- name: Merchant Menu Languages
+  description: Platform-managed languages a merchant catalogue can be offered in
 - name: Geofence
   description: Geofence region discovery for mobile clients
 - name: Appointment Policy
@@ -236,6 +240,16 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: Accept-Language
+        in: header
+        required: false
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -320,6 +334,69 @@ paths:
       responses:
         "200":
           description: OK
+  /{version}/merchants/{merchantId}/products/{productId}/translations/{language}:
+    put:
+      tags:
+      - Merchant Catalog Translations
+      summary: Create or replace a product translation as the merchant
+      operationId: putProductTranslation
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: language
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertCatalogTranslationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogTranslationResponse"
+    delete:
+      tags:
+      - Merchant Catalog Translations
+      summary: Delete a product translation
+      operationId: deleteProductTranslation
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: language
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
   /{version}/merchants/{merchantId}/product-categories/{categoryId}:
     put:
       tags:
@@ -370,6 +447,69 @@ paths:
         schema:
           type: string
           format: uuid
+      responses:
+        "200":
+          description: OK
+  /{version}/merchants/{merchantId}/product-categories/{categoryId}/translations/{language}:
+    put:
+      tags:
+      - Merchant Catalog Translations
+      summary: Create or replace a product category translation as the merchant
+      operationId: putCategoryTranslation
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: language
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertCatalogTranslationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogTranslationResponse"
+    delete:
+      tags:
+      - Merchant Catalog Translations
+      summary: Delete a product category translation
+      operationId: deleteCategoryTranslation
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: language
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -1314,6 +1454,10 @@ paths:
       tags:
       - Merchant Products
       summary: List products for the merchant
+      description: "Name and description follow Accept-Language when the merchant\
+        \ offers International Menu, or the explicit language parameter; untranslated\
+        \ items fall back to the Original Menu Language. The language field states\
+        \ which language was returned."
       operationId: list_1
       parameters:
       - name: merchantId
@@ -1334,6 +1478,16 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: Accept-Language
+        in: header
+        required: false
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -1400,6 +1554,16 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: Accept-Language
+        in: header
+        required: false
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -2889,6 +3053,28 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchants/{merchantId}/translation-coverage:
+    get:
+      tags:
+      - Merchant Catalog Translations
+      summary: Translation Coverage per Supported Menu Language
+      operationId: coverage
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TranslationCoverageResponse"
   /{version}/merchants/{merchantId}/stripe-connect/status:
     get:
       tags:
@@ -2961,6 +3147,62 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ProviderAccountResponse"
+  /{version}/merchants/{merchantId}/products/{productId}/translations:
+    get:
+      tags:
+      - Merchant Catalog Translations
+      summary: "List a product's translations, including stale ones"
+      operationId: listProductTranslations
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogTranslationResponse"
+  /{version}/merchants/{merchantId}/product-categories/{categoryId}/translations:
+    get:
+      tags:
+      - Merchant Catalog Translations
+      summary: "List a product category's translations, including stale ones"
+      operationId: listCategoryTranslations
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogTranslationResponse"
   /{version}/merchants/{merchantId}/branches/{branchId}/appearances/{appearanceId}:
     get:
       tags:
@@ -3264,6 +3506,21 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/NearbyMerchantsResponse"
+  /{version}/merchants/menu-languages:
+    get:
+      tags:
+      - Merchant Menu Languages
+      summary: List the Menu Language Catalogue
+      operationId: list_10
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuLanguageResponse"
   /{version}/merchant/orders/{orderId}:
     get:
       tags:
@@ -4112,6 +4369,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        language:
+          type:
+          - string
+          - "null"
       required:
       - active
       - branchId
@@ -4120,6 +4381,44 @@ components:
       - productId
       - status
       - unitPrice
+      - updatedAt
+    UpsertCatalogTranslationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type:
+          - string
+          - "null"
+      required:
+      - name
+    CatalogTranslationResponse:
+      type: object
+      properties:
+        language:
+          type: string
+        name:
+          type: string
+        description:
+          type:
+          - string
+          - "null"
+        origin:
+          type: string
+          enum:
+          - MACHINE
+          - MERCHANT
+        stale:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - language
+      - name
+      - origin
+      - stale
       - updatedAt
     UpdateProductCategoryRequest:
       type: object
@@ -4152,6 +4451,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        language:
+          type:
+          - string
+          - "null"
       required:
       - createdAt
       - id
@@ -4673,6 +4976,17 @@ components:
           type:
           - number
           - "null"
+        originalMenuLanguage:
+          type:
+          - string
+          - "null"
+        supportedMenuLanguages:
+          type:
+          - array
+          - "null"
+          items:
+            type: string
+          uniqueItems: true
     MerchantDetailsResponse:
       type: object
       properties:
@@ -4729,6 +5043,15 @@ components:
           type:
           - number
           - "null"
+        originalMenuLanguage:
+          type:
+          - string
+          - "null"
+        supportedMenuLanguages:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
       required:
       - address
       - businessType
@@ -4741,6 +5064,7 @@ components:
       - merchantStatus
       - offerings
       - operatingCountry
+      - supportedMenuLanguages
     SetLogoRequest:
       type: object
       properties:
@@ -7261,6 +7585,29 @@ components:
       - status
       - totalAmountMinor
       - usesDeferredPayment
+    TranslationCoverageResponse:
+      type: object
+      properties:
+        language:
+          type: string
+        productsTotal:
+          type: integer
+          format: int32
+        productsTranslated:
+          type: integer
+          format: int32
+        categoriesTotal:
+          type: integer
+          format: int32
+        categoriesTranslated:
+          type: integer
+          format: int32
+      required:
+      - categoriesTotal
+      - categoriesTranslated
+      - language
+      - productsTotal
+      - productsTranslated
     ConnectStatusResponse:
       type: object
       properties:
@@ -7418,6 +7765,16 @@ components:
             $ref: "#/components/schemas/NearbyMerchantResponse"
       required:
       - merchants
+    MenuLanguageResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        displayName:
+          type: string
+      required:
+      - code
+      - displayName
     ShopperSearchResult:
       type: object
       properties:

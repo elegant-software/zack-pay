@@ -39,6 +39,8 @@ data class UpdateMerchantRequest(
     val contactPhoneNumber: String? = null,
     val merchantMobility: MerchantMobility? = null,
     val defaultVatPercent: BigDecimal? = null,
+    val originalMenuLanguage: String? = null,
+    val supportedMenuLanguages: Set<String>? = null,
 )
 
 data class MerchantDetailsResponse(
@@ -58,6 +60,8 @@ data class MerchantDetailsResponse(
     val offerings: Set<String> = emptySet(),
     val merchantMobility: MerchantMobility = MerchantMobility.BRICK_AND_MORTAR,
     val defaultVatPercent: BigDecimal? = null,
+    val originalMenuLanguage: String? = null,
+    val supportedMenuLanguages: Set<String> = emptySet(),
 )
 
 data class MerchantVerticalResponse(
