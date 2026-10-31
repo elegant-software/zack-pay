@@ -71,6 +71,9 @@ class MerchantMcpTools(
         Never send imageUrl and imageBase64 together. imageContentType is only needed with imageBase64.
         Prefer the original, full-quality URL over thumbnails (avoid "thumb", "small", "w=150" style variants).
         Images must be clear, directly related to the product, and JPEG, PNG, or WebP (WebP over 5 MB is rejected).
+        The server rejects technically poor images and says why: shorter side under 400 px, aspect ratio over 4:1,
+        blurry, too dark or overexposed, or blank. On rejection, look for a better image of the same product
+        (larger original, different photo); do not retry the same image.
         Optional crop (cropX, cropY, cropWidth, cropHeight) is in source-image pixels and works for JPEG/PNG.
 
         Categories

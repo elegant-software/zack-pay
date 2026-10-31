@@ -1,6 +1,8 @@
 package com.elegant.software.blitzpay.merchant.service
 
+import com.elegant.software.blitzpay.merchant.config.ProductImageQualityProperties
 import org.slf4j.LoggerFactory
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 import java.awt.Rectangle
 import java.awt.RenderingHints
@@ -24,36 +26,37 @@ data class ProductImageCrop(val x: Int, val y: Int, val width: Int, val height: 
 
 /**
  * Turns a raw product image (up to [ProductImagePolicy.MaxSourceBytes]) into a storable
- * [ProductImageUpload] of at most [ProductImagePolicy.MaxBytes]: applies the optional crop and,
- * when the result is too large, downsizes and re-encodes it.
+ * [ProductImageUpload] of at most [ProductImagePolicy.MaxBytes]: applies the optional crop, rejects
+ * images that fail the technical quality gate ([ProductImageQualityInspector]) and, when the result
+ * is too large, downsizes and re-encodes it. Images that need no changes are stored byte-for-byte.
  *
  * Memory is bounded for small pods: dimensions are checked from the header before decoding,
  * only the crop region is decoded, very large sources are decoded subsampled to [MaxDecodeEdge],
  * and at most [MaxConcurrentDecodes] images are decoded at once.
  */
 @Component
-class ProductImageProcessor {
+@EnableConfigurationProperties(ProductImageQualityProperties::class)
+class ProductImageProcessor(qualityProperties: ProductImageQualityProperties) {
 
     private val log = LoggerFactory.getLogger(ProductImageProcessor::class.java)
     private val decodePermits = Semaphore(MaxConcurrentDecodes)
+    private val qualityInspector = ProductImageQualityInspector(qualityProperties)
 
     fun prepare(image: RawProductImage, crop: ProductImageCrop? = null): ProductImageUpload {
         ProductImagePolicy.extensionFor(image.contentType)
         ProductImagePolicy.validateSourceSize(image.bytes.size.toLong())
-        if (crop == null && image.bytes.size <= ProductImagePolicy.MaxBytes) {
-            return ProductImageUpload(contentType = image.contentType, bytes = image.bytes)
-        }
-        require(image.contentType.lowercase() != "image/webp") {
-            if (crop != null) "Server-side crop is supported for JPEG and PNG images only"
-            else "WebP product images must be 5 MB or smaller; supply a JPEG or PNG to have it resized"
-        }
+        if (image.contentType.lowercase() == "image/webp") return prepareWebp(image, crop)
 
+        val needsReencode = crop != null || image.bytes.size > ProductImagePolicy.MaxBytes
         require(decodePermits.tryAcquire(AcquireTimeoutSeconds, TimeUnit.SECONDS)) {
             "Product image processing is busy; retry shortly"
         }
         try {
-            val decoded = decode(image.bytes, crop)
-            val result = encodeWithinLimit(decoded, image.contentType)
+            val decoded = decode(image.bytes, crop, if (needsReencode) MaxDecodeEdge else AnalysisDecodeEdge)
+            qualityInspector.inspect(decoded.image, decoded.sourceWidth, decoded.sourceHeight)
+            if (!needsReencode) return ProductImageUpload(contentType = image.contentType, bytes = image.bytes)
+
+            val result = encodeWithinLimit(decoded.image, image.contentType)
             log.info(
                 "Product image processed: sourceBytes={} cropped={} resultBytes={} type={}",
                 image.bytes.size, crop != null, result.bytes.size, result.contentType
@@ -64,7 +67,21 @@ class ProductImageProcessor {
         }
     }
 
-    private fun decode(bytes: ByteArray, crop: ProductImageCrop?): BufferedImage {
+    /** ImageIO has no WebP codec: only header-level checks are possible, and the image is stored as-is. */
+    private fun prepareWebp(image: RawProductImage, crop: ProductImageCrop?): ProductImageUpload {
+        require(crop == null) { "Server-side crop is supported for JPEG and PNG images only" }
+        require(image.bytes.size <= ProductImagePolicy.MaxBytes) {
+            "WebP product images must be 5 MB or smaller; supply a JPEG or PNG to have it resized"
+        }
+        val (width, height) = webpDimensions(image.bytes)
+            ?: throw IllegalArgumentException("Unable to read WebP product image dimensions")
+        qualityInspector.checkDimensions(width, height)
+        return ProductImageUpload(contentType = image.contentType, bytes = image.bytes)
+    }
+
+    private class DecodedImage(val image: BufferedImage, val sourceWidth: Int, val sourceHeight: Int)
+
+    private fun decode(bytes: ByteArray, crop: ProductImageCrop?, maxEdge: Int): DecodedImage {
         ImageIO.createImageInputStream(ByteArrayInputStream(bytes)).use { input ->
             val reader = ImageIO.getImageReaders(input).asSequence().firstOrNull()
                 ?: throw IllegalArgumentException("Unable to decode product image")
@@ -76,12 +93,12 @@ class ProductImageProcessor {
                     "Product image dimensions ${width}x$height exceed the supported maximum"
                 }
                 val region = crop?.let { validCropRegion(it, width, height) } ?: Rectangle(0, 0, width, height)
-                val subsampling = max(1, ceil(max(region.width, region.height).toDouble() / MaxDecodeEdge).toInt())
+                val subsampling = max(1, ceil(max(region.width, region.height).toDouble() / maxEdge).toInt())
                 val param = reader.defaultReadParam.apply {
                     sourceRegion = region
                     setSourceSubsampling(subsampling, subsampling, 0, 0)
                 }
-                return read(reader, param)
+                return DecodedImage(read(reader, param), region.width, region.height)
             } finally {
                 reader.dispose()
             }
@@ -172,8 +189,24 @@ class ProductImageProcessor {
         }
     }
 
+    private fun webpDimensions(bytes: ByteArray): Pair<Int, Int>? {
+        if (bytes.size < 30) return null
+        fun u8(i: Int) = bytes[i].toInt() and 0xFF
+        fun u24(i: Int) = u8(i) or (u8(i + 1) shl 8) or (u8(i + 2) shl 16)
+        return when (String(bytes, 12, 4, Charsets.US_ASCII)) {
+            "VP8X" -> (u24(24) + 1) to (u24(27) + 1)
+            "VP8 " -> ((u8(26) or (u8(27) shl 8)) and 0x3FFF) to ((u8(28) or (u8(29) shl 8)) and 0x3FFF)
+            "VP8L" -> {
+                val bits = u8(21) or (u8(22) shl 8) or (u8(23) shl 16) or (u8(24) shl 24)
+                ((bits and 0x3FFF) + 1) to (((bits shr 14) and 0x3FFF) + 1)
+            }
+            else -> null
+        }
+    }
+
     companion object {
         private const val MaxDecodeEdge = 4096
+        private const val AnalysisDecodeEdge = 2048
         private const val MaxConcurrentDecodes = 2
         private const val AcquireTimeoutSeconds = 30L
         private const val JpegQuality = 0.88f
