@@ -1,5 +1,6 @@
 # k8s staging: S3 = minio; credentials come from the minio-credentials secret (helm deployment env).
 # Public host, not the in-cluster service: presigned URLs must be reachable by clients.
+# Server-side S3 calls use STORAGE_INTERNAL_ENDPOINT (blitzpay.storage.internal-endpoint) when set.
 spring:
   cloud:
     aws:

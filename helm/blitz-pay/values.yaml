@@ -120,6 +120,7 @@ config:
   truelayerHttpLogs: "false"
   truelayerWebhookJku: http://localhost:8080/.well-known/jwks.json
   whisperBaseUrl: http://whisper:8000/v1
+  storageInternalEndpoint: ""  # in-cluster S3 for server-side calls; empty = use STORAGE_ENDPOINT
   frontendOrigin: ""  # default: https://<hosts.admin>.<baseDomain>
   stripeConnectReturnUrl: ""  # default: https://<hosts.api>.<baseDomain>/stripe-connect/return
   stripeConnectApiBaseUrl: ""  # default: https://<hosts.api>.<baseDomain>

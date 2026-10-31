@@ -197,6 +197,7 @@ blitzpay:
       - "*"
   storage:
     bucket: ${STORAGE_BUCKET:blitzpay}
+    internal-endpoint: ${STORAGE_INTERNAL_ENDPOINT:}
   product-image:
     quality:
       enabled: ${PRODUCT_IMAGE_QUALITY_ENABLED:true}

@@ -24,6 +24,9 @@ data:
   # The actual PEM content is in the blitz-pay-truelayer-pem Secret (volume mount).
   TRUELAYER_PRIVATE_KEY_PATH: {{ printf "%s/%s" .Values.privateKey.mountPath .Values.privateKey.secretKey | quote }}
   WHISPER_BASE_URL: {{ .Values.config.whisperBaseUrl | quote }}
+  {{- with .Values.config.storageInternalEndpoint }}
+  STORAGE_INTERNAL_ENDPOINT: {{ . | quote }}
+  {{- end }}
   {{- if .Values.global.baseDomain }}
   {{- $api := printf "https://%s" (include "blitz-pay.host" (list . "api")) }}
   FRONTEND_ORIGIN: {{ .Values.config.frontendOrigin | default (printf "https://%s" (include "blitz-pay.host" (list . "admin"))) | quote }}
