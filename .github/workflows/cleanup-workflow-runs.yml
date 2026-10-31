@@ -23,6 +23,7 @@ jobs:
       contents: write
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/cleanup-github-workflows.yml@main
     with:
-      older_than_days: ${{ inputs.older_than_days || 14 }}
+      # reusable workflow declares older_than_days as a string
+      older_than_days: ${{ inputs.older_than_days || '14' }}
       # scheduled runs have no inputs and stay dry runs
       dry_run: ${{ github.event_name == 'schedule' || inputs.dry_run }}

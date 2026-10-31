@@ -30,7 +30,8 @@ jobs:
       contents: write
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/cleanup-release-tags.yml@main
     with:
-      older_than_days: ${{ inputs.older_than_days || 30 }}
+      # dispatch number inputs arrive as strings; the reusable workflow expects a number
+      older_than_days: ${{ fromJSON(inputs.older_than_days || '30') }}
       # scheduled runs have no inputs and stay dry runs
       dry_run: ${{ github.event_name == 'schedule' || inputs.dry_run }}
       delete_drafts: ${{ github.event_name == 'schedule' || inputs.delete_drafts }}
