@@ -53,6 +53,13 @@ helm upgrade --install blitzpay ./helm/blitzpay \
   --timeout 5m
 ```
 
+## Domain
+
+Set the environment's domain once with `global.baseDomain` in `values-<env>.yaml`. The ingress
+host, TLS secret, CORS origin, Keycloak/MinIO/Stripe URLs and the `blitzpay-domains` ConfigMap
+(read by the admin dashboard, storefront and `k8s/apply-infra.sh`) all derive from it. See
+[`reference/domain-configuration.md`](../../reference/domain-configuration.md).
+
 ## CD Pipeline (Automated)
 
 The `.github/workflows/cd.yml` workflow automatically deploys to production when a GitHub release is published. It requires a `KUBECONFIG` secret in the GitHub repository settings:

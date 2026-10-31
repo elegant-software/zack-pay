@@ -64,8 +64,8 @@ URL-path versioning (`/v1/...`) uses a custom `PathOnlyApiVersionResolver` that 
 
 Because Kotlin lacks `package-info.java`, module metadata is declared via a dedicated type annotated with `@org.springframework.modulith.PackageInfo`. Use this for `@ApplicationModule` and `@NamedInterface` declarations.
 
-## CORS / Frontend Origin
-`blitzpay.cors.allowed-origins` comes from `FRONTEND_ORIGIN`: set via `config.frontendOrigin` in `helm/blitz-pay/values-*.yaml` (k8s) and in `infra/lib/app-stack.ts` (AWS). Whenever the admin dashboard's domain changes, update these to match, or every browser call fails with a 403 on the CORS preflight. Full cross-repo checklist: `CLAUDE.md` in `blitzpay-admin-dashboard`, section "Changing Domains / URLs".
+## Domains / CORS
+In Kubernetes, every public hostname derives from `global.baseDomain` in `helm/blitz-pay/values-<env>.yaml`, the only place the domain is set. The chart derives the ingress host, `FRONTEND_ORIGIN` (CORS), Keycloak and MinIO URLs from it and publishes all hosts in the `blitzpay-domains` ConfigMap, which the admin dashboard, storefront and `k8s/apply-infra.sh` read. Never hardcode a hostname in Helm values, `k8s/` manifests or the dashboard; leave `ingress.hostname` and `config.frontendOrigin` empty. How it works and the change procedure: `reference/domain-configuration.md` (ADR-0018). AWS still sets `FRONTEND_ORIGIN` in `infra/lib/app-stack.ts`.
 
 ## Testing
 
