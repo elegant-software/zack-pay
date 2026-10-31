@@ -55,9 +55,23 @@ class MerchantMcpTools(
         Products
           1 product  → product_id_by_name_or_create
           2+ products → products_bulk_upsert  (never loop the single-product tool)
-          GOOD → provide product images when available using imageBase64 + imageContentType only
-          Product images must be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller
+          GOOD → provide product images when available (see PRODUCT IMAGES below)
           For bulk imports, create products first, then use merchant_product_update for images
+
+        PRODUCT IMAGES
+        ══════════════
+        Decide the image source in this order:
+          1. Image has a public http(s) URL (merchant website, CDN, marketplace)  → imageUrl
+               The server downloads it; up to 15 MB; images over 5 MB are resized automatically.
+               The URL must open without login/cookies and must not be a private/internal address.
+          2. No URL, and the image is SMALL (original < ~150 KB, base64 < ~200 KB) → imageBase64 + imageContentType
+               Typical cases: a thumbnail or logo-sized picture pasted into the chat or read from a local file.
+          3. No URL, and the image is larger                                      → do NOT base64 it
+               Ask the user for a public link, or skip the image and continue with the product data.
+        Never send imageUrl and imageBase64 together. imageContentType is only needed with imageBase64.
+        Prefer the original, full-quality URL over thumbnails (avoid "thumb", "small", "w=150" style variants).
+        Images must be clear, directly related to the product, and JPEG, PNG, or WebP (WebP over 5 MB is rejected).
+        Optional crop (cropX, cropY, cropWidth, cropHeight) is in source-image pixels and works for JPEG/PNG.
 
         Categories
           1 category  → category_id_by_name_or_create

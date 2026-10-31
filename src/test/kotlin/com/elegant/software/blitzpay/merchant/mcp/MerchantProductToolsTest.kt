@@ -15,6 +15,10 @@ import com.elegant.software.blitzpay.merchant.service.MerchantProductCategorySer
 import com.elegant.software.blitzpay.merchant.service.MerchantProductService
 import com.elegant.software.blitzpay.merchant.service.MerchantRegistrationService
 import com.elegant.software.blitzpay.merchant.service.MerchantVerticalService
+import com.elegant.software.blitzpay.merchant.service.ProductImageDownloader
+import com.elegant.software.blitzpay.merchant.service.ProductImageProcessor
+import com.elegant.software.blitzpay.merchant.service.ProductImageUpload
+import com.elegant.software.blitzpay.merchant.service.RawProductImage
 import com.elegant.software.blitzpay.merchant.api.MerchantVerticalResponse
 import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
@@ -22,6 +26,7 @@ import com.elegant.software.blitzpay.storage.StorageService
 import io.modelcontextprotocol.spec.McpSchema.CompleteRequest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
@@ -45,6 +50,7 @@ class MerchantProductToolsTest {
     private val merchantProductCategoryService = mock<MerchantProductCategoryService>()
     private val merchantVerticalService = mock<MerchantVerticalService>()
     private val storageService = mock<StorageService>()
+    private val productImageDownloader = mock<ProductImageDownloader>()
 
     private val merchantTools = MerchantMcpTools(
         merchantRegistrationService = merchantRegistrationService,
@@ -62,6 +68,8 @@ class MerchantProductToolsTest {
     private val productTools = ProductMcpTools(
         merchantProductService = merchantProductService,
         merchantProductCategoryService = merchantProductCategoryService,
+        productImageDownloader = productImageDownloader,
+        productImageProcessor = ProductImageProcessor(),
     )
 
     private val merchantPrompts = MerchantMcpPrompts(
@@ -135,6 +143,57 @@ class MerchantProductToolsTest {
         )
 
         verify(merchantProductService).create(eq(merchantId), any<CreateProductRequest>(), isNull(), eq(false))
+    }
+
+    @Test
+    fun `getOrCreateProductId downloads image from imageUrl`() {
+        val merchantId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val bytes = byteArrayOf(1, 2, 3)
+        val image = ProductImageUpload(contentType = "image/png", bytes = bytes)
+        whenever(productImageDownloader.download("https://cdn.example.com/latte.png"))
+            .thenReturn(RawProductImage(contentType = "image/png", bytes = bytes))
+        whenever(merchantProductService.findByNameIncludingInactive(merchantId, branchId, "Latte")).thenReturn(null)
+        whenever(merchantProductService.create(eq(merchantId), any<CreateProductRequest>(), eq(image), eq(false))).thenReturn(
+            ProductResponse(
+                productId = UUID.randomUUID(),
+                branchId = branchId,
+                name = "Latte",
+                description = null,
+                unitPrice = BigDecimal("3.50"),
+                imageUrl = null,
+                active = false,
+                status = "INACTIVE",
+                createdAt = Instant.now(),
+                updatedAt = Instant.now()
+            )
+        )
+
+        productTools.getOrCreateProductId(
+            merchantId = merchantId.toString(),
+            branchId = branchId.toString(),
+            productName = "Latte",
+            unitPrice = "3.50",
+            imageUrl = " https://cdn.example.com/latte.png "
+        )
+
+        verify(merchantProductService).create(eq(merchantId), any<CreateProductRequest>(), eq(image), eq(false))
+    }
+
+    @Test
+    fun `getOrCreateProductId rejects imageBase64 and imageUrl together`() {
+        assertThrows<IllegalArgumentException> {
+            productTools.getOrCreateProductId(
+                merchantId = UUID.randomUUID().toString(),
+                branchId = UUID.randomUUID().toString(),
+                productName = "Latte",
+                unitPrice = "3.50",
+                imageBase64 = "AQID",
+                imageContentType = "image/png",
+                imageUrl = "https://cdn.example.com/latte.png"
+            )
+        }
+        verify(productImageDownloader, never()).download(any())
     }
 
     @Test
