@@ -99,7 +99,7 @@ jobs:
             --set image.tag=$IMAGE_TAG
             --wait
             --atomic
-            --timeout 5m
+            --timeout 10m
           )
 
           # Allow environment-specific OTLP endpoint from GitHub Environment Variables.
@@ -113,7 +113,7 @@ jobs:
         run: |
           kubectl rollout status deployment/$APP_NAME \
             --namespace blitzpay-$ENV_SUFFIX \
-            --timeout=5m
+            --timeout=10m
 
       - name: Add deployment to job summary
         if: always()
