@@ -44,6 +44,9 @@ class StorefrontPublicAccessContractTest : ContractVerifierBase() {
             "/v1/merchants/$MERCHANT/provider-accounts",
             "/v1/merchants/$MERCHANT/stripe-connect/refresh",
             "/v1/merchants/nearby",
+            "/v1/merchants/menu-languages",
+            "/v1/merchants/$MERCHANT/products/$PRODUCT/translations",
+            "/v1/merchants/$MERCHANT/translation-coverage",
             "/v1/merchant/orders",
         ]
     )
@@ -55,6 +58,8 @@ class StorefrontPublicAccessContractTest : ContractVerifierBase() {
     fun `catalog writes still require a token`() {
         anonymous.put().uri("/v1/merchants/$MERCHANT").bodyValue("{}").exchange().expectStatus().isUnauthorized
         anonymous.delete().uri("/v1/merchants/$MERCHANT/products/$PRODUCT").exchange().expectStatus().isUnauthorized
+        anonymous.put().uri("/v1/merchants/$MERCHANT/products/$PRODUCT/translations/en").bodyValue("{}")
+            .exchange().expectStatus().isUnauthorized
     }
 
     companion object {

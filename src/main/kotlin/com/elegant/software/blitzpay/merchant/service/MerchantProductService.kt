@@ -5,6 +5,7 @@ import com.elegant.software.blitzpay.merchant.api.ProductResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductTranslation
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
@@ -26,7 +27,9 @@ class MerchantProductService(
     private val merchantRepository: MerchantRepository,
     private val merchantBranchRepository: MerchantBranchRepository,
     private val entityManager: EntityManager,
-    private val storageService: StorageService
+    private val storageService: StorageService,
+    private val catalogTranslationService: CatalogTranslationService,
+    private val menuLanguageService: MenuLanguageService,
 ) {
     private val log = LoggerFactory.getLogger(MerchantProductService::class.java)
 
@@ -86,10 +89,12 @@ class MerchantProductService(
     }
 
     @Transactional(readOnly = true)
+    /** [language] is a resolved translation language (see [MenuLanguageService.resolve]); null serves the original. */
     fun list(
         merchantId: UUID,
         merchantBranchId: UUID,
-        categoryId: UUID? = null
+        categoryId: UUID? = null,
+        language: String? = null,
     ): List<ProductResponse> {
         requireMerchantExists(merchantId)
         enableTenantFilter(merchantId)
@@ -99,12 +104,11 @@ class MerchantProductService(
             validateCategory(merchantId, categoryId)
             productRepository.findAllByMerchantBranchIdAndProductCategoryId(merchantBranchId, categoryId)
         }
-            .map { it.toResponse() }
-        return products
+        return products.toResponses(merchantId, language)
     }
 
     @Transactional(readOnly = true)
-    fun get(merchantId: UUID, productId: UUID, merchantBranchId: UUID?): ProductResponse {
+    fun get(merchantId: UUID, productId: UUID, merchantBranchId: UUID?, language: String? = null): ProductResponse {
         requireMerchantExists(merchantId)
         enableTenantFilter(merchantId)
         val product = if (merchantBranchId != null) {
@@ -117,7 +121,7 @@ class MerchantProductService(
                     if (it.merchantId != merchantId) throw NoSuchElementException("Product not found: $productId")
                 }
         }
-        return product.toResponse()
+        return listOf(product).toResponses(merchantId, language).single()
     }
 
     @Transactional(readOnly = true)
@@ -323,21 +327,39 @@ class MerchantProductService(
                 .getOrNull()
         }
 
-    private fun MerchantProduct.toResponse() = ProductResponse(
+    private fun List<MerchantProduct>.toResponses(merchantId: UUID, language: String?): List<ProductResponse> {
+        val original = menuLanguageService.originalLanguage(merchantId)
+        val translations = catalogTranslationService.productTexts(this, language)
+        val categoryNames = catalogTranslationService.categoryNames(mapNotNull { it.productCategoryId }.toSet(), language)
+        return map { product ->
+            product.toResponse(
+                translation = translations[product.id],
+                translatedCategoryName = product.productCategoryId?.let { categoryNames[it] },
+                originalLanguage = original,
+            )
+        }
+    }
+
+    private fun MerchantProduct.toResponse(
+        translation: MerchantProductTranslation? = null,
+        translatedCategoryName: String? = null,
+        originalLanguage: String? = menuLanguageService.originalLanguage(merchantId),
+    ) = ProductResponse(
         categoryId = productCategoryId,
-        categoryName = productCategoryId?.let {
+        categoryName = translatedCategoryName ?: productCategoryId?.let {
             categoryRepository.findByMerchantIdAndId(merchantId, it)?.name
         },
         productCode = productCode,
         productId = id,
         branchId = merchantBranchId!!,
-        name = name,
-        description = description,
+        name = translation?.name ?: name,
+        description = if (translation != null) translation.description else description,
         unitPrice = unitPrice,
         imageUrl = signedImageUrl(imageStorageKey),
         active = active,
         status = status,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        language = translation?.language ?: originalLanguage,
     )
 }

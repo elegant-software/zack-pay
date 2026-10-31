@@ -3,10 +3,12 @@ package com.elegant.software.blitzpay.merchant.web
 import com.elegant.software.blitzpay.merchant.api.CreateProductRequest
 import com.elegant.software.blitzpay.merchant.api.ProductResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
+import com.elegant.software.blitzpay.merchant.service.MenuLanguageService
 import com.elegant.software.blitzpay.merchant.service.MerchantProductService
 import com.elegant.software.blitzpay.merchant.service.ProductImageUpload
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -20,7 +22,10 @@ data class ProductErrorResponse(val error: String)
 @Tag(name = "Merchant Products", description = "Product catalog management for merchants")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchants/{merchantId}/products", version = "1")
-class MerchantProductController(private val merchantProductService: MerchantProductService) {
+class MerchantProductController(
+    private val merchantProductService: MerchantProductService,
+    private val menuLanguageService: MenuLanguageService,
+) {
 
     @Operation(summary = "Create a product for the merchant")
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -49,14 +54,26 @@ class MerchantProductController(private val merchantProductService: MerchantProd
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
-    @Operation(summary = "List products for the merchant")
+    @Operation(
+        summary = "List products for the merchant",
+        description = "Name and description follow Accept-Language when the merchant offers International Menu, " +
+            "or the explicit language parameter; untranslated items fall back to the Original Menu Language. " +
+            "The language field states which language was returned."
+    )
     @GetMapping
     fun list(
         @PathVariable merchantId: UUID,
         @RequestParam("branchId") branchId: UUID,
         @RequestParam("categoryId", required = false) categoryId: UUID?,
+        @RequestParam("language", required = false) language: String?,
+        @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE, required = false) acceptLanguage: String?,
     ): ResponseEntity<List<ProductResponse>> =
-        ResponseEntity.ok(merchantProductService.list(merchantId, branchId, categoryId))
+        ResponseEntity.ok(
+            merchantProductService.list(
+                merchantId, branchId, categoryId,
+                menuLanguageService.resolve(merchantId, language, acceptLanguage)
+            )
+        )
 
     @Operation(summary = "Get a single product")
     @GetMapping("/{productId}")
@@ -64,8 +81,15 @@ class MerchantProductController(private val merchantProductService: MerchantProd
         @PathVariable merchantId: UUID,
         @PathVariable productId: UUID,
         @RequestParam("branchId", required = false) branchId: UUID?,
+        @RequestParam("language", required = false) language: String?,
+        @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE, required = false) acceptLanguage: String?,
     ): ResponseEntity<ProductResponse> =
-        ResponseEntity.ok(merchantProductService.get(merchantId, productId, branchId))
+        ResponseEntity.ok(
+            merchantProductService.get(
+                merchantId, productId, branchId,
+                menuLanguageService.resolve(merchantId, language, acceptLanguage)
+            )
+        )
 
     @Operation(summary = "Update a product's name, price, and image")
     @PutMapping("/{productId}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])

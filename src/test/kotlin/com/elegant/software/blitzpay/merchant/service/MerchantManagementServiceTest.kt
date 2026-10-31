@@ -40,7 +40,8 @@ class MerchantManagementServiceTest {
         merchantOfferingRepository,
         merchantOfferingAssignmentRepository,
         storageService,
-        eventPublisher
+        eventPublisher,
+        mock<MenuLanguageService>(),
     )
 
     private fun merchant(name: String = "Old Name GmbH") = Merchant(

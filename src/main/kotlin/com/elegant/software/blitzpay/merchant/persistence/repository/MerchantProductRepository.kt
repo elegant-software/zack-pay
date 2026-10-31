@@ -28,6 +28,7 @@ interface MerchantProductRepository : JpaRepository<MerchantProduct, UUID> {
     fun updateStatus(@Param("id") id: UUID, @Param("status") status: String): Int
 
     fun findAllByActiveTrue(): List<MerchantProduct>
+    fun findAllByMerchantIdAndActiveTrue(merchantId: UUID): List<MerchantProduct>
     fun findAllByMerchantBranchId(merchantBranchId: UUID): List<MerchantProduct>
     fun findAllByActiveTrueAndMerchantBranchId(merchantBranchId: UUID): List<MerchantProduct>
     fun findAllByMerchantBranchIdAndProductCategoryId(

@@ -103,7 +103,7 @@ For technology-specific patterns and detailed best practices, refer to:
 - Use the operational merchant vocabulary defined in `CONTEXT.md`. Prefer `Merchant`, `Branch`, `MerchantCode`, `BranchCode`, `MerchantStatus`, and `BranchStatus` over legacy onboarding terms such as `MerchantApplication`, `applicationReference`, or onboarding workflow states.
 - Merchant status uses a simplified two-value model (`ACTIVE` / `INACTIVE`). Onboarding workflow statuses (`DRAFT`, `SUBMITTED`, etc.) coexist for backwards compatibility but must not leak into operational merchant contracts or new feature code.
 - Every `Branch` is the mandatory anchor for `Order` records. `branchId` is required on all new order creation requests. `orderType` (`PRE_ORDER` / `WALK_IN_ORDERING`) and `usesDeferredPayment` are explicit fields on every order.
-- Merchant-wide offerings (`PRE_ORDER`, `WALK_IN_ORDERING`, `DEFERRED_PAYMENT`, `APPOINTMENT_BOOKING`) are a platform-managed catalogue. `DEFERRED_PAYMENT` requires at least one ordering offering to also be enabled.
+- Merchant-wide offerings (`PRE_ORDER`, `WALK_IN_ORDERING`, `DEFERRED_PAYMENT`, `APPOINTMENT_BOOKING`, `INTERNATIONAL_MENU`) are a platform-managed catalogue. `DEFERRED_PAYMENT` requires at least one ordering offering to also be enabled. `INTERNATIONAL_MENU` requires the merchant's `originalMenuLanguage`.
 
 ## Documentation
 

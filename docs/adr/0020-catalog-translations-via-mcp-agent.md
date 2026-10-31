@@ -21,8 +21,9 @@ current.
 Each translation stores a hash of the original name/description it was made from. A translation
 is stale when that hash no longer matches. A stale translation is still served to shoppers until
 it is replaced. Products and categories have separate translation tables, not one polymorphic
-table, so foreign keys and `ON DELETE CASCADE` stay in Liquibase. One shared component holds the
-fallback, staleness and origin rules.
+table, so each translation has a real `ON DELETE RESTRICT` foreign key. The category service deletes
+a category's translations before the category; products are only soft-deleted. One shared component
+holds the fallback, staleness and origin rules.
 
 ## Considered Options
 

@@ -6,6 +6,7 @@ import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductC
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryTranslationRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -23,11 +24,15 @@ class MerchantProductCategoryServiceTest {
     private val productRepository = mock<MerchantProductRepository>()
     private val merchantRepository = mock<MerchantRepository>()
     private val offeringAssignmentRepository = mock<MerchantOfferingAssignmentRepository>()
+    private val categoryTranslationRepository = mock<MerchantProductCategoryTranslationRepository>()
     private val service = MerchantProductCategoryService(
         categoryRepository,
         productRepository,
         merchantRepository,
         offeringAssignmentRepository,
+        categoryTranslationRepository,
+        mock(),
+        mock(),
     )
     private val merchantId = UUID.randomUUID()
 
@@ -207,6 +212,7 @@ class MerchantProductCategoryServiceTest {
 
         service.delete(merchantId, existing.id)
 
+        verify(categoryTranslationRepository).deleteAllByCategoryId(existing.id)
         verify(categoryRepository).deleteById(existing.id)
     }
 
