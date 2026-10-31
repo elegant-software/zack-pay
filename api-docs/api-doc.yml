@@ -293,6 +293,8 @@ paths:
                   type: string
                 productCode:
                   type: string
+                active:
+                  type: string
                 image:
                   type: string
                   format: binary

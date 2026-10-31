@@ -285,14 +285,18 @@ class MerchantProductService(
     ): ProductResponse {
         val previousImageStorageKey = product.imageStorageKey
         val newImageStorageKey = image?.let { uploadImage(merchantId, product.id, it, request.branchId) } ?: previousImageStorageKey
-        val resolvedProductCode = resolveProductCode(request.branchId, request.productCode)
+        val resolvedProductCode = request.productCode
+            ?.let { resolveProductCode(request.branchId, it) }
+            ?: product.productCode
+            ?: resolveProductCode(request.branchId, null)
         product.update(
             name = request.name.trim(),
             description = ProductImagePolicy.normalizeDescription(request.description),
             unitPrice = request.unitPrice,
             imageStorageKey = newImageStorageKey,
             productCategoryId = request.categoryId,
-            productCode = resolvedProductCode
+            productCode = resolvedProductCode,
+            active = request.active
         )
         if (request.branchId != product.merchantBranchId) {
             product.merchantBranchId = request.branchId

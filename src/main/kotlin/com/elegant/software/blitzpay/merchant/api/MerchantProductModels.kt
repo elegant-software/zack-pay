@@ -19,7 +19,9 @@ data class UpdateProductRequest(
     val unitPrice: BigDecimal,
     val description: String? = null,
     val categoryId: UUID? = null,
-    val productCode: Long? = null
+    val productCode: Long? = null,
+    /** null keeps the product's current status. */
+    val active: Boolean? = null
 )
 
 data class ProductResponse(

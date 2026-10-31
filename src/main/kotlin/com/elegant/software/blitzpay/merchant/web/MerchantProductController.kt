@@ -102,6 +102,7 @@ class MerchantProductController(
         @RequestPart("description", required = false) description: String?,
         @RequestPart("categoryId", required = false) categoryId: String?,
         @RequestPart("productCode", required = false) productCode: String?,
+        @RequestPart("active", required = false) active: String?,
         @RequestPart("image", required = false) image: MultipartFile?,
     ): ResponseEntity<ProductResponse> =
         ResponseEntity.ok(
@@ -114,6 +115,7 @@ class MerchantProductController(
                     description = description,
                     categoryId = categoryId.toUuidOrNull(),
                     productCode = productCode.toLongOrNull(),
+                    active = active.toBooleanOrNull(),
                 ),
                 image?.toProductImageUpload()
             )
@@ -149,4 +151,5 @@ class MerchantProductController(
 
     private fun String?.toUuidOrNull(): UUID? = this?.trim()?.takeIf { it.isNotEmpty() }?.let(UUID::fromString)
     private fun String?.toLongOrNull(): Long? = this?.trim()?.takeIf { it.isNotEmpty() }?.toLong()
+    private fun String?.toBooleanOrNull(): Boolean? = this?.trim()?.takeIf { it.isNotEmpty() }?.toBooleanStrict()
 }

@@ -61,6 +61,7 @@ class MerchantProduct(
 ) {
     fun deactivate(at: Instant = Instant.now()) {
         active = false
+        status = MerchantEntityStatus.INACTIVE
         updatedAt = at
     }
 
@@ -71,6 +72,8 @@ class MerchantProduct(
         imageStorageKey: String?,
         productCategoryId: UUID? = this.productCategoryId,
         productCode: Long? = this.productCode,
+        /** null keeps the current status; true/false sets both [active] and [status]. */
+        active: Boolean? = null,
         at: Instant = Instant.now()
     ) {
         require(name.isNotBlank()) { "name must not be blank" }
@@ -83,8 +86,10 @@ class MerchantProduct(
         this.imageStorageKey = imageStorageKey
         this.productCategoryId = productCategoryId
         this.productCode = productCode
-        this.active = true
-        this.status = MerchantEntityStatus.ACTIVE
+        if (active != null) {
+            this.active = active
+            this.status = if (active) MerchantEntityStatus.ACTIVE else MerchantEntityStatus.INACTIVE
+        }
         this.updatedAt = at
     }
 }

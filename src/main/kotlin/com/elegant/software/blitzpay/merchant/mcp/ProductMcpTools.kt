@@ -71,7 +71,9 @@ class ProductMcpTools(
         @McpToolParam(required = false, description = CropDescription)
         cropWidth: Int? = null,
         @McpToolParam(required = false, description = CropDescription)
-        cropHeight: Int? = null
+        cropHeight: Int? = null,
+        @McpToolParam(required = false, description = "true to activate, false to deactivate the product. Omit to keep the current status.")
+        active: Boolean? = null
     ): ProductResponse {
         val mId = UUID.fromString(merchantId)
         val pId = UUID.fromString(productId)
@@ -98,7 +100,8 @@ class ProductMcpTools(
                 } else {
                     resolveOrCreateCategory(mId, categoryId, categoryName)
                 },
-                productCode = productCode?.trim()?.takeIf { it.isNotEmpty() }?.toLong() ?: existing.productCode
+                productCode = productCode?.trim()?.takeIf { it.isNotEmpty() }?.toLong() ?: existing.productCode,
+                active = active
             ),
             image = image
         )

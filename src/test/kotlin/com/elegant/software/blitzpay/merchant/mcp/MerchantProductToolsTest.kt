@@ -510,6 +510,27 @@ class MerchantProductToolsTest {
     }
 
     @Test
+    fun `updateProduct passes active flag through to request`() {
+        val merchantId = UUID.randomUUID()
+        val productId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val stored = storedProduct(productId, branchId)
+        whenever(merchantProductService.get(merchantId, productId, null)).thenReturn(stored)
+        whenever(merchantProductService.updateIncludingInactive(eq(merchantId), eq(productId), any(), isNull())).thenReturn(stored)
+
+        productTools.updateProduct(
+            merchantId = merchantId.toString(),
+            productId = productId.toString(),
+            branchId = branchId.toString(),
+            active = false
+        )
+
+        val captor = argumentCaptor<com.elegant.software.blitzpay.merchant.api.UpdateProductRequest>()
+        verify(merchantProductService).updateIncludingInactive(eq(merchantId), eq(productId), captor.capture(), isNull())
+        assertEquals(false, captor.firstValue.active)
+    }
+
+    @Test
     fun `updateProduct with only an image keeps price, description, category and code`() {
         val merchantId = UUID.randomUUID()
         val productId = UUID.randomUUID()
