@@ -15,6 +15,9 @@ class MerchantMenuLanguage(
     @Column(name = "display_name", nullable = false, length = 64)
     var displayName: String,
 
+    @Column(name = "native_name", nullable = false, length = 64)
+    var nativeName: String = displayName,
+
     @Column(nullable = false)
     var active: Boolean = true,
 )

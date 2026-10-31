@@ -96,3 +96,66 @@ CREATE TABLE blitzpay.merchant_product_category_translations (
 );
 
 -- rollback DROP TABLE blitzpay.merchant_product_category_translations;
+
+-- changeset mehdi:20261031-007-menu-language-iso-639-1-catalogue
+-- Standard ISO 639-1 codes for the menu language catalogue, with English and native names for the admin dropdown.
+ALTER TABLE blitzpay.merchant_menu_languages
+    ADD COLUMN native_name VARCHAR(64);
+
+INSERT INTO blitzpay.merchant_menu_languages (code, display_name, native_name, active)
+VALUES
+    ('ar', 'Arabic', 'العربية', TRUE),
+    ('bg', 'Bulgarian', 'Български', TRUE),
+    ('bn', 'Bengali', 'বাংলা', TRUE),
+    ('bs', 'Bosnian', 'Bosanski', TRUE),
+    ('ca', 'Catalan', 'Català', TRUE),
+    ('cs', 'Czech', 'Čeština', TRUE),
+    ('da', 'Danish', 'Dansk', TRUE),
+    ('de', 'German', 'Deutsch', TRUE),
+    ('el', 'Greek', 'Ελληνικά', TRUE),
+    ('en', 'English', 'English', TRUE),
+    ('es', 'Spanish', 'Español', TRUE),
+    ('et', 'Estonian', 'Eesti', TRUE),
+    ('fa', 'Persian', 'فارسی', TRUE),
+    ('fi', 'Finnish', 'Suomi', TRUE),
+    ('fr', 'French', 'Français', TRUE),
+    ('he', 'Hebrew', 'עברית', TRUE),
+    ('hi', 'Hindi', 'हिन्दी', TRUE),
+    ('hr', 'Croatian', 'Hrvatski', TRUE),
+    ('hu', 'Hungarian', 'Magyar', TRUE),
+    ('id', 'Indonesian', 'Bahasa Indonesia', TRUE),
+    ('it', 'Italian', 'Italiano', TRUE),
+    ('ja', 'Japanese', '日本語', TRUE),
+    ('ko', 'Korean', '한국어', TRUE),
+    ('ku', 'Kurdish', 'Kurdî', TRUE),
+    ('lt', 'Lithuanian', 'Lietuvių', TRUE),
+    ('lv', 'Latvian', 'Latviešu', TRUE),
+    ('mk', 'Macedonian', 'Македонски', TRUE),
+    ('ms', 'Malay', 'Bahasa Melayu', TRUE),
+    ('nl', 'Dutch', 'Nederlands', TRUE),
+    ('no', 'Norwegian', 'Norsk', TRUE),
+    ('pl', 'Polish', 'Polski', TRUE),
+    ('pt', 'Portuguese', 'Português', TRUE),
+    ('ro', 'Romanian', 'Română', TRUE),
+    ('ru', 'Russian', 'Русский', TRUE),
+    ('sk', 'Slovak', 'Slovenčina', TRUE),
+    ('sl', 'Slovenian', 'Slovenščina', TRUE),
+    ('sq', 'Albanian', 'Shqip', TRUE),
+    ('sr', 'Serbian', 'Српски', TRUE),
+    ('sv', 'Swedish', 'Svenska', TRUE),
+    ('th', 'Thai', 'ไทย', TRUE),
+    ('tr', 'Turkish', 'Türkçe', TRUE),
+    ('uk', 'Ukrainian', 'Українська', TRUE),
+    ('ur', 'Urdu', 'اردو', TRUE),
+    ('vi', 'Vietnamese', 'Tiếng Việt', TRUE),
+    ('zh', 'Chinese', '中文', TRUE)
+ON CONFLICT (code) DO UPDATE
+    SET display_name = EXCLUDED.display_name,
+        native_name  = EXCLUDED.native_name;
+
+UPDATE blitzpay.merchant_menu_languages SET native_name = display_name WHERE native_name IS NULL;
+
+ALTER TABLE blitzpay.merchant_menu_languages
+    ALTER COLUMN native_name SET NOT NULL;
+
+-- rollback ALTER TABLE blitzpay.merchant_menu_languages DROP COLUMN native_name;

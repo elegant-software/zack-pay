@@ -28,7 +28,8 @@ class MenuLanguageService(
     @Transactional(readOnly = true)
     fun catalogue(): List<MenuLanguageResponse> =
         menuLanguageRepository.findAllByActiveTrueOrderByCodeAsc()
-            .map { MenuLanguageResponse(code = it.code, displayName = it.displayName) }
+            .sortedBy { it.displayName }
+            .map { MenuLanguageResponse(code = it.code, displayName = it.displayName, nativeName = it.nativeName) }
 
     @Transactional(readOnly = true)
     fun supportedLanguages(merchantId: UUID): Set<String> =

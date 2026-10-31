@@ -285,7 +285,7 @@ An additional language, chosen by the Merchant in the admin dashboard, in which 
 _Avoid_: enabled locale, translation language, available language
 
 **Menu Language Catalogue**:
-The platform-managed list of languages a Merchant may choose as its Original Menu Language or Supported Menu Languages. Merchants select from it; they cannot add their own languages.
+The platform-managed list of languages, identified by ISO 639-1 codes, that a Merchant may choose as its Original Menu Language or Supported Menu Languages. Merchants select from it; they cannot add their own languages.
 _Avoid_: locale list, language enum, free-form language code
 
 **Product Translation**:

@@ -7772,9 +7772,12 @@ components:
           type: string
         displayName:
           type: string
+        nativeName:
+          type: string
       required:
       - code
       - displayName
+      - nativeName
     ShopperSearchResult:
       type: object
       properties:

@@ -140,7 +140,7 @@ class MerchantMcpTools(
             "Pass mobility = \"MOBILE\" for food trucks, street sellers, circuses, pop-up theatres, or any merchant that operates from variable locations. " +
             "Omit mobility (or pass \"BRICK_AND_MORTAR\") for fixed-location merchants. " +
             "Optionally uploads a logo via logoBase64 and logoContentType only; use a clear, high-quality merchant logo in JPEG, PNG, or WebP format. " +
-            "Pass originalMenuLanguage (ISO 639-1, e.g. \"de\") for the language the source menu is written in. " +
+            "Pass originalMenuLanguage (ISO 639-1 code, e.g. \"de\", \"en\", \"tr\") for the language the source menu is written in. " +
             "Returns full merchant details; use the returned merchantId as merchantId in subsequent branch and product calls.",
         annotations = McpTool.McpAnnotations(title = "Merchant Upsert")
     )

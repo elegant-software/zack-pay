@@ -4,9 +4,11 @@ import com.elegant.software.blitzpay.merchant.persistence.model.TranslationOrigi
 import java.time.Instant
 import java.util.UUID
 
+/** A Menu Language Catalogue entry: ISO 639-1 [code], English [displayName] and the language's own [nativeName]. */
 data class MenuLanguageResponse(
     val code: String,
     val displayName: String,
+    val nativeName: String,
 )
 
 enum class CatalogItemType {
