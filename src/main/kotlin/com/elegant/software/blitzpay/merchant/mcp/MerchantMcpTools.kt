@@ -57,6 +57,10 @@ class MerchantMcpTools(
           2+ products → products_bulk_upsert  (never loop the single-product tool)
           GOOD → provide product images when available (see PRODUCT IMAGES below)
           For bulk imports, create products first, then use merchant_product_update for images
+          read one    → product_get  (by productId or productName; includes inactive products)
+          read many   → products_list  (optional categoryName filter; paged with offset/limit)
+          change some fields → merchant_product_update  (partial: omitted fields keep their stored values;
+                               pass an empty string to clear description or category)
 
         PRODUCT IMAGES
         ══════════════
@@ -75,6 +79,9 @@ class MerchantMcpTools(
         blurry, too dark or overexposed, or blank. On rejection, look for a better image of the same product
         (larger original, different photo); do not retry the same image.
         Optional crop (cropX, cropY, cropWidth, cropHeight) is in source-image pixels and works for JPEG/PNG.
+        To set or replace only the image of an existing product, call merchant_product_update with merchantId,
+        productId, branchId and the image; price, description, category and productCode stay unchanged.
+        Find the productId with product_get or products_list.
 
         Categories
           1 category  → category_id_by_name_or_create

@@ -35,7 +35,9 @@ class ProductMcpTools(
 
     @McpTool(
         name = "merchant_product_update",
-        description = "Update a product's name, description, price, and category for a merchant. " +
+        description = "Partially update a product. Only merchantId, productId, and branchId are required; " +
+            "every omitted field keeps its stored value, so an image-only update needs just the ids plus imageUrl (or imageBase64). " +
+            "To clear description or category, pass an empty string. " +
             "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly. " +
             "Optional product image — see the image parameter descriptions or merchant_api_guide (PRODUCT IMAGES) for choosing imageUrl vs imageBase64.",
         annotations = McpTool.McpAnnotations(title = "Product Update")
@@ -44,11 +46,17 @@ class ProductMcpTools(
         merchantId: String,
         productId: String,
         branchId: String,
-        name: String,
-        unitPrice: String,
+        @McpToolParam(required = false, description = "New product name. Omit to keep the current name.")
+        name: String? = null,
+        @McpToolParam(required = false, description = "New unit price as a decimal string, e.g. \"4.50\". Omit to keep the current price.")
+        unitPrice: String? = null,
+        @McpToolParam(required = false, description = "New description. Omit to keep it; pass an empty string to clear it.")
         description: String? = null,
+        @McpToolParam(required = false, description = CategoryIdDescription)
         categoryId: String? = null,
+        @McpToolParam(required = false, description = CategoryNameDescription)
         categoryName: String? = null,
+        @McpToolParam(required = false, description = "New positive integer product code. Omit to keep the current code.")
         productCode: String? = null,
         @McpToolParam(required = false, description = ImageBase64Description)
         imageBase64: String? = null,
@@ -67,27 +75,97 @@ class ProductMcpTools(
     ): ProductResponse {
         val mId = UUID.fromString(merchantId)
         val pId = UUID.fromString(productId)
+        val existing = merchantProductService.get(mId, pId, null)
+        val image = productImageUploadOrNull(
+            imageBase64 = imageBase64,
+            imageContentType = imageContentType,
+            imageUrl = imageUrl,
+            cropX = cropX,
+            cropY = cropY,
+            cropWidth = cropWidth,
+            cropHeight = cropHeight
+        )
         return merchantProductService.updateIncludingInactive(
             merchantId = mId,
             productId = pId,
             request = UpdateProductRequest(
-                name = name,
+                name = name?.trim()?.takeIf { it.isNotEmpty() } ?: existing.name,
                 branchId = UUID.fromString(branchId),
-                unitPrice = BigDecimal(unitPrice),
-                description = description,
-                categoryId = resolveOrCreateCategory(mId, categoryId, categoryName),
-                productCode = productCode?.trim()?.takeIf { it.isNotEmpty() }?.toLong()
+                unitPrice = unitPrice?.trim()?.takeIf { it.isNotEmpty() }?.let(::BigDecimal) ?: existing.unitPrice,
+                description = description ?: existing.description,
+                categoryId = if (categoryId == null && categoryName == null) {
+                    existing.categoryId
+                } else {
+                    resolveOrCreateCategory(mId, categoryId, categoryName)
+                },
+                productCode = productCode?.trim()?.takeIf { it.isNotEmpty() }?.toLong() ?: existing.productCode
             ),
-            image = productImageUploadOrNull(
-                imageBase64 = imageBase64,
-                imageContentType = imageContentType,
-                imageUrl = imageUrl,
-                cropX = cropX,
-                cropY = cropY,
-                cropWidth = cropWidth,
-                cropHeight = cropHeight
-            )
+            image = image
         )
+    }
+
+    @McpTool(
+        name = "product_get",
+        description = "Read one product (name, description, unitPrice, imageUrl, category, productCode, active, status), including inactive products. " +
+            "Give exactly one of productId or productName. Use it to check current values before merchant_product_update.",
+        annotations = McpTool.McpAnnotations(title = "Product Get", readOnlyHint = true)
+    )
+    fun getProduct(
+        merchantId: String,
+        branchId: String,
+        @McpToolParam(required = false, description = "Product ID. Give this or productName, not both.")
+        productId: String? = null,
+        @McpToolParam(required = false, description = "Exact product name. Give this or productId, not both.")
+        productName: String? = null
+    ): ProductResponse {
+        val normalizedId = productId?.trim()?.takeIf { it.isNotEmpty() }
+        val normalizedName = productName?.trim()?.takeIf { it.isNotEmpty() }
+        require((normalizedId == null) != (normalizedName == null)) {
+            "Provide exactly one of productId or productName"
+        }
+        val mId = UUID.fromString(merchantId)
+        val bId = UUID.fromString(branchId)
+        return if (normalizedId != null) {
+            merchantProductService.get(mId, UUID.fromString(normalizedId), bId)
+        } else {
+            merchantProductService.findByNameIncludingInactive(mId, bId, normalizedName!!)
+                ?: throw IllegalArgumentException("Product not found with name: $normalizedName")
+        }
+    }
+
+    @McpTool(
+        name = "products_list",
+        description = "List a branch's products sorted by name, optionally filtered by category. " +
+            "Includes inactive products unless includeInactive is false. " +
+            "Returns at most limit items (default 50, max 200) starting at offset; page with offset until fewer than limit come back.",
+        annotations = McpTool.McpAnnotations(title = "Products List", readOnlyHint = true)
+    )
+    fun listProducts(
+        merchantId: String,
+        branchId: String,
+        @McpToolParam(required = false, description = "Only products in this existing category (exact name).")
+        categoryName: String? = null,
+        @McpToolParam(required = false, description = "Include inactive products. Defaults to true.")
+        includeInactive: Boolean? = null,
+        @McpToolParam(required = false, description = "Number of products to skip. Defaults to 0.")
+        offset: Int? = null,
+        @McpToolParam(required = false, description = "Maximum number of products to return, 1 to 200. Defaults to 50.")
+        limit: Int? = null
+    ): List<ProductResponse> {
+        val resolvedOffset = offset ?: 0
+        val resolvedLimit = limit ?: DefaultListLimit
+        require(resolvedOffset >= 0) { "offset must be >= 0" }
+        require(resolvedLimit in 1..MaxListLimit) { "limit must be between 1 and $MaxListLimit" }
+        val mId = UUID.fromString(merchantId)
+        val categoryId = categoryName?.trim()?.takeIf { it.isNotEmpty() }?.let { name ->
+            merchantProductCategoryService.findByName(mId, name)?.id
+                ?: throw IllegalArgumentException("Category not found with name: $name")
+        }
+        return merchantProductService.list(mId, UUID.fromString(branchId), categoryId)
+            .filter { includeInactive != false || it.active }
+            .sortedBy { it.name.lowercase() }
+            .drop(resolvedOffset)
+            .take(resolvedLimit)
     }
 
     @McpTool(
@@ -108,6 +186,7 @@ class ProductMcpTools(
         description = "Get or create a SINGLE product by name. " +
             "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly. " +
             "Optional product image — see the image parameter descriptions or merchant_api_guide (PRODUCT IMAGES) for choosing imageUrl vs imageBase64. " +
+            "If the product already exists, only a given image is applied; its other stored fields are kept (use merchant_product_update to change them). " +
             "WARNING: if you need to create or update 2 or more products, call products_bulk_upsert instead — do NOT call this tool in a loop.",
         annotations = McpTool.McpAnnotations(title = "Product: Get or Create")
     )
@@ -137,8 +216,6 @@ class ProductMcpTools(
     ): String {
         val mId = UUID.fromString(merchantId)
         val bId = UUID.fromString(branchId)
-        val resolvedCategoryId = resolveOrCreateCategory(mId, categoryId, categoryName)
-        val parsedCode = productCode?.trim()?.takeIf { it.isNotEmpty() }?.toLong()
         val image = productImageUploadOrNull(
             imageBase64 = imageBase64,
             imageContentType = imageContentType,
@@ -155,12 +232,12 @@ class ProductMcpTools(
                     mId,
                     existing.productId,
                     UpdateProductRequest(
-                        name = productName,
+                        name = existing.name,
                         branchId = bId,
-                        unitPrice = BigDecimal(unitPrice),
-                        description = description ?: existing.description,
-                        categoryId = resolvedCategoryId,
-                        productCode = parsedCode
+                        unitPrice = existing.unitPrice,
+                        description = existing.description,
+                        categoryId = existing.categoryId,
+                        productCode = existing.productCode
                     ),
                     image
                 )
@@ -168,6 +245,8 @@ class ProductMcpTools(
             return existing.productId.toString()
         }
 
+        val resolvedCategoryId = resolveOrCreateCategory(mId, categoryId, categoryName)
+        val parsedCode = productCode?.trim()?.takeIf { it.isNotEmpty() }?.toLong()
         return merchantProductService.create(
             mId,
             CreateProductRequest(
@@ -332,6 +411,13 @@ class ProductMcpTools(
     }
 
     private companion object {
+        const val DefaultListLimit = 50
+        const val MaxListLimit = 200
+        const val CategoryIdDescription =
+            "Category ID. Omit both categoryId and categoryName to keep the current category; pass an empty string to clear it."
+        const val CategoryNameDescription =
+            "Category name, resolved or created automatically. Omit both categoryId and categoryName to keep the current category; " +
+                "pass an empty string to clear it."
         const val ImageUrlDescription =
             "PREFERRED image source. Public http(s) URL of a JPEG, PNG, or WebP product image, up to 15 MB; " +
                 "the server downloads it (no auth, cookies, or private/internal hosts) and resizes images over 5 MB. " +
