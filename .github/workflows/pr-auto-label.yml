@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   label:
-    name: Apply Labels
+    name: Labels
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/pull-request-auto-label.yml@main
     with:
       pr_number: ${{ github.event.pull_request.number }}

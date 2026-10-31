@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   manual-release:
-    name: "Release ${{ inputs.new_version || '(version TBD)' }}"
+    name: Release
     permissions:
       contents: write
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/manual-release.yml@main

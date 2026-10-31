@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   release-notes:
-    name: Generate Release Notes
+    name: Release Notes
     if: ${{ github.event.pull_request.merged == true }}
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/release-notes.yml@main
     secrets:

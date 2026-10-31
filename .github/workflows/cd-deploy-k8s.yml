@@ -1,4 +1,5 @@
 name: CD · Deploy to Kubernetes
+run-name: Deploy ${{ inputs.image-tag }} to ${{ inputs.environment }}
 
 on:
   workflow_dispatch:
@@ -31,7 +32,8 @@ jobs:
       ENV_SUFFIX: ${{ inputs.environment == 'production' && 'prod' || 'staging' }}
       OTLP_LOGS_ENDPOINT: ${{ vars.OTLP_LOGS_ENDPOINT }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout code
+        uses: actions/checkout@v7
 
       - name: Configure kubectl
         env:
@@ -94,3 +96,21 @@ jobs:
           kubectl rollout status deployment/$APP_NAME \
             --namespace blitzpay-$ENV_SUFFIX \
             --timeout=5m
+
+      - name: Add deployment to job summary
+        if: always()
+        env:
+          IMAGE_TAG: ${{ inputs.image-tag }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          revision=$(helm history "$APP_NAME" --namespace "blitzpay-$ENV_SUFFIX" --max 1 -o json 2>/dev/null | jq -r '.[0].revision // empty')
+          revision=${revision:-—}
+          if [ "$JOB_STATUS" = "success" ]; then icon="🚀"; result="✅ rolled out"; else icon="❌"; result="❌ ${JOB_STATUS}"; fi
+          {
+            echo "### ${icon} Deploy \`${IMAGE_TAG}\` to ${ENVIRONMENT}"
+            echo "| Release | Namespace | Image tag | Helm revision | Result |"
+            echo "|---|---|---|---|---|"
+            echo "| ${APP_NAME} | blitzpay-${ENV_SUFFIX} | \`${IMAGE_TAG}\` | ${revision} | ${result} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Deploy ${JOB_STATUS}::${APP_NAME} ${IMAGE_TAG} → blitzpay-${ENV_SUFFIX} (revision ${revision})"

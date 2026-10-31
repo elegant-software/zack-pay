@@ -26,7 +26,7 @@ permissions:
   checks: write
 jobs:
   test:
-    name: Gradle Tests
+    name: Tests
     permissions:
       contents: read
       actions: write
@@ -60,7 +60,7 @@ jobs:
           }
 
   qodana:
-    name: Qodana Code Quality
+    name: Qodana
     needs: test
     if: false # temporarily disabled to verify watchdog functionality and codana docker issue
     permissions:
@@ -72,7 +72,7 @@ jobs:
     secrets: inherit
 
   sbom-upload:
-    name: Dependency-Track SBOM Upload
+    name: SBOM
     needs: test
     if: false # temporarily disabled to verify watchdog functionality
     permissions:

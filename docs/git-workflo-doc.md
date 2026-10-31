@@ -4,6 +4,8 @@ All workflows in this project are **thin delegators** — they define triggers a
 
 > **For agents:** Do not add inline build/test/deploy logic here. Any change to what CI/CD _does_ belongs in `elegant-ci-cd-pipeline`. Changes here are limited to triggers, permissions, inputs, and secrets forwarding.
 
+> **Naming & reporting:** every workflow follows [`github-actions-conventions.md`](https://github.com/elegant-software/elegant-ci-cd-pipeline/blob/main/docs/github-actions-conventions.md): category-prefixed file names, `<Category> · <What>` names, a `run-name` for dispatch/schedule/release triggers, short caller job names (GitHub renders `<caller> / <called>`), and results in the job summary.
+
 ---
 
 ## Workflow Overview

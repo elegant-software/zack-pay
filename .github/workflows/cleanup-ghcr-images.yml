@@ -1,4 +1,8 @@
 name: Cleanup · GHCR Images
+run-name: >-
+  ${{ github.event_name == 'schedule' && 'Scheduled' || 'Manual' }} ·
+  ${{ (github.event_name == 'schedule' || inputs.untagged_only) && 'untagged only' || 'all versions' }} ·
+  keep ${{ inputs.min_versions_to_keep || 5 }}
 
 on:
   schedule:
@@ -17,7 +21,7 @@ on:
 
 jobs:
   cleanup:
-    name: Delete Untagged Images
+    name: Delete ${{ (github.event_name == 'schedule' || inputs.untagged_only) && 'untagged' || 'old' }} blitz-pay images (keep ${{ inputs.min_versions_to_keep || 5 }})
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -30,3 +34,18 @@ jobs:
           package-type: container
           min-versions-to-keep: ${{ inputs.min_versions_to_keep || 5 }}
           delete-only-untagged-versions: ${{ github.event_name == 'schedule' || inputs.untagged_only }}
+
+      - name: Add remaining versions to job summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          versions=$(gh api "/orgs/${{ github.repository_owner }}/packages/container/blitz-pay/versions?per_page=100" --paginate \
+            --jq '.[] | "| \(.metadata.container.tags | join(", ") | if . == "" then "_untagged_" else . end) | \(.created_at[0:10]) |"' 2>/dev/null || true)
+          count=$(printf '%s\n' "$versions" | grep -c '^|' || true)
+          {
+            echo "### 🐳 blitz-pay images after cleanup (${count} versions)"
+            echo "| Tags | Created |"
+            echo "|---|---|"
+            printf '%s\n' "$versions" | head -50
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=GHCR cleanup::${count} blitz-pay image versions remain"

@@ -17,7 +17,7 @@ on:
 
 jobs:
   ci:
-    name: CI ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+    name: CI
     permissions:
       actions: write
       contents: write
@@ -25,7 +25,7 @@ jobs:
       pull-requests: write
     uses: ./.github/workflows/ci-build.yml
   release:
-    name: Build Image ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+    name: Image
     permissions:
       contents: read
       packages: write
