@@ -5,9 +5,10 @@ on:
   workflow_dispatch:
     inputs:
       image-tag:
-        description: 'Docker image tag to deploy (e.g. v0.2.2)'
-        required: true
+        description: 'Docker image tag to deploy (e.g. v0.2.2). "latest" resolves to the latest published release tag.'
+        required: false
         type: string
+        default: latest
       environment:
         description: 'Target environment'
         required: true
@@ -34,6 +35,23 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+
+      - name: Resolve image tag
+        env:
+          INPUT_TAG: ${{ inputs.image-tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$INPUT_TAG"
+          if [ -z "$tag" ] || [ "$tag" = "latest" ]; then
+            tag=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r '.tag_name // empty')
+            if [ -z "$tag" ]; then
+              echo "::error::Could not resolve the latest release tag"
+              exit 1
+            fi
+            echo "::notice title=Resolved image tag::latest → $tag"
+          fi
+          echo "IMAGE_TAG=$tag" >> "$GITHUB_ENV"
 
       - name: Configure kubectl
         env:
@@ -78,7 +96,7 @@ jobs:
             --create-namespace
             --values $HELM_CHART/values.yaml
             --values $HELM_CHART/values-$ENV_SUFFIX.yaml
-            --set image.tag=${{ inputs.image-tag }}
+            --set image.tag=$IMAGE_TAG
             --wait
             --atomic
             --timeout 5m
@@ -100,12 +118,12 @@ jobs:
       - name: Add deployment to job summary
         if: always()
         env:
-          IMAGE_TAG: ${{ inputs.image-tag }}
           ENVIRONMENT: ${{ inputs.environment }}
           JOB_STATUS: ${{ job.status }}
         run: |
           revision=$(helm history "$APP_NAME" --namespace "blitzpay-$ENV_SUFFIX" --max 1 -o json 2>/dev/null | jq -r '.[0].revision // empty')
           revision=${revision:-—}
+          IMAGE_TAG=${IMAGE_TAG:-unresolved}
           if [ "$JOB_STATUS" = "success" ]; then icon="🚀"; result="✅ rolled out"; else icon="❌"; result="❌ ${JOB_STATUS}"; fi
           {
             echo "### ${icon} Deploy \`${IMAGE_TAG}\` to ${ENVIRONMENT}"
