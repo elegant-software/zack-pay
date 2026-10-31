@@ -1,4 +1,8 @@
 name: Cleanup · Releases & Tags
+run-name: >-
+  ${{ github.event_name == 'schedule' && 'Scheduled' || 'Manual' }} ·
+  ${{ (github.event_name == 'schedule' || inputs.dry_run) && 'Dry run' || 'LIVE' }} ·
+  older than ${{ inputs.older_than_days || 30 }}d
 
 on:
   schedule:
@@ -25,7 +29,7 @@ on:
 
 jobs:
   cleanup:
-    name: Delete Old Releases & Tags
+    name: Releases & Tags
     permissions:
       contents: write
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/cleanup-release-tags.yml@main
