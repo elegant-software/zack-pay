@@ -25,8 +25,46 @@ permissions:
   actions: write
   checks: write
 jobs:
+  # Builds and tests only run when code or build config changed. The workflow itself
+  # always runs, so skipped jobs still report success. Non push/PR events (e.g. the
+  # release build calling this workflow) always run everything.
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ (github.event_name != 'push' && github.event_name != 'pull_request') || steps.filter.outputs.code == 'true' }}
+      jooq: ${{ (github.event_name != 'push' && github.event_name != 'pull_request') || steps.filter.outputs.jooq == 'true' }}
+    steps:
+      - uses: actions/checkout@v7
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+      - uses: dorny/paths-filter@v4
+        id: filter
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        with:
+          filters: |
+            build: &build
+              - '*.gradle.kts'
+              - 'gradle.properties'
+              - 'gradle/**'
+              - 'gradlew'
+              - '.github/workflows/ci-build.yml'
+            code:
+              - *build
+              - 'src/**'
+            jooq:
+              - *build
+              - 'src/main/resources/db/**'
+              - 'src/jooq/**'
+              - 'src/jooqCodegen/**'
+              - 'src/generated/jooq/**'
+
   test:
     name: Tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     permissions:
       contents: read
       actions: write
@@ -39,6 +77,8 @@ jobs:
 
   jooq-check:
     name: jOOQ Sources Up To Date
+    needs: changes
+    if: needs.changes.outputs.jooq == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
