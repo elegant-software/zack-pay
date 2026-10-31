@@ -62,7 +62,7 @@ jobs:
               - 'src/generated/jooq/**'
 
   test:
-    name: Tests
+    name: Unit & Contract Tests
     needs: changes
     if: needs.changes.outputs.code == 'true'
     permissions:
