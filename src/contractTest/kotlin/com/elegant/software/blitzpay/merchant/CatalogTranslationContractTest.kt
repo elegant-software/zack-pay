@@ -122,7 +122,7 @@ class CatalogTranslationContractTest : ContractVerifierBase() {
     @Test
     fun `GET menu languages returns the catalogue`() {
         whenever(menuLanguageService.catalogue()).thenReturn(
-            listOf(MenuLanguageResponse("de", "Deutsch"), MenuLanguageResponse("en", "English"))
+            listOf(MenuLanguageResponse("en", "English", "English"), MenuLanguageResponse("de", "German", "Deutsch"))
         )
 
         webTestClient.get()
@@ -131,8 +131,9 @@ class CatalogTranslationContractTest : ContractVerifierBase() {
             .expectStatus().isOk
             .expectBody()
             .jsonPath("$.length()").isEqualTo(2)
-            .jsonPath("$[1].code").isEqualTo("en")
-            .jsonPath("$[1].displayName").isEqualTo("English")
+            .jsonPath("$[1].code").isEqualTo("de")
+            .jsonPath("$[1].displayName").isEqualTo("German")
+            .jsonPath("$[1].nativeName").isEqualTo("Deutsch")
     }
 
     @Test
