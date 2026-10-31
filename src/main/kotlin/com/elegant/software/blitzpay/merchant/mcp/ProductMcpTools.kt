@@ -10,32 +10,34 @@ import com.elegant.software.blitzpay.merchant.api.ProductResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
 import com.elegant.software.blitzpay.merchant.service.MerchantProductCategoryService
 import com.elegant.software.blitzpay.merchant.service.MerchantProductService
+import com.elegant.software.blitzpay.merchant.service.ProductImageCrop
+import com.elegant.software.blitzpay.merchant.service.ProductImageDownloader
 import com.elegant.software.blitzpay.merchant.service.ProductImagePolicy
+import com.elegant.software.blitzpay.merchant.service.ProductImageProcessor
 import com.elegant.software.blitzpay.merchant.service.ProductImageUpload
+import com.elegant.software.blitzpay.merchant.service.RawProductImage
 import org.springframework.ai.mcp.annotation.McpTool
+import org.springframework.ai.mcp.annotation.McpToolParam
 import org.springframework.stereotype.Component
-import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.math.BigDecimal
 import java.util.Base64
 import java.util.LinkedHashSet
 import java.util.UUID
-import javax.imageio.ImageIO
 
 @Suppress("unused")
 @Component
 class ProductMcpTools(
     private val merchantProductService: MerchantProductService,
     private val merchantProductCategoryService: MerchantProductCategoryService,
+    private val productImageDownloader: ProductImageDownloader,
+    private val productImageProcessor: ProductImageProcessor,
 ) {
 
     @McpTool(
         name = "merchant_product_update",
         description = "Update a product's name, description, price, and category for a merchant. " +
             "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly. " +
-            "Optional product image upload uses imageBase64 and imageContentType only. " +
-            "Images must be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller.",
+            "Optional product image — see the image parameter descriptions or merchant_api_guide (PRODUCT IMAGES) for choosing imageUrl vs imageBase64.",
         annotations = McpTool.McpAnnotations(title = "Product Update")
     )
     fun updateProduct(
@@ -48,11 +50,19 @@ class ProductMcpTools(
         categoryId: String? = null,
         categoryName: String? = null,
         productCode: String? = null,
+        @McpToolParam(required = false, description = ImageBase64Description)
         imageBase64: String? = null,
+        @McpToolParam(required = false, description = ImageContentTypeDescription)
         imageContentType: String? = null,
+        @McpToolParam(required = false, description = ImageUrlDescription)
+        imageUrl: String? = null,
+        @McpToolParam(required = false, description = CropDescription)
         cropX: Int? = null,
+        @McpToolParam(required = false, description = CropDescription)
         cropY: Int? = null,
+        @McpToolParam(required = false, description = CropDescription)
         cropWidth: Int? = null,
+        @McpToolParam(required = false, description = CropDescription)
         cropHeight: Int? = null
     ): ProductResponse {
         val mId = UUID.fromString(merchantId)
@@ -71,6 +81,7 @@ class ProductMcpTools(
             image = productImageUploadOrNull(
                 imageBase64 = imageBase64,
                 imageContentType = imageContentType,
+                imageUrl = imageUrl,
                 cropX = cropX,
                 cropY = cropY,
                 cropWidth = cropWidth,
@@ -96,8 +107,7 @@ class ProductMcpTools(
         name = "product_id_by_name_or_create",
         description = "Get or create a SINGLE product by name. " +
             "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly. " +
-            "Optional product image upload uses imageBase64 and imageContentType only. " +
-            "Images must be clear, high-quality, directly related to the product, JPEG/PNG/WebP, and 5 MB or smaller. " +
+            "Optional product image — see the image parameter descriptions or merchant_api_guide (PRODUCT IMAGES) for choosing imageUrl vs imageBase64. " +
             "WARNING: if you need to create or update 2 or more products, call products_bulk_upsert instead — do NOT call this tool in a loop.",
         annotations = McpTool.McpAnnotations(title = "Product: Get or Create")
     )
@@ -110,11 +120,19 @@ class ProductMcpTools(
         categoryId: String? = null,
         categoryName: String? = null,
         productCode: String? = null,
+        @McpToolParam(required = false, description = ImageBase64Description)
         imageBase64: String? = null,
+        @McpToolParam(required = false, description = ImageContentTypeDescription)
         imageContentType: String? = null,
+        @McpToolParam(required = false, description = ImageUrlDescription)
+        imageUrl: String? = null,
+        @McpToolParam(required = false, description = CropDescription)
         cropX: Int? = null,
+        @McpToolParam(required = false, description = CropDescription)
         cropY: Int? = null,
+        @McpToolParam(required = false, description = CropDescription)
         cropWidth: Int? = null,
+        @McpToolParam(required = false, description = CropDescription)
         cropHeight: Int? = null
     ): String {
         val mId = UUID.fromString(merchantId)
@@ -124,6 +142,7 @@ class ProductMcpTools(
         val image = productImageUploadOrNull(
             imageBase64 = imageBase64,
             imageContentType = imageContentType,
+            imageUrl = imageUrl,
             cropX = cropX,
             cropY = cropY,
             cropWidth = cropWidth,
@@ -172,7 +191,7 @@ class ProductMcpTools(
             "Returns created, updated, skipped (within-batch duplicates only), and failed items with their IDs. " +
             "Accepts categoryName per item (resolved or created automatically) or categoryId. " +
             "Re-running the same payload is safe — existing products are updated, not duplicated. " +
-            "Max 200 items per call. Images are not supported in bulk; use merchant_product_update after import with clear, high-quality, directly related JPEG/PNG/WebP images that are 5 MB or smaller.",
+            "Max 200 items per call. Images are not supported in bulk; use merchant_product_update after import (see merchant_api_guide, PRODUCT IMAGES).",
         annotations = McpTool.McpAnnotations(title = "Products: Bulk Upsert")
     )
     fun bulkUpsertProducts(
@@ -271,6 +290,7 @@ class ProductMcpTools(
     private fun productImageUploadOrNull(
         imageBase64: String?,
         imageContentType: String?,
+        imageUrl: String?,
         cropX: Int?,
         cropY: Int?,
         cropWidth: Int?,
@@ -278,71 +298,51 @@ class ProductMcpTools(
     ): ProductImageUpload? {
         val normalizedBase64 = imageBase64?.trim()?.takeIf { it.isNotEmpty() }
         val normalizedContentType = imageContentType?.trim()?.takeIf { it.isNotEmpty() }
-
-        if (normalizedBase64 == null) {
-            require(listOf(normalizedContentType, cropX, cropY, cropWidth, cropHeight).all { it == null }) {
-                "imageBase64 is required when imageContentType or crop parameters are provided"
-            }
-            return null
-        }
-
-        val contentType = normalizedContentType
-            ?: throw IllegalArgumentException("imageContentType is required when imageBase64 is provided")
-        ProductImagePolicy.extensionFor(contentType)
-        val originalBytes = Base64.getDecoder().decode(normalizedBase64.substringAfter("base64,", normalizedBase64))
-        val imageBytes = cropImageIfRequested(
-            bytes = originalBytes,
-            contentType = contentType,
-            cropX = cropX,
-            cropY = cropY,
-            cropWidth = cropWidth,
-            cropHeight = cropHeight
-        )
-        return ProductImageUpload(contentType = contentType, bytes = imageBytes)
-    }
-
-    private fun cropImageIfRequested(
-        bytes: ByteArray,
-        contentType: String,
-        cropX: Int?,
-        cropY: Int?,
-        cropWidth: Int?,
-        cropHeight: Int?
-    ): ByteArray {
+        val normalizedUrl = imageUrl?.trim()?.takeIf { it.isNotEmpty() }
         val cropValues = listOf(cropX, cropY, cropWidth, cropHeight)
-        if (cropValues.all { it == null }) return bytes
-        require(cropValues.all { it != null }) {
+
+        require(normalizedBase64 == null || normalizedUrl == null) {
+            "Provide either imageBase64 or imageUrl, not both"
+        }
+        require(cropValues.all { it == null } || cropValues.all { it != null }) {
             "cropX, cropY, cropWidth, and cropHeight must all be provided to crop an image"
         }
-        require(cropWidth!! > 0 && cropHeight!! > 0) { "cropWidth and cropHeight must be positive" }
-        require(contentType.lowercase() != "image/webp") { "Server-side crop is supported for JPEG and PNG images only" }
 
-        val source = ImageIO.read(ByteArrayInputStream(bytes))
-            ?: throw IllegalArgumentException("Unable to decode product image")
-        require(cropX!! >= 0 && cropY!! >= 0) { "cropX and cropY must be >= 0" }
-        require(cropX + cropWidth <= source.width && cropY + cropHeight <= source.height) {
-            "Crop rectangle exceeds image bounds ${source.width}x${source.height}"
+        val source = when {
+            normalizedUrl != null -> productImageDownloader.download(normalizedUrl)
+            normalizedBase64 != null -> {
+                val contentType = normalizedContentType
+                    ?: throw IllegalArgumentException("imageContentType is required when imageBase64 is provided")
+                ProductImagePolicy.extensionFor(contentType)
+                RawProductImage(
+                    contentType = contentType,
+                    bytes = Base64.getDecoder().decode(normalizedBase64.substringAfter("base64,", normalizedBase64))
+                )
+            }
+            else -> {
+                require(normalizedContentType == null && cropValues.all { it == null }) {
+                    "imageBase64 or imageUrl is required when imageContentType or crop parameters are provided"
+                }
+                return null
+            }
         }
 
-        val cropped = source.getSubimage(cropX, cropY, cropWidth, cropHeight)
-        val normalized = normalizeForContentType(cropped, contentType)
-        val output = ByteArrayOutputStream()
-        val format = ProductImagePolicy.extensionFor(contentType).let { if (it == "jpg") "jpeg" else it }
-        require(ImageIO.write(normalized, format, output)) {
-            "Unable to encode cropped product image as $contentType"
-        }
-        return output.toByteArray()
+        val crop = if (cropX != null) ProductImageCrop(cropX, cropY!!, cropWidth!!, cropHeight!!) else null
+        return productImageProcessor.prepare(source, crop)
     }
 
-    private fun normalizeForContentType(image: BufferedImage, contentType: String): BufferedImage {
-        if (contentType.lowercase() != "image/jpeg") return image
-        val normalized = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
-        val graphics = normalized.createGraphics()
-        try {
-            graphics.drawImage(image, 0, 0, null)
-        } finally {
-            graphics.dispose()
-        }
-        return normalized
+    private companion object {
+        const val ImageUrlDescription =
+            "PREFERRED image source. Public http(s) URL of a JPEG, PNG, or WebP product image, up to 15 MB; " +
+                "the server downloads it (no auth, cookies, or private/internal hosts) and resizes images over 5 MB. " +
+                "Use whenever the image already exists online (merchant website, CDN, marketplace listing). Do not combine with imageBase64."
+        const val ImageBase64Description =
+            "Fallback image source, ONLY for a small image (encoded string under ~200 KB, i.e. original under ~150 KB) " +
+                "that has no public URL, e.g. a local file or an image pasted into the chat. Requires imageContentType. " +
+                "For a larger image with no URL, do not send it here; ask the user for a public link instead. Do not combine with imageUrl."
+        const val ImageContentTypeDescription =
+            "Required with imageBase64 only: image/jpeg, image/png, or image/webp. Ignored for imageUrl (type is detected from the file)."
+        const val CropDescription =
+            "Optional crop in source-image pixels; give all of cropX, cropY, cropWidth, cropHeight or none. JPEG/PNG only."
     }
 }
