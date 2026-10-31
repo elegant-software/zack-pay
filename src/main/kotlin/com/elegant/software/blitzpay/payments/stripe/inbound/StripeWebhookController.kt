@@ -5,11 +5,13 @@ import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusUpdateGateway
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.stripe.Stripe
 import com.stripe.exception.EventDataObjectDeserializationException
 import com.stripe.exception.SignatureVerificationException
 import com.stripe.model.Account
 import com.stripe.model.Event
 import com.stripe.model.PaymentIntent
+import com.stripe.model.StripeObject
 import com.stripe.net.Webhook
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -143,9 +145,7 @@ class StripeWebhookController(
         }
         when (event.type) {
             "account.updated" -> {
-                val account = runCatching {
-                    event.dataObjectDeserializer.getObject().orElse(null) as? Account
-                }.getOrNull()
+                val account = extractDataObject<Account>(event)
                 if (account != null) {
                     log.info(
                         "stripe connect account.updated connectedAccountId={} chargesEnabled={} detailsSubmitted={} cardPayments={} payByBankPayments={}",
@@ -211,28 +211,28 @@ class StripeWebhookController(
         return ResponseEntity.ok().build()
     }
 
-    private fun extractPaymentIntent(event: Event): PaymentIntent? {
+    private fun extractPaymentIntent(event: Event): PaymentIntent? = extractDataObject<PaymentIntent>(event)
+
+    /**
+     * Each stripe-java major pins one Stripe API release (34.x = `2026-10-28.endive`). When the webhook
+     * endpoint delivers events at a different release, `getObject()` returns empty, so fall back to
+     * `deserializeUnsafe()` and only give up if the payload really cannot be mapped.
+     */
+    private inline fun <reified T : StripeObject> extractDataObject(event: Event): T? {
         val deserializer = event.dataObjectDeserializer
-        val typedObject = deserializer.getObject().orElse(null) as? PaymentIntent
-        if (typedObject != null) {
-            log.info("stripe webhook event={} deserialized PaymentIntent via typed deserializer", event.id)
-            return typedObject
-        }
+        (deserializer.getObject().orElse(null) as? T)?.let { return it }
 
         return try {
-            val unsafeObject = deserializer.deserializeUnsafe() as? PaymentIntent
-            if (unsafeObject != null) {
+            (deserializer.deserializeUnsafe() as? T)?.also {
                 log.warn(
-                    "stripe webhook event={} deserialized PaymentIntent via unsafe fallback due to SDK/API version mismatch",
-                    event.id,
+                    "stripe webhook event={} type={} eventApiVersion={} sdkApiVersion={} deserialized {} via unsafe fallback; align the webhook endpoint api_version",
+                    event.id, event.type, event.apiVersion, Stripe.API_VERSION, T::class.simpleName,
                 )
             }
-            unsafeObject
         } catch (ex: EventDataObjectDeserializationException) {
             log.warn(
-                "stripe webhook event={} failed unsafe PaymentIntent deserialization error={}",
-                event.id,
-                ex.message,
+                "stripe webhook event={} type={} eventApiVersion={} sdkApiVersion={} failed {} deserialization error={}",
+                event.id, event.type, event.apiVersion, Stripe.API_VERSION, T::class.simpleName, ex.message,
             )
             null
         }

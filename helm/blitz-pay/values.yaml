@@ -45,6 +45,7 @@ global:
 #   TRUELAYER_MERCHANT_ACCOUNT_ID - TrueLayer merchant account UUID
 #   TRUELAYER_ACCESS_TOKEN        - TrueLayer bearer access token
 #   STRIPE_SECRET_KEY             - Stripe API secret key
+#   STRIPE_WEBHOOK_SECRET         - Stripe platform webhook signing secret
 #   STRIPE_CONNECT_WEBHOOK_SECRET - Stripe Connect webhook signing secret
 #   BRAINTREE_MERCHANT_ID         - Braintree merchant ID
 #   BRAINTREE_PUBLIC_KEY          - Braintree public key
@@ -69,6 +70,7 @@ global:
 #     --from-literal=TRUELAYER_MERCHANT_ACCOUNT_ID="<merchant-id>" \
 #     --from-literal=TRUELAYER_ACCESS_TOKEN="<access-token>" \
 #     --from-literal=STRIPE_SECRET_KEY="<stripe-secret-key>" \
+#     --from-literal=STRIPE_WEBHOOK_SECRET="<stripe-webhook-secret>" \
 #     --from-literal=STRIPE_CONNECT_WEBHOOK_SECRET="<stripe-connect-webhook-secret>" \
 #     --from-literal=BRAINTREE_MERCHANT_ID="<braintree-merchant-id>" \
 #     --from-literal=BRAINTREE_PUBLIC_KEY="<braintree-public-key>" \
@@ -125,7 +127,7 @@ config:
   stripeConnectReturnUrl: ""  # default: https://<hosts.api>.<baseDomain>/stripe-connect/return
   stripeConnectApiBaseUrl: ""  # default: https://<hosts.api>.<baseDomain>
   stripeConnectAppDeepLink: ""
-  stripeDashboardPlatformAccountId: "acct_1TMybCLoNGD7heqR"
+  stripeDashboardPlatformAccountId: "acct_1UWiwu2NJde9cvaI"
 
 # ---------------------------------------------------------------------------
 # Resource requests and limits

@@ -49,7 +49,7 @@ class StripePaymentService(
             .setCurrency(currency.lowercase())
             .apply {
                 if (paymentMethodType == "card_present") {
-                    addPaymentMethodType("card_present")
+                    addAllowedPaymentMethodType(PaymentIntentCreateParams.AllowedPaymentMethodType.CARD_PRESENT)
                     setCaptureMethod(PaymentIntentCreateParams.CaptureMethod.AUTOMATIC)
                 } else {
                     setAutomaticPaymentMethods(
@@ -112,7 +112,7 @@ class StripePaymentService(
             .setMode(SessionCreateParams.Mode.PAYMENT)
             .setSuccessUrl(successUrl)
             .setCancelUrl(cancelUrl)
-            .addPaymentMethodType(SessionCreateParams.PaymentMethodType.PAY_BY_BANK)
+            .addAllowedPaymentMethodType(SessionCreateParams.AllowedPaymentMethodType.PAY_BY_BANK)
             .setPaymentIntentData(
                 SessionCreateParams.PaymentIntentData.builder()
                     .apply {

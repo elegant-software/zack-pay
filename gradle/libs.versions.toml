@@ -51,7 +51,7 @@ mockito-kotlin       = "6.3.0"
 keycloak-admin-client = "26.0.9"
 
 # Modulith: `payments.stripe` + `payments.braintree` — mobile payment gateways
-stripe-java          = "33.0.0"
+stripe-java          = "34.1.0"
 braintree-java       = "3.50.0"
 spring-cloud-aws     = "4.0.2"
 
