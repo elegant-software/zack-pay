@@ -10,9 +10,8 @@ on:
         type: string
   release:
     types:
-      - published
+      - released
       - prereleased
-      - edited
 
 
 jobs:
