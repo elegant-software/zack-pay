@@ -9,7 +9,7 @@ on:
         required: true
         type: string
   release:
-    types: [published, prereleased]
+    types: [released, prereleased]
 
 permissions:
   contents: read
