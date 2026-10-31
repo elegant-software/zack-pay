@@ -9,14 +9,15 @@ metadata:
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+{{- $host := .Values.ingress.hostname | default (include "blitz-pay.host" (list . "api")) }}
 spec:
   ingressClassName: {{ .Values.ingress.ingressClassName }}
   tls:
     - hosts:
-        - {{ .Values.ingress.hostname | quote }}
-      secretName: {{ .Values.ingress.tlsSecretName | quote }}
+        - {{ $host | quote }}
+      secretName: {{ include "blitz-pay.tlsSecretName" . | quote }}
   rules:
-    - host: {{ .Values.ingress.hostname | quote }}
+    - host: {{ $host | quote }}
       http:
         paths:
           - path: /api-docs

@@ -1,6 +1,6 @@
 # =============================================================================
 # Keycloak Ingress
-# Route: auth.zackpay.de -> keycloak service (namespace: keycloak)
+# Route: ${AUTH_HOST} -> keycloak service (namespace: keycloak)
 # =============================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -14,10 +14,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - auth.zackpay.de
-      secretName: wildcard-zackpay-de-tls
+        - ${AUTH_HOST}
+      secretName: ${TLS_SECRET_NAME}
   rules:
-    - host: auth.zackpay.de
+    - host: ${AUTH_HOST}
       http:
         paths:
           - path: /
@@ -30,7 +30,7 @@ spec:
 ---
 # =============================================================================
 # Backstage Ingress (via OAuth2 Proxy)
-# Route: backstage.zackpay.de -> backstage-oauth2-proxy (namespace: backstage)
+# Route: backstage.${BASE_DOMAIN} -> backstage-oauth2-proxy (namespace: backstage)
 # =============================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -45,10 +45,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - backstage.zackpay.de
-      secretName: wildcard-zackpay-de-tls
+        - backstage.${BASE_DOMAIN}
+      secretName: ${TLS_SECRET_NAME}
   rules:
-    - host: backstage.zackpay.de
+    - host: backstage.${BASE_DOMAIN}
       http:
         paths:
           - path: /

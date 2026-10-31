@@ -3,14 +3,17 @@
 
 replicaCount: 2
 
+global:
+  baseDomain: zackpay.de
+  hosts:
+    admin: blitzpay-admin-dashboard
+
 image:
   pullPolicy: Always
   pullSecrets:
     - ghcr-pull-secret
 
 ingress:
-  hostname: api-blitzpay.zackpay.de
-  tlsSecretName: wildcard-elegantsoftware-de-tls
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
@@ -19,7 +22,6 @@ ingress:
 config:
   springProfilesActive: prod
   tracingEnabled: "true"
-  frontendOrigin: https://blitzpay-admin-dashboard.zackpay.de
   truelayerApiBase: https://api.truelayer.com
   truelayerEnv: live  # true layer treats this as "production" environment
   truelayerHttpLogs: "false"

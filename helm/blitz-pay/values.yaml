@@ -13,6 +13,23 @@ nameOverride: ""
 fullnameOverride: ""
 
 # ---------------------------------------------------------------------------
+# Public domain — set global.baseDomain in values-<env>.yaml; it is the only place
+# to change the domain. Every public hostname is "<hosts.X>.<baseDomain>": the API
+# ingress, TLS secret, FRONTEND_ORIGIN, Stripe URLs, Keycloak and MinIO URLs derive
+# from it, and the blitzpay-domains ConfigMap hands them to the admin dashboard,
+# storefront and k8s/ infra manifests. Empty = no derivation (explicit config.* wins).
+# ---------------------------------------------------------------------------
+global:
+  baseDomain: ""
+  hosts:
+    api: api-blitzpay
+    auth: auth
+    admin: admin
+    storefront: storefront
+    minio: minio
+    minioConsole: minio-console
+
+# ---------------------------------------------------------------------------
 # Secrets
 # ---------------------------------------------------------------------------
 # Name of the pre-created Kubernetes Secret containing sensitive env vars.
@@ -103,9 +120,9 @@ config:
   truelayerHttpLogs: "false"
   truelayerWebhookJku: http://localhost:8080/.well-known/jwks.json
   whisperBaseUrl: http://whisper:8000/v1
-  frontendOrigin: http://localhost:4200
-  stripeConnectReturnUrl: http://localhost:8080/stripe-connect/return
-  stripeConnectApiBaseUrl: http://localhost:8080
+  frontendOrigin: ""  # default: https://<hosts.admin>.<baseDomain>
+  stripeConnectReturnUrl: ""  # default: https://<hosts.api>.<baseDomain>/stripe-connect/return
+  stripeConnectApiBaseUrl: ""  # default: https://<hosts.api>.<baseDomain>
   stripeConnectAppDeepLink: ""
   stripeDashboardPlatformAccountId: "acct_1TMybCLoNGD7heqR"
 
@@ -126,8 +143,8 @@ resources:
 ingress:
   enabled: true
   ingressClassName: nginx
-  hostname: api.blitz-pay.local
-  tlsSecretName: wildcard-elegantsoftware-de-tls
+  hostname: ""       # default: <hosts.api>.<baseDomain>
+  tlsSecretName: ""  # default: wildcard-<baseDomain with dots as dashes>-tls
   # blockActuator via server-snippet is intentionally removed — snippet annotations are
   # disabled by the ingress-nginx admission webhook. Actuator exposure is already
   # restricted at the application level (application.yml exposes only health and metrics).

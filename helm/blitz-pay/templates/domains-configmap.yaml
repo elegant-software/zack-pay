@@ -1,0 +1,20 @@
+{{- if .Values.global.baseDomain -}}
+# Every public hostname of the environment, derived from global.baseDomain.
+# Read at deploy time by the admin dashboard, storefront and infra manifests (k8s/apply-infra.sh),
+# so changing global.baseDomain in values-<env>.yaml is the only edit a domain change needs.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blitzpay-domains
+  labels:
+    {{- include "blitz-pay.labels" . | nindent 4 }}
+data:
+  BASE_DOMAIN: {{ .Values.global.baseDomain | quote }}
+  TLS_SECRET_NAME: {{ include "blitz-pay.tlsSecretName" . | quote }}
+  API_HOST: {{ include "blitz-pay.host" (list . "api") | quote }}
+  AUTH_HOST: {{ include "blitz-pay.host" (list . "auth") | quote }}
+  ADMIN_HOST: {{ include "blitz-pay.host" (list . "admin") | quote }}
+  STOREFRONT_HOST: {{ include "blitz-pay.host" (list . "storefront") | quote }}
+  MINIO_HOST: {{ include "blitz-pay.host" (list . "minio") | quote }}
+  MINIO_CONSOLE_HOST: {{ include "blitz-pay.host" (list . "minioConsole") | quote }}
+{{- end }}

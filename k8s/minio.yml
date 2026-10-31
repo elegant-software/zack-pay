@@ -1,7 +1,7 @@
 # =============================================================================
 # MinIO — Object Storage for blitzpay-staging
-# S3 API  : minio.zackpay.de         -> port 9000
-# Console : minio-console.zackpay.de -> port 9001
+# S3 API  : ${MINIO_HOST}         -> port 9000
+# Console : ${MINIO_CONSOLE_HOST} -> port 9001
 # =============================================================================
 apiVersion: v1
 kind: Namespace
@@ -145,10 +145,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - minio.zackpay.de
-      secretName: wildcard-zackpay-de-tls
+        - ${MINIO_HOST}
+      secretName: ${TLS_SECRET_NAME}
   rules:
-    - host: minio.zackpay.de
+    - host: ${MINIO_HOST}
       http:
         paths:
           - path: /
@@ -173,10 +173,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - minio-console.zackpay.de
-      secretName: wildcard-zackpay-de-tls
+        - ${MINIO_CONSOLE_HOST}
+      secretName: ${TLS_SECRET_NAME}
   rules:
-    - host: minio-console.zackpay.de
+    - host: ${MINIO_CONSOLE_HOST}
       http:
         paths:
           - path: /
