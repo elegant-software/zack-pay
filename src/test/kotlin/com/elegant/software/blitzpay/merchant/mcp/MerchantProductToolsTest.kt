@@ -314,6 +314,8 @@ class MerchantProductToolsTest {
         val productId = UUID.randomUUID()
         val branchId = UUID.randomUUID()
         val categoryId = UUID.randomUUID()
+        whenever(merchantProductService.get(merchantId, productId, null))
+            .thenReturn(storedProduct(productId, branchId))
         whenever(merchantProductService.updateIncludingInactive(eq(merchantId), eq(productId), any(), isNull())).thenReturn(
             ProductResponse(
                 productId = productId,
@@ -351,6 +353,8 @@ class MerchantProductToolsTest {
         val merchantId = UUID.randomUUID()
         val productId = UUID.randomUUID()
         val branchId = UUID.randomUUID()
+        whenever(merchantProductService.get(merchantId, productId, null))
+            .thenReturn(storedProduct(productId, branchId))
         whenever(merchantProductService.updateIncludingInactive(eq(merchantId), eq(productId), any(), isNull())).thenReturn(
             ProductResponse(
                 productId = productId,
@@ -377,6 +381,218 @@ class MerchantProductToolsTest {
         verify(merchantProductService).updateIncludingInactive(eq(merchantId), eq(productId), any(), isNull())
         verify(merchantProductService, never()).update(eq(merchantId), eq(productId), any(), isNull())
         verify(merchantProductService, never()).markInactive(any(), any())
+    }
+
+    @Test
+    fun `getProduct returns product by id including inactive`() {
+        val merchantId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val productId = UUID.randomUUID()
+        val stored = storedProduct(productId, branchId)
+        whenever(merchantProductService.get(merchantId, productId, branchId)).thenReturn(stored)
+
+        val result = productTools.getProduct(merchantId.toString(), branchId.toString(), productId = productId.toString())
+
+        assertEquals(stored, result)
+    }
+
+    @Test
+    fun `getProduct returns product by name`() {
+        val merchantId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val stored = storedProduct(UUID.randomUUID(), branchId)
+        whenever(merchantProductService.findByNameIncludingInactive(merchantId, branchId, "Sütlaç")).thenReturn(stored)
+
+        val result = productTools.getProduct(merchantId.toString(), branchId.toString(), productName = " Sütlaç ")
+
+        assertEquals(stored, result)
+    }
+
+    @Test
+    fun `getProduct requires exactly one of productId and productName`() {
+        val merchantId = UUID.randomUUID().toString()
+        val branchId = UUID.randomUUID().toString()
+        assertThrows<IllegalArgumentException> { productTools.getProduct(merchantId, branchId) }
+        assertThrows<IllegalArgumentException> {
+            productTools.getProduct(merchantId, branchId, productId = UUID.randomUUID().toString(), productName = "Sütlaç")
+        }
+    }
+
+    @Test
+    fun `getProduct throws when name is not found`() {
+        val merchantId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        whenever(merchantProductService.findByNameIncludingInactive(merchantId, branchId, "Missing")).thenReturn(null)
+
+        assertThrows<IllegalArgumentException> {
+            productTools.getProduct(merchantId.toString(), branchId.toString(), productName = "Missing")
+        }
+    }
+
+    @Test
+    fun `listProducts filters by category, sorts by name and pages`() {
+        val merchantId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val categoryId = UUID.randomUUID()
+        whenever(merchantProductCategoryService.findByName(merchantId, "Desserts"))
+            .thenReturn(categoryResponse(id = categoryId, name = "Desserts"))
+        whenever(merchantProductService.list(merchantId, branchId, categoryId)).thenReturn(
+            listOf(
+                productResponse(branchId = branchId, name = "Sütlaç", unitPrice = BigDecimal("5.00")),
+                productResponse(branchId = branchId, name = "Baklava", unitPrice = BigDecimal("6.00")),
+                productResponse(branchId = branchId, name = "Künefe", unitPrice = BigDecimal("7.00"))
+            )
+        )
+
+        val result = productTools.listProducts(
+            merchantId.toString(),
+            branchId.toString(),
+            categoryName = "Desserts",
+            offset = 1,
+            limit = 1
+        )
+
+        assertEquals(listOf("Künefe"), result.map { it.name })
+    }
+
+    @Test
+    fun `listProducts includes inactive products unless excluded`() {
+        val merchantId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val inactive = productResponse(branchId = branchId, name = "Draft", unitPrice = BigDecimal.ONE)
+        val active = storedProduct(UUID.randomUUID(), branchId)
+        whenever(merchantProductService.list(merchantId, branchId, null)).thenReturn(listOf(inactive, active))
+
+        assertEquals(2, productTools.listProducts(merchantId.toString(), branchId.toString()).size)
+        assertEquals(
+            listOf(active),
+            productTools.listProducts(merchantId.toString(), branchId.toString(), includeInactive = false)
+        )
+    }
+
+    @Test
+    fun `listProducts rejects limit over 200`() {
+        assertThrows<IllegalArgumentException> {
+            productTools.listProducts(UUID.randomUUID().toString(), UUID.randomUUID().toString(), limit = 201)
+        }
+    }
+
+    @Test
+    fun `updateProduct keeps fields that are not supplied`() {
+        val merchantId = UUID.randomUUID()
+        val productId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val stored = storedProduct(productId, branchId)
+        whenever(merchantProductService.get(merchantId, productId, null)).thenReturn(stored)
+        whenever(merchantProductService.updateIncludingInactive(eq(merchantId), eq(productId), any(), isNull())).thenReturn(stored)
+
+        productTools.updateProduct(
+            merchantId = merchantId.toString(),
+            productId = productId.toString(),
+            branchId = branchId.toString(),
+            unitPrice = "6.20"
+        )
+
+        val captor = argumentCaptor<com.elegant.software.blitzpay.merchant.api.UpdateProductRequest>()
+        verify(merchantProductService).updateIncludingInactive(eq(merchantId), eq(productId), captor.capture(), isNull())
+        assertEquals(
+            com.elegant.software.blitzpay.merchant.api.UpdateProductRequest(
+                name = stored.name,
+                branchId = branchId,
+                unitPrice = BigDecimal("6.20"),
+                description = stored.description,
+                categoryId = stored.categoryId,
+                productCode = stored.productCode
+            ),
+            captor.firstValue
+        )
+        verify(merchantProductCategoryService, never()).create(any(), any())
+    }
+
+    @Test
+    fun `updateProduct with only an image keeps price, description, category and code`() {
+        val merchantId = UUID.randomUUID()
+        val productId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val stored = storedProduct(productId, branchId)
+        val bytes = noisyPng()
+        whenever(productImageDownloader.download("https://bona-me.de/sutlac.png"))
+            .thenReturn(RawProductImage(contentType = "image/png", bytes = bytes))
+        whenever(merchantProductService.get(merchantId, productId, null)).thenReturn(stored)
+        whenever(merchantProductService.updateIncludingInactive(eq(merchantId), eq(productId), any(), any())).thenReturn(stored)
+
+        productTools.updateProduct(
+            merchantId = merchantId.toString(),
+            productId = productId.toString(),
+            branchId = branchId.toString(),
+            imageUrl = "https://bona-me.de/sutlac.png"
+        )
+
+        val captor = argumentCaptor<com.elegant.software.blitzpay.merchant.api.UpdateProductRequest>()
+        verify(merchantProductService).updateIncludingInactive(
+            eq(merchantId),
+            eq(productId),
+            captor.capture(),
+            eq(ProductImageUpload(contentType = "image/png", bytes = bytes))
+        )
+        assertEquals(stored.name, captor.firstValue.name)
+        assertEquals(stored.unitPrice, captor.firstValue.unitPrice)
+        assertEquals(stored.description, captor.firstValue.description)
+        assertEquals(stored.categoryId, captor.firstValue.categoryId)
+        assertEquals(stored.productCode, captor.firstValue.productCode)
+    }
+
+    @Test
+    fun `updateProduct clears description and category with empty strings`() {
+        val merchantId = UUID.randomUUID()
+        val productId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val stored = storedProduct(productId, branchId)
+        whenever(merchantProductService.get(merchantId, productId, null)).thenReturn(stored)
+        whenever(merchantProductService.updateIncludingInactive(eq(merchantId), eq(productId), any(), isNull())).thenReturn(stored)
+
+        productTools.updateProduct(
+            merchantId = merchantId.toString(),
+            productId = productId.toString(),
+            branchId = branchId.toString(),
+            description = "",
+            categoryName = ""
+        )
+
+        val captor = argumentCaptor<com.elegant.software.blitzpay.merchant.api.UpdateProductRequest>()
+        verify(merchantProductService).updateIncludingInactive(eq(merchantId), eq(productId), captor.capture(), isNull())
+        assertEquals("", captor.firstValue.description)
+        assertEquals(null, captor.firstValue.categoryId)
+        assertEquals(stored.unitPrice, captor.firstValue.unitPrice)
+    }
+
+    @Test
+    fun `getOrCreateProductId applies only the image to an existing product`() {
+        val merchantId = UUID.randomUUID()
+        val branchId = UUID.randomUUID()
+        val stored = storedProduct(UUID.randomUUID(), branchId)
+        val bytes = noisyPng()
+        whenever(productImageDownloader.download("https://bona-me.de/meze.png"))
+            .thenReturn(RawProductImage(contentType = "image/png", bytes = bytes))
+        whenever(merchantProductService.findByNameIncludingInactive(merchantId, branchId, stored.name)).thenReturn(stored)
+        whenever(merchantProductService.update(eq(merchantId), eq(stored.productId), any(), any())).thenReturn(stored)
+
+        val result = productTools.getOrCreateProductId(
+            merchantId = merchantId.toString(),
+            branchId = branchId.toString(),
+            productName = stored.name,
+            unitPrice = "1.00",
+            imageUrl = "https://bona-me.de/meze.png"
+        )
+
+        assertEquals(stored.productId.toString(), result)
+        val captor = argumentCaptor<com.elegant.software.blitzpay.merchant.api.UpdateProductRequest>()
+        verify(merchantProductService).update(eq(merchantId), eq(stored.productId), captor.capture(), any())
+        assertEquals(stored.unitPrice, captor.firstValue.unitPrice)
+        assertEquals(stored.description, captor.firstValue.description)
+        assertEquals(stored.categoryId, captor.firstValue.categoryId)
+        assertEquals(stored.productCode, captor.firstValue.productCode)
+        verify(merchantProductCategoryService, never()).findByName(any(), any())
     }
 
     @Test
@@ -701,6 +917,33 @@ class MerchantProductToolsTest {
         assertEquals(1, result.failed.size)
         assertEquals("Broken", result.failed.single().name)
         assertEquals("Category name must not be blank", result.failed.single().reason)
+    }
+
+    private fun storedProduct(productId: UUID, branchId: UUID): ProductResponse =
+        ProductResponse(
+            productId = productId,
+            branchId = branchId,
+            name = "Karışık Meze",
+            description = "Mixed starters",
+            unitPrice = BigDecimal("12.90"),
+            imageUrl = null,
+            active = true,
+            status = "ACTIVE",
+            categoryId = UUID.randomUUID(),
+            categoryName = "Starters",
+            productCode = 7L,
+            createdAt = Instant.now(),
+            updatedAt = Instant.now()
+        )
+
+    private fun noisyPng(): ByteArray {
+        val random = java.util.Random(7)
+        return java.io.ByteArrayOutputStream().also { out ->
+            val photo = java.awt.image.BufferedImage(600, 400, java.awt.image.BufferedImage.TYPE_INT_RGB).apply {
+                for (y in 0 until 400) for (x in 0 until 600) setRGB(x, y, random.nextInt())
+            }
+            javax.imageio.ImageIO.write(photo, "png", out)
+        }.toByteArray()
     }
 
     private fun captureBranchName(): String {
