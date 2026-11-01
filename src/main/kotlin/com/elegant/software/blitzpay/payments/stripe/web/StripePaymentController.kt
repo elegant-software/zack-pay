@@ -94,7 +94,7 @@ class StripePaymentController(
         if (paymentMethodType == "card_present" && !stripeConnectGateway.isTapToPayEnabled(merchantId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse("Tap to Pay is not enabled for this merchant"))
         }
-        val currency = request.currency ?: "eur"
+        val currency = orderSummary.currency.lowercase()
         val paymentRequestId = UUID.randomUUID()
         return LogContext.with(
             LogContext.ORDER_ID to orderId,
@@ -146,7 +146,7 @@ class StripePaymentController(
             ?.takeIf { stripeConnectGateway.isPayByBankEnabled(merchantId) }
             ?: return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(ErrorResponse("Stripe Pay by Bank is not configured or not yet enabled for this merchant"))
-        val currency = (request.currency ?: orderSummary.currency).lowercase()
+        val currency = orderSummary.currency.lowercase()
         if (currency !in setOf("eur", "gbp")) {
             return ResponseEntity.badRequest().body(ErrorResponse("Stripe Pay by Bank supports only EUR and GBP"))
         }
@@ -186,20 +186,14 @@ class StripePaymentController(
     private fun resolveAmount(request: CreateIntentRequest, orderAmountMinor: Long): Double? =
         resolveAmount(request.amount, request.productId, orderAmountMinor)
 
+    // The order total is the only trusted amount. Client-sent amount/productId are ignored for pricing
+    // (kept in the request for backwards compatibility with older app builds).
     private fun resolveAmount(amount: Double?, productId: UUID?, orderAmountMinor: Long): Double? {
-        val productPrice = productId?.let { credentialResolver.resolveProductPrice(it) }
-        val effectiveAmount = when {
-            amount != null && productPrice != null -> {
-                if (amount != productPrice.toDouble()) {
-                    log.warn("stripe create_intent amount override productId={} requestAmount={} productPrice={}", productId, amount, productPrice.toDouble())
-                }
-                amount
-            }
-            amount != null -> amount
-            productPrice != null -> productPrice.toDouble()
-            else -> orderAmountMinor / 100.0
+        val orderAmount = orderAmountMinor / 100.0
+        if (amount != null && Math.round(amount * 100) != orderAmountMinor) {
+            log.warn("stripe client amount ignored requestAmount={} orderAmount={} productId={}", amount, orderAmount, productId)
         }
-        return effectiveAmount.takeIf { it > 0 && it.isFinite() }
+        return orderAmount.takeIf { orderAmountMinor > 0 }
     }
 
     private fun validateStripePaymentRequest(merchantId: UUID?, orderId: String, branchId: UUID?, productId: UUID?): StripePaymentContext {
