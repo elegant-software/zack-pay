@@ -60,8 +60,9 @@ private val ISO_COUNTRY = Regex("[A-Za-z]{2}")
  * Accounts v2 equivalent of the former v1 Express account (`type=express` requesting card_payments,
  * transfers and pay_by_bank_payments). The Express dashboard requires the platform to collect fees and
  * losses; Stripe does not allow changing these responsibilities after creation. Payments are direct
- * charges (`Stripe-Account` header), so the merchant configuration carries the payment capabilities;
- * the recipient configuration keeps parity with the v1 `transfers` capability.
+ * charges (`Stripe-Account` header), so only the merchant configuration is needed. The recipient
+ * configuration (v1 `transfers`) is deliberately omitted: nothing transfers funds to connected accounts,
+ * and Stripe rejects it when the merchant has no contact email.
  */
 internal fun buildAccountCreateParams(details: MerchantDetailsResponse): AccountCreateParams {
     val website = details.website?.takeIf { it.isNotBlank() }
@@ -84,21 +85,6 @@ internal fun buildAccountCreateParams(details: MerchantDetailsResponse): Account
         merchantConfig.setSupport(AccountCreateParams.Configuration.Merchant.Support.builder().setUrl(it).build())
     }
 
-    val recipientConfig = AccountCreateParams.Configuration.Recipient.builder()
-        .setCapabilities(
-            AccountCreateParams.Configuration.Recipient.Capabilities.builder()
-                .setStripeBalance(
-                    AccountCreateParams.Configuration.Recipient.Capabilities.StripeBalance.builder()
-                        .setStripeTransfers(
-                            AccountCreateParams.Configuration.Recipient.Capabilities.StripeBalance.StripeTransfers.builder()
-                                .setRequested(true).build()
-                        )
-                        .build()
-                )
-                .build()
-        )
-        .build()
-
     val profile = AccountCreateParams.Defaults.Profile.builder()
     website?.let { profile.setBusinessUrl(it) }
     displayName?.let { profile.setDoingBusinessAs(it) }
@@ -108,7 +94,6 @@ internal fun buildAccountCreateParams(details: MerchantDetailsResponse): Account
         .setConfiguration(
             AccountCreateParams.Configuration.builder()
                 .setMerchant(merchantConfig.build())
-                .setRecipient(recipientConfig)
                 .build()
         )
         .setDefaults(

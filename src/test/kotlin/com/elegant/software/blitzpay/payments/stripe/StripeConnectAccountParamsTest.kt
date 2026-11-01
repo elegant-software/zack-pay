@@ -45,10 +45,7 @@ class StripeConnectAccountParamsTest {
         assertEquals("https://cafe.example", map.at("defaults", "profile", "business_url"))
         assertEquals(true, map.at("configuration", "merchant", "capabilities", "card_payments", "requested"))
         assertEquals(true, map.at("configuration", "merchant", "capabilities", "pay_by_bank_payments", "requested"))
-        assertEquals(
-            true,
-            map.at("configuration", "recipient", "capabilities", "stripe_balance", "stripe_transfers", "requested"),
-        )
+        assertEquals(null, map.at("configuration", "recipient"))
         assertEquals(merchantId.toString(), map.at("metadata", "merchantId"))
     }
 
