@@ -19,14 +19,14 @@ data class ConnectStatusResponse(
     val enabledPaymentFlows: Set<ConnectPaymentFlow> = emptySet(),
 )
 
-@Tag(name = "Stripe Connect", description = "Stripe Connect Express account onboarding for merchants")
+@Tag(name = "Stripe Connect", description = "Stripe Connect account onboarding for merchants")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchants/{merchantId}/stripe-connect", version = "1")
 class StripeConnectController(
     private val stripeConnectService: StripeConnectService,
     private val stripeProperties: StripeProperties,
 ) {
-    @Operation(summary = "Start Stripe Connect onboarding — creates an Express account and returns the hosted onboarding URL")
+    @Operation(summary = "Start Stripe Connect onboarding — creates a connected account and returns the hosted onboarding URL")
     @PostMapping
     fun startOnboarding(
         @PathVariable merchantId: UUID,

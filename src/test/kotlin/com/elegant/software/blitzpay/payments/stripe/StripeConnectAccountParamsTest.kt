@@ -33,15 +33,15 @@ class StripeConnectAccountParamsTest {
         path.fold(this as Any?) { node, key -> (node as? Map<String, Any?>)?.get(key) }
 
     @Test
-    fun `creates express v2 account with platform responsibilities and v1-equivalent capabilities`() {
+    fun `creates full-dashboard v2 account with Stripe-managed risk and merchant capabilities`() {
         val map = buildAccountCreateParams(details()).toMap()
 
-        assertEquals("express", map["dashboard"])
+        assertEquals("full", map["dashboard"])
         assertEquals("owner@cafe.example", map["contact_email"])
         assertEquals("Cafe Blitz", map["display_name"])
         assertEquals("de", map.at("identity", "country"))
-        assertEquals("application", map.at("defaults", "responsibilities", "fees_collector"))
-        assertEquals("application", map.at("defaults", "responsibilities", "losses_collector"))
+        assertEquals("stripe", map.at("defaults", "responsibilities", "fees_collector"))
+        assertEquals("stripe", map.at("defaults", "responsibilities", "losses_collector"))
         assertEquals("https://cafe.example", map.at("defaults", "profile", "business_url"))
         assertEquals(true, map.at("configuration", "merchant", "capabilities", "card_payments", "requested"))
         assertEquals(true, map.at("configuration", "merchant", "capabilities", "pay_by_bank_payments", "requested"))

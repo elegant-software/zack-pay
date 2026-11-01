@@ -57,12 +57,12 @@ class StripeConnectService(
 private val ISO_COUNTRY = Regex("[A-Za-z]{2}")
 
 /**
- * Accounts v2 equivalent of the former v1 Express account (`type=express` requesting card_payments,
- * transfers and pay_by_bank_payments). The Express dashboard requires the platform to collect fees and
- * losses; Stripe does not allow changing these responsibilities after creation. Payments are direct
- * charges (`Stripe-Account` header), so only the merchant configuration is needed. The recipient
- * configuration (v1 `transfers`) is deliberately omitted: nothing transfers funds to connected accounts,
- * and Stripe rejects it when the merchant has no contact email.
+ * Accounts v2 connected account for a merchant. The platform is not eligible to own loss liability, so
+ * Stripe collects fees and losses (Stripe-managed risk); Stripe does not allow changing these
+ * responsibilities after creation. That combination requires the full Stripe dashboard (Express with
+ * Stripe-managed risk is preview-only). Payments are direct charges (`Stripe-Account` header), so only
+ * the merchant configuration is needed. The recipient configuration (v1 `transfers`) is deliberately
+ * omitted: nothing transfers funds to connected accounts, and Stripe rejects it without a contact email.
  */
 internal fun buildAccountCreateParams(details: MerchantDetailsResponse): AccountCreateParams {
     val website = details.website?.takeIf { it.isNotBlank() }
@@ -90,7 +90,7 @@ internal fun buildAccountCreateParams(details: MerchantDetailsResponse): Account
     displayName?.let { profile.setDoingBusinessAs(it) }
 
     val params = AccountCreateParams.builder()
-        .setDashboard(AccountCreateParams.Dashboard.EXPRESS)
+        .setDashboard(AccountCreateParams.Dashboard.FULL)
         .setConfiguration(
             AccountCreateParams.Configuration.builder()
                 .setMerchant(merchantConfig.build())
@@ -100,8 +100,8 @@ internal fun buildAccountCreateParams(details: MerchantDetailsResponse): Account
             AccountCreateParams.Defaults.builder()
                 .setResponsibilities(
                     AccountCreateParams.Defaults.Responsibilities.builder()
-                        .setFeesCollector(AccountCreateParams.Defaults.Responsibilities.FeesCollector.APPLICATION)
-                        .setLossesCollector(AccountCreateParams.Defaults.Responsibilities.LossesCollector.APPLICATION)
+                        .setFeesCollector(AccountCreateParams.Defaults.Responsibilities.FeesCollector.STRIPE)
+                        .setLossesCollector(AccountCreateParams.Defaults.Responsibilities.LossesCollector.STRIPE)
                         .build()
                 )
                 .setProfile(profile.build())
