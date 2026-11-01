@@ -29,3 +29,4 @@ config:
   whisperBaseUrl: http://whisper:8000/v1
   storageInternalEndpoint: http://minio:9000  # k8s/minio.yml, same namespace
   stripeConnectAppDeepLink: ""
+  stripeDashboardPlatformAccountId: "acct_1UWnIQBrzZDcM32R"  # ZackPay sandbox

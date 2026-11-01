@@ -127,7 +127,7 @@ config:
   stripeConnectReturnUrl: ""  # default: https://<hosts.api>.<baseDomain>/stripe-connect/return
   stripeConnectApiBaseUrl: ""  # default: https://<hosts.api>.<baseDomain>
   stripeConnectAppDeepLink: ""
-  stripeDashboardPlatformAccountId: "acct_1UWiwu2NJde9cvaI"
+  stripeDashboardPlatformAccountId: ""  # set per environment (values-<env>.yaml)
 
 # ---------------------------------------------------------------------------
 # Resource requests and limits
