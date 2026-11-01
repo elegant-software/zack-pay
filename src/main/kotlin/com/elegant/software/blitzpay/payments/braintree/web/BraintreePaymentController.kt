@@ -102,7 +102,7 @@ class BraintreePaymentController(
             ?: return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(BraintreeErrorResponse("Payment provider not configured"))
         val nonce = request.nonce?.takeIf { it.isNotBlank() }
             ?: return ResponseEntity.badRequest().body(BraintreeErrorResponse("nonce is required"))
-        val currency = request.currency ?: "EUR"
+        val currency = orderSummary.currency.uppercase()
         val paymentRequestId = UUID.randomUUID()
         return LogContext.with(
             LogContext.ORDER_ID to orderId,
@@ -138,13 +138,12 @@ class BraintreePaymentController(
         }
     }
 
+    // The order total is the only trusted amount; client-sent amount/productId are ignored for pricing.
     private fun resolveAmount(request: CheckoutRequest, orderAmountMinor: Long): Double? {
-        val productPrice = request.productId?.let { credentialResolver.resolveProductPrice(it) }
-        val effectiveAmount = when {
-            request.amount != null -> request.amount
-            productPrice != null -> productPrice.toDouble()
-            else -> orderAmountMinor / 100.0
+        val orderAmount = orderAmountMinor / 100.0
+        if (request.amount != null && Math.round(request.amount * 100) != orderAmountMinor) {
+            log.warn("braintree client amount ignored requestAmount={} orderAmount={} productId={}", request.amount, orderAmount, request.productId)
         }
-        return effectiveAmount.takeIf { it > 0 && it.isFinite() }
+        return orderAmount.takeIf { orderAmountMinor > 0 }
     }
 }
