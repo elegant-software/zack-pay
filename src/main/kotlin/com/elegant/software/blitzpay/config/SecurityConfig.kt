@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.config
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -11,7 +12,9 @@ import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig {
+class SecurityConfig(
+    @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}") private val issuerUri: String,
+) {
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =
@@ -35,7 +38,15 @@ class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, *STOREFRONT_CATALOG_READS).permitAll()
                     .anyRequest().authenticated()
             }
-            .oauth2ResourceServer { it.jwt(Customizer.withDefaults()) }
+            .oauth2ResourceServer {
+                it.jwt(Customizer.withDefaults())
+                // RFC 9728: point MCP clients straight at Keycloak for AS discovery
+                it.protectedResourceMetadata { m ->
+                    m.protectedResourceMetadataCustomizer { b ->
+                        b.authorizationServer(issuerUri).tlsClientCertificateBoundAccessTokens(false)
+                    }
+                }
+            }
             .build()
 
     private companion object {
