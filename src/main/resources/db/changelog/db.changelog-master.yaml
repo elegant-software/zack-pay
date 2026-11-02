@@ -129,3 +129,5 @@ databaseChangeLog:
       file: db/changelog/20260629-001-merchant-entity-rename.sql
   - include:
       file: db/changelog/20261031-001-international-menu.sql
+  - include:
+      file: db/changelog/20261103-001-order-guest-token.sql

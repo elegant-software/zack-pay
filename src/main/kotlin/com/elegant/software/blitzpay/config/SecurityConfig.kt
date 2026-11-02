@@ -36,6 +36,9 @@ class SecurityConfig(
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs", "/api-docs/**").permitAll()
                     // Web Storefront browses a merchant's catalog anonymously — catalog reads only
                     .requestMatchers(HttpMethod.GET, *STOREFRONT_CATALOG_READS).permitAll()
+                    // Web Storefront guest checkout — authorised in the controller by the order-scoped guest_token cookie
+                    .requestMatchers(HttpMethod.POST, "/v1/storefront/orders", "/v1/storefront/orders/{orderId}/payment").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/v1/storefront/orders/{orderId}").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer {

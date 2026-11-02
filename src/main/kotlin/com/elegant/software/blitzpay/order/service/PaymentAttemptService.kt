@@ -102,6 +102,13 @@ class PaymentAttemptService(
     override fun findLastPaymentRequestId(orderId: String): UUID? =
         orderRepository.findByOrderId(orderId)?.lastPaymentRequestId
 
+    @Transactional(readOnly = true)
+    override fun isGuestTokenValid(orderId: String, token: String?): Boolean =
+        orderRepository.findByOrderId(orderId)?.let { GuestToken.matches(it, token) } ?: false
+
+    @Transactional(readOnly = true)
+    override fun countPaymentAttempts(orderId: String): Long = paymentAttemptRepository.countByOrderId(orderId)
+
     private fun checkoutPaymentMethodForProvider(provider: String): CheckoutPaymentMethod? =
         when (provider) {
             "TRUELAYER" -> CheckoutPaymentMethod.BANK_ACCOUNT

@@ -20,6 +20,7 @@ import com.elegant.software.blitzpay.order.api.MerchantOrderResponse
 import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.OrderSummaryResponse
 import com.elegant.software.blitzpay.order.api.SettleOrderRequest
+import com.elegant.software.blitzpay.order.api.StorefrontOrderRequest
 import com.elegant.software.blitzpay.order.api.UpdateOrderItemRequest
 import com.elegant.software.blitzpay.order.api.toMerchantResponse
 import com.elegant.software.blitzpay.order.api.toResponse
@@ -58,7 +59,47 @@ class OrderService(
 ) {
     private val log = LoggerFactory.getLogger(OrderService::class.java)
 
-    fun createShopperOrder(request: CreateOrderRequest, shopperId: String): OrderResponse {
+    fun createShopperOrder(request: CreateOrderRequest, shopperId: String): OrderResponse =
+        createCustomerOrder(request, CreatorType.SHOPPER, shopperId) {
+            request.buyerContact ?: shopperProfileGateway.findByShopperId(shopperId)?.let { p ->
+                BuyerContactRequest(name = p.name, street = p.street, zip = p.zip, city = p.city, country = p.country)
+            }
+        }
+
+    /**
+     * Web storefront guest order. Priced from the catalog like a shopper order; the returned raw token is the
+     * only proof of ownership and is never stored (only its hash).
+     */
+    fun createGuestOrder(request: StorefrontOrderRequest): GuestOrderCreated {
+        require(request.items.size <= MAX_GUEST_ORDER_LINES) { "Order must not contain more than $MAX_GUEST_ORDER_LINES items" }
+        request.items.forEach { require(it.quantity <= MAX_GUEST_ITEM_QUANTITY) { "quantity must be <= $MAX_GUEST_ITEM_QUANTITY for product ${it.productId}" } }
+        val token = GuestToken.generate()
+        val order = createCustomerOrder(
+            CreateOrderRequest(branchId = request.branchId, orderType = OrderType.PRE_ORDER, items = request.items),
+            CreatorType.GUEST,
+            GUEST_CREATOR_ID,
+            guestTokenHash = GuestToken.hash(token),
+            guestTokenExpiresAt = Instant.now().plus(GuestToken.TTL),
+        ) { null }
+        return GuestOrderCreated(order, token)
+    }
+
+    /** Unknown order and wrong/expired token look the same to the caller, so the endpoint can't be used as an order-ID oracle. */
+    @Transactional(readOnly = true)
+    fun getGuestOrder(orderId: String, token: String?): OrderResponse {
+        val order = orderRepository.findByOrderId(orderId)?.takeIf { GuestToken.matches(it, token) }
+            ?: throw NoSuchElementException("Order not found: $orderId")
+        return order.toResponse(orderItemRepository.findAllByOrderIdFk(order.id))
+    }
+
+    private fun createCustomerOrder(
+        request: CreateOrderRequest,
+        creatorType: CreatorType,
+        createdById: String,
+        guestTokenHash: String? = null,
+        guestTokenExpiresAt: Instant? = null,
+        buyerContact: () -> BuyerContactRequest?,
+    ): OrderResponse {
         requireNotNull(request.branchId) { "branchId is required" }
         require(request.items.isNotEmpty()) { "Order must contain at least one item" }
         request.items.forEach { require(it.quantity > 0) { "quantity must be > 0 for product ${it.productId}" } }
@@ -71,10 +112,7 @@ class OrderService(
         validateOfferingRules(merchantId, request.orderType, request.usesDeferredPayment)
         validateWalkInLocationIfNeeded(branch, request.orderType, request.customerLocation)
 
-        val resolvedBuyerContact = request.buyerContact
-            ?: shopperProfileGateway.findByShopperId(shopperId)?.let { p ->
-                BuyerContactRequest(name = p.name, street = p.street, zip = p.zip, city = p.city, country = p.country)
-            }
+        val resolvedBuyerContact = buyerContact()
 
         val order = Order(
             orderId = Order.nextOrderId(),
@@ -82,12 +120,14 @@ class OrderService(
             merchantBranchId = request.branchId,
             orderType = request.orderType,
             usesDeferredPayment = request.usesDeferredPayment,
-            creatorType = CreatorType.SHOPPER,
-            createdById = shopperId,
+            creatorType = creatorType,
+            createdById = createdById,
             currency = DEFAULT_CURRENCY,
             totalAmountMinor = request.items.sumOf { productsById.getValue(it.productId).unitPriceMinor() * it.quantity },
             itemCount = request.items.sumOf { it.quantity },
             checkoutPaymentMethod = resolveCheckoutPaymentMethod(request)?.name,
+            guestTokenHash = guestTokenHash,
+            guestTokenExpiresAt = guestTokenExpiresAt,
             buyerContactName = resolvedBuyerContact?.name,
             buyerContactStreet = resolvedBuyerContact?.street,
             buyerContactZip = resolvedBuyerContact?.zip,
@@ -449,6 +489,9 @@ class OrderService(
 
     companion object {
         private const val DEFAULT_CURRENCY = "EUR"
+        private const val GUEST_CREATOR_ID = "guest"
+        private const val MAX_GUEST_ORDER_LINES = 50
+        private const val MAX_GUEST_ITEM_QUANTITY = 99
         private val MAX_WALK_IN_LOCATION_AGE = ChronoUnit.MINUTES.duration.multipliedBy(5)
         private const val MAX_WALK_IN_ACCURACY_METERS = 100.0
     }

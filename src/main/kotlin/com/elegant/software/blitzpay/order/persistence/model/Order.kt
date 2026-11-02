@@ -99,6 +99,12 @@ class Order(
 
     @Column(name = "buyer_contact_country", length = 64)
     val buyerContactCountry: String? = null,
+
+    @Column(name = "guest_token_hash", length = 64)
+    val guestTokenHash: String? = null,
+
+    @Column(name = "guest_token_expires_at")
+    val guestTokenExpiresAt: Instant? = null,
 ) {
     fun markPaymentInProgress(paymentRequestId: UUID, provider: String, at: Instant = Instant.now()) {
         require(status != OrderStatus.PAID) { "Order is already paid: $orderId" }

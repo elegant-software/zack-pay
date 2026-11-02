@@ -32,12 +32,14 @@ data:
   FRONTEND_ORIGIN: {{ .Values.config.frontendOrigin | default (printf "https://%s" (include "blitz-pay.host" (list . "admin"))) | quote }}
   STRIPE_CONNECT_RETURN_URL: {{ .Values.config.stripeConnectReturnUrl | default (printf "%s/stripe-connect/return" $api) | quote }}
   STRIPE_CONNECT_API_BASE_URL: {{ .Values.config.stripeConnectApiBaseUrl | default $api | quote }}
+  STOREFRONT_URL: {{ printf "https://%s" (include "blitz-pay.host" (list . "storefront")) | quote }}
   KEYCLOAK_IAM_SERVER_URL: {{ printf "https://%s" (include "blitz-pay.host" (list . "auth")) | quote }}
   STORAGE_ENDPOINT: {{ printf "https://%s" (include "blitz-pay.host" (list . "minio")) | quote }}
   {{- else }}
   FRONTEND_ORIGIN: {{ .Values.config.frontendOrigin | quote }}
   STRIPE_CONNECT_RETURN_URL: {{ .Values.config.stripeConnectReturnUrl | quote }}
   STRIPE_CONNECT_API_BASE_URL: {{ .Values.config.stripeConnectApiBaseUrl | quote }}
+  STOREFRONT_URL: {{ .Values.config.storefrontUrl | default "" | quote }}
   {{- end }}
   STRIPE_CONNECT_APP_DEEP_LINK: {{ .Values.config.stripeConnectAppDeepLink | quote }}
   STRIPE_DASHBOARD_PLATFORM_ACCOUNT_ID: {{ .Values.config.stripeDashboardPlatformAccountId | quote }}

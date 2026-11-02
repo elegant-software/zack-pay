@@ -7,4 +7,5 @@ import java.util.UUID
 interface PaymentAttemptRepository : JpaRepository<PaymentAttempt, UUID> {
     fun findByPaymentRequestId(paymentRequestId: UUID): PaymentAttempt?
     fun deleteAllByOrderIdFk(orderIdFk: UUID)
+    fun countByOrderId(orderId: String): Long
 }
