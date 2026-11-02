@@ -30,3 +30,17 @@ config:
   storageInternalEndpoint: http://minio:9000  # k8s/minio.yml, same namespace
   stripeConnectAppDeepLink: ""
   stripeDashboardPlatformAccountId: "acct_1UWnIQBrzZDcM32R"  # ZackPay sandbox
+
+# 1Gi left no headroom (heap 768MB + ~200MB non-heap) and the 1-CPU limit throttled 90% of periods,
+# causing GC thrash → liveness timeouts → restarts. No CPU limit: request guarantees, burst is free.
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: null
+    memory: 1536Mi
+
+livenessProbe:
+  timeoutSeconds: 10
+  failureThreshold: 5
