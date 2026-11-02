@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.order.service
 
+import com.elegant.software.blitzpay.merchant.api.TableGateway
 import com.elegant.software.blitzpay.order.OrderFixtureLoader
 import com.elegant.software.blitzpay.order.persistence.model.CreatorType
 import com.elegant.software.blitzpay.order.persistence.model.Order
@@ -9,7 +10,6 @@ import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepos
 import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
 import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
 import com.elegant.software.blitzpay.order.api.PaymentStatusCode
-import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -17,7 +17,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.springframework.context.ApplicationEventPublisher
 import java.time.Instant
 import java.util.Optional
 import kotlin.test.assertEquals
@@ -26,10 +25,8 @@ class OrderStatusProjectionTest {
     private val orderRepository = mock<OrderRepository>()
     private val paymentAttemptRepository = mock<PaymentAttemptRepository>()
     private val orderItemRepository = mock<OrderItemRepository>()
-    private val eventPublisher = mock<ApplicationEventPublisher>()
-    private val shopperProfileGateway = mock<ShopperProfileGateway>()
     private val storefrontOrderBus = mock<StorefrontOrderBus>()
-    private val projection = OrderStatusProjection(orderRepository, paymentAttemptRepository, orderItemRepository, eventPublisher, shopperProfileGateway, storefrontOrderBus, org.mockito.kotlin.mock<com.elegant.software.blitzpay.merchant.api.TableGateway>())
+    private val projection = OrderStatusProjection(orderRepository, paymentAttemptRepository, orderItemRepository, storefrontOrderBus, mock<TableGateway>())
 
     @Test
     fun `settled event marks order as paid`() {
@@ -54,7 +51,6 @@ class OrderStatusProjectionTest {
         whenever(orderRepository.findById(order.id)).thenReturn(Optional.of(order))
         whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
         whenever(paymentAttemptRepository.save(any<PaymentAttempt>())).thenAnswer { it.arguments[0] }
-        whenever(orderItemRepository.findAllByOrderIdFk(order.id)).thenReturn(emptyList())
 
         projection.on(event)
 

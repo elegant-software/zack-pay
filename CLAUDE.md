@@ -40,6 +40,16 @@ KEYCLOAK_IAM_ADMIN_CLIENT_ID # service account client ID with realm-management r
 KEYCLOAK_IAM_ADMIN_CLIENT_SECRET # service account client secret
 ```
 
+Optional (invoice module). Invoices are rendered and emailed by `InvoiceBatchJob`, which runs only when `SPRING_MAIL_HOST` is set. Without it, no invoices are generated and the invoice endpoints return 404. Put SMTP credentials in `blitz-pay-secrets`.
+
+```
+SPRING_MAIL_HOST             # SMTP host; enables InvoiceBatchJob
+SPRING_MAIL_PORT             # SMTP port (e.g. 587)
+SPRING_MAIL_USERNAME         # SMTP user
+SPRING_MAIL_PASSWORD         # SMTP password
+BLITZPAY_INVOICE_EMAIL_FROM  # sender address of invoice emails (required when SPRING_MAIL_HOST is set)
+```
+
 Contract tests do **not** require these — TrueLayer and Keycloak beans are mocked under the `contract-test` Spring profile.
 
 ## Architecture

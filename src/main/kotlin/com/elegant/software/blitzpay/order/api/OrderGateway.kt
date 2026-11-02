@@ -1,6 +1,7 @@
 package com.elegant.software.blitzpay.order.api
 
 import org.springframework.modulith.NamedInterface
+import java.time.Instant
 import java.util.UUID
 
 /** Session cookie carrying the web storefront guest token (see `GuestToken`). */
@@ -27,6 +28,12 @@ interface OrderGateway {
     fun isGuestTokenValid(orderId: String, token: String?): Boolean
 
     fun countPaymentAttempts(orderId: String): Long
+
+    /** Order ids that need an invoice: paid after [since], or merchant-issued invoice orders created after [since]. Oldest first. */
+    fun findInvoiceableOrderIds(since: Instant): List<String>
+
+    /** Invoice data for a paid order or an invoice order; null if the order is unknown or neither. */
+    fun findInvoiceSource(orderId: String): OrderInvoiceSource?
 }
 
 data class OrderPaymentSummary(

@@ -2,8 +2,6 @@ package com.elegant.software.blitzpay.order.service
 
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.merchant.api.TableGateway
-import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
-import com.elegant.software.blitzpay.order.api.OrderPaid
 import com.elegant.software.blitzpay.order.persistence.model.CreatorType
 import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
@@ -11,9 +9,7 @@ import com.elegant.software.blitzpay.order.persistence.repository.OrderRepositor
 import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
 import com.elegant.software.blitzpay.order.api.PaymentStatusChanged
 import com.elegant.software.blitzpay.order.api.PaymentStatusCode
-import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import org.slf4j.LoggerFactory
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.stereotype.Component
 
@@ -22,8 +18,6 @@ class OrderStatusProjection(
     private val orderRepository: OrderRepository,
     private val paymentAttemptRepository: PaymentAttemptRepository,
     private val orderItemRepository: OrderItemRepository,
-    private val eventPublisher: ApplicationEventPublisher,
-    private val shopperProfileGateway: ShopperProfileGateway,
     private val storefrontOrderBus: StorefrontOrderBus,
     private val tableGateway: TableGateway,
 ) {
@@ -71,30 +65,6 @@ class OrderStatusProjection(
                     val tableId = order.tableId
                     val branchId = order.merchantBranchId
                     if (tableId != null && branchId != null) tableGateway.tableChanged(branchId, tableId)
-                    if (order.status == OrderStatus.PAID) {
-                        val items = orderItemRepository.findAllByOrderIdFk(order.id)
-                            .filter { it.quantity > 0 }
-                            .map { OrderItemSnapshot(it.productName, it.quantity, it.effectiveUnitPriceMinor) }
-                        val profile = if (order.buyerContactName == null && order.creatorType == CreatorType.SHOPPER) {
-                            shopperProfileGateway.findByShopperId(order.createdById)
-                        } else null
-                        eventPublisher.publishEvent(
-                            OrderPaid(
-                                orderId = order.orderId,
-                                orderIdFk = order.id,
-                                merchantId = order.merchantApplicationId,
-                                currency = order.currency,
-                                totalAmountMinor = order.totalAmountMinor,
-                                buyerContactName = order.buyerContactName ?: profile?.name,
-                                buyerContactStreet = order.buyerContactStreet ?: profile?.street,
-                                buyerContactZip = order.buyerContactZip ?: profile?.zip,
-                                buyerContactCity = order.buyerContactCity ?: profile?.city,
-                                buyerContactCountry = order.buyerContactCountry ?: profile?.country,
-                                paidAt = order.paidAt!!,
-                                items = items,
-                            )
-                        )
-                    }
                 } else {
                     log.info("order status unchanged status={}", order.status)
                 }

@@ -65,6 +65,7 @@ dependencies {
     // ----------------------------
     implementation(libs.mustang.library)
     implementation(libs.spring.boot.starter.thymeleaf)
+    implementation(libs.spring.boot.starter.mail)
     implementation(libs.flying.saucer.pdf)
 
     // ----------------------------

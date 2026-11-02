@@ -4,19 +4,83 @@ import com.elegant.software.blitzpay.order.persistence.model.CreatorType
 import com.elegant.software.blitzpay.order.persistence.model.Order
 import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import com.elegant.software.blitzpay.order.persistence.model.PaymentAttempt
+import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
 import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
 import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
+import com.elegant.software.blitzpay.shopper.api.ShopperProfileData
+import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class PaymentAttemptServiceTest {
     private val orderRepository = mock<OrderRepository>()
     private val paymentAttemptRepository = mock<PaymentAttemptRepository>()
-    private val service = PaymentAttemptService(orderRepository, paymentAttemptRepository)
+    private val orderItemRepository = mock<OrderItemRepository>()
+    private val shopperProfileGateway = mock<ShopperProfileGateway>()
+    private val service = PaymentAttemptService(orderRepository, paymentAttemptRepository, orderItemRepository, shopperProfileGateway)
+
+    @Test
+    fun `findInvoiceSource for paid shopper order falls back to shopper profile contact and email`() {
+        val paidAt = Instant.parse("2026-10-01T10:00:00Z")
+        val order = payableOrder().apply { status = OrderStatus.PAID; this.paidAt = paidAt }
+        whenever(orderRepository.findByOrderId(order.orderId)).thenReturn(order)
+        whenever(orderItemRepository.findAllByOrderIdFk(order.id)).thenReturn(emptyList())
+        whenever(shopperProfileGateway.findByShopperId("shopper-test"))
+            .thenReturn(ShopperProfileData("Alice", "1 Lane", "10115", "Berlin", "DE", email = "alice@example.com"))
+
+        val source = service.findInvoiceSource(order.orderId)!!
+
+        assertEquals(paidAt, source.issuedAt)
+        assertEquals("Alice", source.buyerContactName)
+        assertEquals("DE", source.buyerContactCountry)
+        assertEquals("alice@example.com", source.buyerEmail)
+        assertEquals(false, source.isInvoiceOrder)
+    }
+
+    @Test
+    fun `findInvoiceSource for invoice order uses createdAt and target shopper email`() {
+        val createdAt = Instant.parse("2026-10-02T09:00:00Z")
+        val order = Order(
+            orderId = "ORDER-INV",
+            merchantApplicationId = UUID.randomUUID(),
+            creatorType = CreatorType.MERCHANT,
+            createdById = "merchant-user",
+            currency = "EUR",
+            totalAmountMinor = 5000,
+            itemCount = 1,
+            createdAt = createdAt,
+            targetShopperId = "shopper-target",
+            dueDate = LocalDate.parse("2026-10-16"),
+        )
+        whenever(orderRepository.findByOrderId(order.orderId)).thenReturn(order)
+        whenever(orderItemRepository.findAllByOrderIdFk(order.id)).thenReturn(emptyList())
+        whenever(shopperProfileGateway.findByShopperId("shopper-target"))
+            .thenReturn(ShopperProfileData("Bob", "", "", "", "", email = "bob@example.com"))
+
+        val source = service.findInvoiceSource(order.orderId)!!
+
+        assertTrue(source.isInvoiceOrder)
+        assertEquals(createdAt, source.issuedAt)
+        assertEquals(LocalDate.parse("2026-10-16"), source.dueDate)
+        assertEquals("bob@example.com", source.buyerEmail)
+        assertNull(source.buyerContactName)
+    }
+
+    @Test
+    fun `findInvoiceSource returns null for unpaid regular order`() {
+        val order = payableOrder()
+        whenever(orderRepository.findByOrderId(order.orderId)).thenReturn(order)
+
+        assertNull(service.findInvoiceSource(order.orderId))
+    }
 
     @Test
     fun `linkPaymentAttempt captures pay by bank checkout method from provider`() {

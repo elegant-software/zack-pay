@@ -39,6 +39,10 @@ spring:
     enabled: true
     default-schema: blitzpay
     liquibase-schema: public
+  # SMTP for InvoiceBatchJob: set SPRING_MAIL_HOST/PORT/USERNAME/PASSWORD to enable it.
+  mail:
+    properties:
+      "[mail.smtp.starttls.enable]": true
   threads:
     virtual:
       enabled: true
