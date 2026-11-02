@@ -274,3 +274,10 @@ internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: Stri
     },
     createdAt = createdAt,
 )
+
+/** Web storefront guest order: prices, merchant and order type are resolved on the server. */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class StorefrontOrderRequest(
+    val branchId: UUID,
+    val items: List<CreateOrderItemRequest> = emptyList(),
+)

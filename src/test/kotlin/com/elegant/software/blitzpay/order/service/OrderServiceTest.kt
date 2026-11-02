@@ -10,6 +10,8 @@ import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.CreateOrderItemRequest
 import com.elegant.software.blitzpay.order.api.OrderCustomerLocationRequest
 import com.elegant.software.blitzpay.order.api.PaymentMethod
+import com.elegant.software.blitzpay.order.api.StorefrontOrderRequest
+import com.elegant.software.blitzpay.order.persistence.model.CreatorType
 import com.elegant.software.blitzpay.order.persistence.model.Order
 import com.elegant.software.blitzpay.order.persistence.model.OrderItem
 import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
@@ -32,6 +34,9 @@ import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class OrderServiceTest {
     private val merchantGateway = mock<MerchantGateway>()
@@ -341,4 +346,53 @@ class OrderServiceTest {
             verify(orderRepository).delete(order)
         }
     }
+
+    private fun stubGuestCatalog(productId: UUID) {
+        stubActiveMerchantContext("PRE_ORDER")
+        whenever(merchantGateway.findOrderableProducts(any())).thenReturn(
+            listOf(OrderableMerchantProduct(productId, merchantId, branchId, "Coffee", "Medium roast", BigDecimal("12.50"), true)),
+        )
+        whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
+        whenever(orderItemRepository.saveAll(any<List<OrderItem>>())).thenAnswer { it.arguments[0] }
+    }
+
+    @Test
+    fun `createGuestOrder prices from catalog and stores only the token hash`() {
+        val productId = UUID.randomUUID()
+        stubGuestCatalog(productId)
+
+        val created = service.createGuestOrder(StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(productId, 2))))
+
+        val saved = argumentCaptor<Order>().also { verify(orderRepository).save(it.capture()) }.firstValue
+        assertEquals(2_500L, created.order.totalAmountMinor)
+        assertEquals(CreatorType.GUEST, saved.creatorType)
+        assertTrue(created.token.length >= 43, "256-bit token expected")
+        assertNotEquals(created.token, saved.guestTokenHash)
+        assertTrue(GuestToken.matches(saved, created.token))
+        assertTrue(saved.guestTokenExpiresAt!!.isAfter(Instant.now().plusSeconds(55 * 60)))
+    }
+
+    @Test
+    fun `createGuestOrder rejects oversized quantities`() {
+        assertFailsWith<IllegalArgumentException> {
+            service.createGuestOrder(StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(UUID.randomUUID(), 100))))
+        }
+    }
+
+    @Test
+    fun `getGuestOrder hides the order for a missing, wrong, expired or other order's token`() {
+        val productId = UUID.randomUUID()
+        stubGuestCatalog(productId)
+        val created = service.createGuestOrder(StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(productId, 1))))
+        val saved = argumentCaptor<Order>().also { verify(orderRepository).save(it.capture()) }.firstValue
+        whenever(orderRepository.findByOrderId(saved.orderId)).thenReturn(saved)
+        whenever(orderItemRepository.findAllByOrderIdFk(saved.id)).thenReturn(emptyList())
+
+        assertEquals(saved.orderId, service.getGuestOrder(saved.orderId, created.token).orderId)
+        listOf(null, "", "wrong", GuestToken.generate()).forEach { token ->
+            assertFailsWith<NoSuchElementException> { service.getGuestOrder(saved.orderId, token) }
+        }
+        assertFalse(GuestToken.matches(saved, created.token, now = saved.guestTokenExpiresAt!!.plusSeconds(1)))
+    }
 }
+

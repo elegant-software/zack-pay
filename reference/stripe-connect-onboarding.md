@@ -78,8 +78,9 @@ See [`domain-configuration.md`](domain-configuration.md).
 | `STRIPE_CONNECT_RETURN_URL` | `https://<api-host>/stripe-connect/return` | Where Stripe sends the merchant after onboarding |
 | `STRIPE_CONNECT_API_BASE_URL` | `https://<api-host>` | Base for the onboarding `refresh_url` |
 | `STRIPE_CONNECT_APP_DEEP_LINK` | empty | Optional. If set, the return page reopens the merchant app |
+| `STOREFRONT_URL` | `https://<storefront-host>` | Web storefront origin. Guest Pay by Bank redirects are built from it ([ADR-0021](../docs/adr/0021-storefront-guest-checkout-token.md)) |
 
-The Helm chart derives the first two from the base domain. Leave `config.stripeConnectReturnUrl`
+The Helm chart derives the first two and `STOREFRONT_URL` from the base domain. Leave `config.stripeConnectReturnUrl`
 and `config.stripeConnectApiBaseUrl` empty in values files.
 
 ### 1.6 Store the secrets

@@ -9,6 +9,7 @@ import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.elegant.software.blitzpay.payments.stripe.outbound.StripeIntentResult
 import com.elegant.software.blitzpay.payments.stripe.outbound.StripePaymentService
 import com.elegant.software.blitzpay.payments.stripe.web.CreateIntentRequest
+import com.elegant.software.blitzpay.payments.stripe.web.StripeCheckoutService
 import com.elegant.software.blitzpay.payments.stripe.web.StripePaymentController
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -30,7 +31,7 @@ class StripePaymentControllerAmountTest {
     private val orderGateway = mock<OrderGateway>()
     private val statusGateway = mock<PaymentStatusInitializationGateway>()
     private val controller = StripePaymentController(
-        stripePaymentService, credentialResolver, stripeConnectGateway, StripeProperties(), orderGateway, statusGateway,
+        StripeCheckoutService(stripePaymentService, credentialResolver, stripeConnectGateway, StripeProperties(), orderGateway, statusGateway),
     )
 
     @Test

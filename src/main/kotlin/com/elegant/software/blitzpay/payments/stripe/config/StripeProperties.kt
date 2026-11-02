@@ -10,6 +10,8 @@ data class StripeProperties(
     val connectWebhookSecret: String = "",
     val applicationFeeAmount: Long = 0,
     val dashboardPlatformAccountId: String = "",
+    /** Public web storefront origin; guest Pay by Bank redirects are built from it, never taken from the client. */
+    val storefrontUrl: String = "",
     val connect: ConnectUrls = ConnectUrls(),
 ) {
     data class ConnectUrls(
