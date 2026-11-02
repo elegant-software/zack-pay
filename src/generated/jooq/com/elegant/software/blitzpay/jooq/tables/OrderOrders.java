@@ -203,6 +203,16 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
      */
     public final TableField<OrderOrdersRecord, LocalDate> DUE_DATE = createField(DSL.name("due_date"), SQLDataType.LOCALDATE, this, "");
 
+    /**
+     * The column <code>blitzpay.order_orders.guest_token_hash</code>.
+     */
+    public final TableField<OrderOrdersRecord, String> GUEST_TOKEN_HASH = createField(DSL.name("guest_token_hash"), SQLDataType.VARCHAR(64), this, "");
+
+    /**
+     * The column <code>blitzpay.order_orders.guest_token_expires_at</code>.
+     */
+    public final TableField<OrderOrdersRecord, OffsetDateTime> GUEST_TOKEN_EXPIRES_AT = createField(DSL.name("guest_token_expires_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
     private OrderOrders(Name alias, Table<OrderOrdersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
