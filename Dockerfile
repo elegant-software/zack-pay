@@ -24,5 +24,8 @@ COPY --from=build /workspace/build/libs/app.jar app.jar
 
 EXPOSE 8080
 
-# JVM defaults to 25% of the container limit (256MB on 1Gi) — too small, startup GC-thrashes
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
+# JVM defaults to 25% of the container limit (256MB on 1Gi) — too small, startup GC-thrashes.
+# 70% leaves room for metaspace/threads/code cache. G1 + ActiveProcessorCount: with <2 CPUs the JVM
+# silently picks SerialGC, which can thrash for hours without ever throwing OOM (staging, 2026-11-02).
+# ExitOnOutOfMemoryError: crash fast and let k8s restart instead of hanging half-alive.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70", "-XX:+UseG1GC", "-XX:ActiveProcessorCount=2", "-XX:+ExitOnOutOfMemoryError", "-Xlog:gc:stderr", "-jar", "app.jar"]
