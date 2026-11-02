@@ -3,13 +3,17 @@ package com.elegant.software.blitzpay.order.service
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.OrderGateway
+import com.elegant.software.blitzpay.order.api.OrderInvoiceSource
+import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
 import com.elegant.software.blitzpay.order.api.PaymentRequestResolver
 import com.elegant.software.blitzpay.order.persistence.model.CreatorType
 import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import com.elegant.software.blitzpay.order.persistence.model.PaymentAttempt
+import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
 import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
 import com.elegant.software.blitzpay.order.persistence.repository.PaymentAttemptRepository
+import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,6 +25,8 @@ import java.util.UUID
 class PaymentAttemptService(
     private val orderRepository: OrderRepository,
     private val paymentAttemptRepository: PaymentAttemptRepository,
+    private val orderItemRepository: OrderItemRepository,
+    private val shopperProfileGateway: ShopperProfileGateway,
 ) : OrderGateway, PaymentRequestResolver {
     private val log = LoggerFactory.getLogger(PaymentAttemptService::class.java)
 
@@ -108,6 +114,43 @@ class PaymentAttemptService(
 
     @Transactional(readOnly = true)
     override fun countPaymentAttempts(orderId: String): Long = paymentAttemptRepository.countByOrderId(orderId)
+
+    override fun findInvoiceableOrderIds(since: Instant): List<String> =
+        orderRepository.findInvoiceableOrderIds(since)
+
+    @Transactional(readOnly = true)
+    override fun findInvoiceSource(orderId: String): OrderInvoiceSource? {
+        val order = orderRepository.findByOrderId(orderId) ?: return null
+        val isInvoiceOrder = order.targetShopperId != null
+        val issuedAt = if (isInvoiceOrder) order.createdAt else order.paidAt ?: return null
+        val creatorProfile = if (order.creatorType == CreatorType.SHOPPER) {
+            shopperProfileGateway.findByShopperId(order.createdById)
+        } else null
+        val contactFallback = if (order.buyerContactName == null) creatorProfile else null
+        val buyerEmail = order.targetShopperId
+            ?.let { shopperProfileGateway.findByShopperId(it)?.email }
+            ?: creatorProfile?.email
+        val items = orderItemRepository.findAllByOrderIdFk(order.id)
+            .filter { it.quantity > 0 }
+            .map { OrderItemSnapshot(it.productName, it.quantity, it.effectiveUnitPriceMinor) }
+        return OrderInvoiceSource(
+            orderId = order.orderId,
+            orderIdFk = order.id,
+            merchantId = order.merchantApplicationId,
+            currency = order.currency,
+            totalAmountMinor = order.totalAmountMinor,
+            buyerContactName = order.buyerContactName ?: contactFallback?.name,
+            buyerContactStreet = order.buyerContactStreet ?: contactFallback?.street,
+            buyerContactZip = order.buyerContactZip ?: contactFallback?.zip,
+            buyerContactCity = order.buyerContactCity ?: contactFallback?.city,
+            buyerContactCountry = order.buyerContactCountry ?: contactFallback?.country,
+            issuedAt = issuedAt,
+            dueDate = order.dueDate,
+            isInvoiceOrder = isInvoiceOrder,
+            items = items,
+            buyerEmail = buyerEmail,
+        )
+    }
 
     private fun checkoutPaymentMethodForProvider(provider: String): CheckoutPaymentMethod? =
         when (provider) {

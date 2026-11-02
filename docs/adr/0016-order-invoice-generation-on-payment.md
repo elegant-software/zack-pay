@@ -1,7 +1,7 @@
 # ADR-0016 — Order Invoice generation on payment
 
 ## Status
-Accepted
+Accepted. The trigger was superseded on 2026-11-02 (issue #172). `OrderPaid` and `InvoiceOrchestrationListener` were removed because rendering on the payment path caused memory pressure. `InvoiceBatchJob` now renders invoices for paid orders and invoice orders on a schedule, using `OrderGateway.findInvoiceSource`, and emails them to the shopper. The buyer-contact and issue-date rules below still apply.
 
 ## Context
 BlitzPay needs to generate a ZUGFeRD EN16931 compliant invoice for every paid Order and store it for later delivery via a mail service. The existing `invoice` module already provides PDF/XML generation. Two design questions required explicit decisions: when to trigger generation, and how to handle missing buyer address data.

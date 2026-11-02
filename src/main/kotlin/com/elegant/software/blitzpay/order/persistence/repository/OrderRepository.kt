@@ -54,6 +54,16 @@ interface OrderRepository : JpaRepository<Order, UUID> {
     """)
     fun findDistinctShopperIdsByBranch(branchId: UUID): List<String>
 
+    // ponytail: scans the whole lookback window and returns every id in it; fine up to ~tens of
+    // thousands of orders per window. Beyond that, page it or track invoice state on the order.
+    @Query("""
+        SELECT o.orderId FROM Order o
+        WHERE (o.status = 'PAID' AND o.paidAt > :since)
+           OR (o.targetShopperId IS NOT NULL AND o.createdAt > :since)
+        ORDER BY o.createdAt
+    """)
+    fun findInvoiceableOrderIds(since: Instant): List<String>
+
     fun findAllByAppointmentId(appointmentId: UUID): List<Order>
 
     fun findAllByTableIdInAndCreatedAtAfterAndStatusNot(

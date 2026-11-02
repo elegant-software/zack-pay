@@ -31,5 +31,6 @@ class OrderInvoice(
     object DeliveryStatus {
         const val PENDING = "PENDING"
         const val SENT = "SENT"
+        const val SKIPPED = "SKIPPED"
     }
 }
