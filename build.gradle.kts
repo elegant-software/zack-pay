@@ -216,6 +216,11 @@ tasks.withType<Test> {
     systemProperty("spring.cloud.aws.s3.enabled", "false")
     systemProperty("spring.cloud.aws.secretsmanager.enabled", "false")
     systemProperty("spring.cloud.aws.region.static", "us-east-1")
+    // Each test class with its own @MockitoBean set boots a separate full context (Tomcat, Modulith...).
+    // Gradle's default 512m test heap OOMs once ~7 are cached. ponytail: cap the cache instead of
+    // per-test tuning; raise maxSize if context reloads start dominating test time.
+    maxHeapSize = "1536m"
+    systemProperty("spring.test.context.cache.maxSize", "3")
 }
 
 tasks.named<Test>("contractTest") {
