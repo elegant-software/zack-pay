@@ -41,3 +41,14 @@ jobs:
       image-tag: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
       registry: ${{ vars.CONTAINER_REGISTRY }}
       platforms: linux/amd64,linux/arm64  # arm64 for oracle-dev (OKE Ampere A1)
+
+  deploy-staging:
+    name: Staging
+    needs: release
+    permissions:
+      contents: read
+    uses: ./.github/workflows/cd-deploy-k8s.yml
+    with:
+      image-tag: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+      environment: staging
+    secrets: inherit  # K8S_* secrets live on the staging GitHub Environment
