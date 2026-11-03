@@ -105,7 +105,23 @@ class Order(
 
     @Column(name = "guest_token_expires_at")
     val guestTokenExpiresAt: Instant? = null,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "preparation_status", nullable = false, length = 16)
+    var preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
+
+    /** Short per-Branch, per-day number; null for orders created before Pickup Numbers existed or without a Branch. */
+    @Column(name = "pickup_number", updatable = false)
+    val pickupNumber: Int? = null,
 ) {
+    fun advancePreparation(next: PreparationStatus, at: Instant = Instant.now()) {
+        require(preparationStatus.canAdvanceTo(next)) {
+            "Preparation status cannot change from $preparationStatus to $next"
+        }
+        preparationStatus = next
+        updatedAt = at
+    }
+
     fun markPaymentInProgress(paymentRequestId: UUID, provider: String, at: Instant = Instant.now()) {
         require(status != OrderStatus.PAID) { "Order is already paid: $orderId" }
         if (status == OrderStatus.CREATED || status == OrderStatus.FAILED || status == OrderStatus.CANCELLED) {

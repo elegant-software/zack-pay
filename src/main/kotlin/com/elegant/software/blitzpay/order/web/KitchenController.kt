@@ -1,0 +1,99 @@
+package com.elegant.software.blitzpay.order.web
+
+import com.elegant.software.blitzpay.order.api.KitchenOrder
+import com.elegant.software.blitzpay.order.api.UpdatePreparationStatusRequest
+import com.elegant.software.blitzpay.order.service.KitchenOrderBus
+import com.elegant.software.blitzpay.order.service.KitchenService
+import com.elegant.software.blitzpay.order.service.OrderMutationConflictException
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
+import java.util.UUID
+
+@Tag(name = "Kitchen Screen", description = "Live Orders of one Branch and their Preparation Status")
+@RestController
+@RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchant/branches/{branchId}/kitchen", version = "1")
+class KitchenController(
+    private val kitchenService: KitchenService,
+    private val bus: KitchenOrderBus,
+) {
+    private val log = LoggerFactory.getLogger(KitchenController::class.java)
+
+    @Operation(summary = "List today's open Orders of the Branch (not READY, not cancelled), oldest first; used on (re)connect")
+    @GetMapping("/orders")
+    fun listOpenOrders(
+        @PathVariable branchId: UUID,
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): ResponseEntity<List<KitchenOrder>> {
+        BranchGroupAccess.require(jwt, branchId)
+        return ResponseEntity.ok(kitchenService.listOpenOrders(branchId))
+    }
+
+    @Operation(summary = "Stream the Branch's Order events (order.created, order.changed, order.cancelled) as SSE")
+    @GetMapping("/stream", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    fun stream(
+        @PathVariable branchId: UUID,
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): SseEmitter {
+        BranchGroupAccess.require(jwt, branchId)
+        log.info("kitchen SSE client connected branchId={}", branchId)
+        return SseEmitter(STREAM_TIMEOUT_MS).also {
+            bus.register(branchId, it)
+            // Flushes the response headers right away so clients know the stream is open before the first event.
+            it.send(SseEmitter.event().comment("connected"))
+        }
+    }
+
+    @Operation(summary = "Advance an Order's Preparation Status: RECEIVED → PREPARING → READY")
+    @PostMapping("/orders/{orderId}/preparation-status")
+    fun updatePreparationStatus(
+        @PathVariable branchId: UUID,
+        @PathVariable orderId: UUID,
+        @RequestBody request: UpdatePreparationStatusRequest,
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): ResponseEntity<KitchenOrder> {
+        BranchGroupAccess.require(jwt, branchId)
+        return ResponseEntity.ok(kitchenService.updatePreparationStatus(branchId, orderId, request.status))
+    }
+
+    @ExceptionHandler(BranchAccessDeniedException::class)
+    fun forbidden(ex: BranchAccessDeniedException): ResponseEntity<OrderErrorResponse> =
+        // Explicit content type: the stream endpoint only produces text/event-stream, which can't carry the error body.
+        ResponseEntity.status(HttpStatus.FORBIDDEN).contentType(MediaType.APPLICATION_JSON)
+            .body(OrderErrorResponse(ex.message ?: "Access denied"))
+
+    @ExceptionHandler(NoSuchElementException::class)
+    fun notFound(ex: NoSuchElementException): ResponseEntity<OrderErrorResponse> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(OrderErrorResponse(ex.message ?: "Order not found"))
+
+    @ExceptionHandler(OrderMutationConflictException::class)
+    fun conflict(ex: OrderMutationConflictException): ResponseEntity<OrderErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(OrderErrorResponse(ex.message ?: "Preparation status change not allowed"))
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun unreadable(ex: HttpMessageNotReadableException): ResponseEntity<OrderErrorResponse> =
+        ResponseEntity.badRequest().body(OrderErrorResponse("Request body must be {\"status\": \"PREPARING\" | \"READY\"}"))
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun badRequest(ex: IllegalArgumentException): ResponseEntity<OrderErrorResponse> =
+        ResponseEntity.badRequest().body(OrderErrorResponse(ex.message ?: "Invalid request"))
+
+    private companion object {
+        /** Screens reconnect (and re-sync via the list endpoint) after this; heartbeats keep the connection alive meanwhile. */
+        const val STREAM_TIMEOUT_MS = 60 * 60 * 1000L
+    }
+}

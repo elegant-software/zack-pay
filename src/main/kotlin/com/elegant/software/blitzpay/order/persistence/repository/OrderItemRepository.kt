@@ -6,5 +6,6 @@ import java.util.UUID
 
 interface OrderItemRepository : JpaRepository<OrderItem, UUID> {
     fun findAllByOrderIdFk(orderIdFk: UUID): List<OrderItem>
+    fun findAllByOrderIdFkIn(orderIdFks: Collection<UUID>): List<OrderItem>
     fun deleteAllByOrderIdFk(orderIdFk: UUID)
 }

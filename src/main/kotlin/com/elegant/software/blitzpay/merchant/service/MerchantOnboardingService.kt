@@ -11,6 +11,7 @@ import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOff
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.ZoneId
 import java.util.UUID
 
 @Service
@@ -75,4 +76,10 @@ class MerchantOnboardingService(
         merchantOfferingAssignmentRepository.findAllByMerchantId(merchantId)
             .map { it.offeringCode }
             .toSet()
+
+    @Transactional(readOnly = true)
+    override fun findBranchTimezone(branchId: UUID): ZoneId? =
+        merchantBranchRepository.findById(branchId).orElse(null)
+            ?.timezone
+            ?.let { runCatching { ZoneId.of(it) }.getOrNull() }
 }

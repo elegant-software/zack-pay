@@ -22,10 +22,19 @@ class WebMvcVersioningConfig(
     }
 
     override fun addCorsMappings(registry: CorsRegistry) {
+        // First matching mapping wins, so the kitchen mapping must be registered before the catch-all.
+        registry.addMapping(KITCHEN_PATH_PATTERN)
+            .allowedOrigins(*(corsProperties.allowedOrigins + corsProperties.kitchenAllowedOrigins).toTypedArray())
+            .allowedMethods(*corsProperties.allowedMethods.toTypedArray())
+            .allowedHeaders(*corsProperties.allowedHeaders.toTypedArray())
         registry.addMapping("/**")
             .allowedOrigins(*corsProperties.allowedOrigins.toTypedArray())
             .allowedMethods(*corsProperties.allowedMethods.toTypedArray())
             .allowedHeaders(*corsProperties.allowedHeaders.toTypedArray())
+    }
+
+    private companion object {
+        const val KITCHEN_PATH_PATTERN = "/*/merchant/branches/*/kitchen/**"
     }
 }
 

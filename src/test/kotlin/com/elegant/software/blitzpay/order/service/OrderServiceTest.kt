@@ -45,8 +45,11 @@ class OrderServiceTest {
     private val paymentAttemptRepository = mock<PaymentAttemptRepository>()
     private val shopperProfileGateway = mock<com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway>()
     private val eventPublisher = mock<org.springframework.context.ApplicationEventPublisher>()
+    private val pickupNumberAllocator = mock<PickupNumberAllocator>()
+    private val kitchenOrderBus = mock<KitchenOrderBus>()
     private val service = OrderService(
         merchantGateway, orderRepository, orderItemRepository, paymentAttemptRepository, shopperProfileGateway, eventPublisher,
+        pickupNumberAllocator, kitchenOrderBus,
     )
 
     private val merchantId = UUID.fromString("11111111-1111-1111-1111-111111111111")

@@ -13,6 +13,8 @@ import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.CreateOrderRequest
 import com.elegant.software.blitzpay.order.api.InvoiceOrderCreated
+import com.elegant.software.blitzpay.order.api.KitchenEventType
+import com.elegant.software.blitzpay.order.api.toKitchenOrder
 import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
 import com.elegant.software.blitzpay.order.api.MerchantItemPriceOverrideRequest
 import com.elegant.software.blitzpay.order.api.OrderCustomerLocationRequest
@@ -30,6 +32,7 @@ import com.elegant.software.blitzpay.order.persistence.model.Order
 import com.elegant.software.blitzpay.order.persistence.model.OrderItem
 import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import com.elegant.software.blitzpay.order.persistence.model.OrderType
+import com.elegant.software.blitzpay.order.persistence.model.PreparationStatus
 import com.elegant.software.blitzpay.order.persistence.model.unitPriceMinor
 import com.elegant.software.blitzpay.order.persistence.repository.OrderItemRepository
 import com.elegant.software.blitzpay.order.persistence.repository.OrderRepository
@@ -56,6 +59,8 @@ class OrderService(
     private val paymentAttemptRepository: PaymentAttemptRepository,
     private val shopperProfileGateway: ShopperProfileGateway,
     private val eventPublisher: ApplicationEventPublisher,
+    private val pickupNumberAllocator: PickupNumberAllocator,
+    private val kitchenOrderBus: KitchenOrderBus,
 ) {
     private val log = LoggerFactory.getLogger(OrderService::class.java)
 
@@ -133,11 +138,13 @@ class OrderService(
             buyerContactZip = resolvedBuyerContact?.zip,
             buyerContactCity = resolvedBuyerContact?.city,
             buyerContactCountry = resolvedBuyerContact?.country,
+            pickupNumber = pickupNumberAllocator.next(request.branchId),
         )
         val savedOrder = orderRepository.save(order)
         val savedItems = orderItemRepository.saveAll(
             request.items.map { OrderItem.fromProduct(savedOrder.id, productsById.getValue(it.productId), it.quantity) }
         )
+        notifyKitchen(savedOrder, savedItems, KitchenEventType.CREATED)
         LogContext.with(LogContext.ORDER_ID to savedOrder.orderId) {
             log.info(
                 "order saved orderId={} merchantId={} branchId={} totalAmountMinor={} currency={} itemCount={}",
@@ -186,11 +193,13 @@ class OrderService(
             buyerContactZip = resolvedBuyerContact?.zip,
             buyerContactCity = resolvedBuyerContact?.city,
             buyerContactCountry = resolvedBuyerContact?.country,
+            pickupNumber = pickupNumberAllocator.next(request.branchId),
         )
         val savedOrder = orderRepository.save(order)
         val savedItems = orderItemRepository.saveAll(
             request.items.map { OrderItem.fromProduct(savedOrder.id, productsById.getValue(it.productId), it.quantity) }
         )
+        notifyKitchen(savedOrder, savedItems, KitchenEventType.CREATED)
 
         val targetShopper = savedOrder.targetShopperId
         if (targetShopper != null) {
@@ -259,11 +268,17 @@ class OrderService(
         if (product.merchantId != order.merchantApplicationId) {
             throw OrderMutationConflictException("Product does not belong to the order's merchant")
         }
+        if (order.preparationStatus == PreparationStatus.READY) {
+            // Everything on a READY order is already made: lock it and send the order back to the kitchen.
+            orderItemRepository.saveAll(orderItemRepository.findAllByOrderIdFk(order.id).onEach { it.locked = true })
+            order.preparationStatus = PreparationStatus.RECEIVED
+        }
         val newItem = OrderItem.fromProduct(order.id, product, request.quantity)
         orderItemRepository.save(newItem)
         val items = orderItemRepository.findAllByOrderIdFk(order.id)
         order.recalculateTotals(items)
         orderRepository.save(order)
+        notifyKitchen(order, items, KitchenEventType.CHANGED)
         return order.toResponse(items)
     }
 
@@ -271,28 +286,32 @@ class OrderService(
         require(request.quantity > 0) { "quantity must be > 0" }
         val order = requireMutableOrder(orderId)
         val item = requireOrderItem(order.id, itemId)
+        requireItemEditable(order, item)
         item.updateQuantity(request.quantity)
         orderItemRepository.save(item)
         val items = orderItemRepository.findAllByOrderIdFk(order.id)
         order.recalculateTotals(items)
         orderRepository.save(order)
+        notifyKitchen(order, items, KitchenEventType.CHANGED)
         return order.toResponse(items)
     }
 
     fun removeItem(orderId: String, itemId: UUID, actorId: String): OrderResponse {
         val order = requireMutableOrder(orderId)
-        requireOrderItem(order.id, itemId)
+        requireItemEditable(order, requireOrderItem(order.id, itemId))
         val allItems = orderItemRepository.findAllByOrderIdFk(order.id)
         return if (allItems.size <= 1) {
             order.status = OrderStatus.CANCELLED
             order.updatedAt = java.time.Instant.now()
             orderRepository.save(order)
+            notifyKitchen(order, allItems, KitchenEventType.CANCELLED)
             order.toResponse(allItems)
         } else {
             orderItemRepository.deleteById(itemId)
             val remaining = allItems.filter { it.id != itemId }
             order.recalculateTotals(remaining)
             orderRepository.save(order)
+            notifyKitchen(order, remaining, KitchenEventType.CHANGED)
             order.toResponse(remaining)
         }
     }
@@ -303,6 +322,7 @@ class OrderService(
         order.updatedAt = java.time.Instant.now()
         orderRepository.save(order)
         val items = orderItemRepository.findAllByOrderIdFk(order.id)
+        notifyKitchen(order, items, KitchenEventType.CANCELLED)
         return order.toResponse(items)
     }
 
@@ -364,6 +384,21 @@ class OrderService(
             )
         }
         return order
+    }
+
+    /** Once READY (or after a READY order was re-opened) existing items are already made; only additions are allowed. */
+    private fun requireItemEditable(order: Order, item: OrderItem) {
+        if (order.preparationStatus == PreparationStatus.READY) {
+            throw OrderMutationConflictException("Order is ready for pickup; existing items cannot be changed, only added")
+        }
+        if (item.locked) {
+            throw OrderMutationConflictException("Order item is already prepared and cannot be changed: ${item.productName}")
+        }
+    }
+
+    private fun notifyKitchen(order: Order, items: List<OrderItem>, type: KitchenEventType) {
+        if (order.appointmentId != null) return
+        kitchenOrderBus.publishAfterCommit(order.merchantBranchId, type, order.toKitchenOrder(items))
     }
 
     private fun requireOrderItem(orderIdFk: UUID, itemId: UUID): OrderItem {
