@@ -22,6 +22,10 @@
 
 ## Contract Tests
 
+HTTP JSON uses the Jackson 3 Kotlin module so omitted request properties honor Kotlin constructor defaults
+(for example, merchant order `usesDeferredPayment` defaults to `false`). Explicit `null` remains invalid
+for non-nullable booleans. The Jackson 2 Kotlin module is retained for adapters using `com.fasterxml` APIs.
+
 `./gradlew contractTest` runs the API contract suite against a dedicated `contract-test` Spring profile.
 
 To regenerate the checked-in OpenAPI document at `api-docs/api-doc.yml`, run:

@@ -15,6 +15,11 @@ import com.elegant.software.blitzpay.order.persistence.model.CreatorType
 import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import com.elegant.software.blitzpay.order.persistence.model.OrderType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.verify
+import org.springframework.core.io.ClassPathResource
 import com.elegant.software.blitzpay.order.api.BranchCustomerResponse
 import com.elegant.software.blitzpay.shopper.api.ShopperSearchResult
 import org.mockito.kotlin.any
@@ -94,8 +99,9 @@ class OrderContractTest : ContractVerifierBase() {
             .jsonPath("$.items[0].itemId").isEqualTo("44444444-4444-4444-4444-444444444441")
     }
 
-    @Test
-    fun `post merchant orders returns created status with qr code`() {
+    @ParameterizedTest
+    @ValueSource(strings = ["omitted", "false", "true"])
+    fun `post merchant orders returns created status with qr code`(deferredPayment: String) {
         whenever(orderService.createMerchantOrder(any(), any())).thenReturn(
             MerchantOrderResponse(
                 orderId = "ORD-MERCHANT00001",
@@ -126,20 +132,7 @@ class OrderContractTest : ContractVerifierBase() {
             .uri("/v1/merchant/orders")
             .contentType(MediaType.APPLICATION_JSON)
             .header("Authorization", "Bearer $fakeJwt")
-            .bodyValue(
-                """
-                {
-                  "merchantId": "11111111-1111-1111-1111-111111111111",
-                  "branchId": "33333333-3333-3333-3333-333333333333",
-                  "orderType": "WALK_IN_ORDERING",
-                  "usesDeferredPayment": false,
-                  "customerLocation": null,
-                  "items": [
-                    { "productId": "22222222-2222-2222-2222-222222222221", "quantity": 1 }
-                  ]
-                }
-                """.trimIndent()
-            )
+            .bodyValue(ClassPathResource("testdata/order/merchant-order-deferred-$deferredPayment.json").getContentAsString(Charsets.UTF_8))
             .exchange()
             .expectStatus().isCreated
             .expectBody()
@@ -148,6 +141,18 @@ class OrderContractTest : ContractVerifierBase() {
             .jsonPath("$.status").isEqualTo("CREATED")
             .jsonPath("$.paymentRetryAllowed").isEqualTo(true)
             .jsonPath("$.qrCode.paymentUrl").isEqualTo("blitzpay://payment/qr?orderId=ORD-MERCHANT00001&amount=1250&currency=EUR")
+
+        verify(orderService).createMerchantOrder(argThat { usesDeferredPayment == (deferredPayment == "true") }, any())
+    }
+
+    @Test
+    fun `post merchant orders rejects explicit null deferred payment`() {
+        webTestClient.post()
+            .uri("/v1/merchant/orders")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(ClassPathResource("testdata/order/merchant-order-deferred-null.json").getContentAsString(Charsets.UTF_8))
+            .exchange()
+            .expectStatus().isBadRequest
     }
 
     @Test
