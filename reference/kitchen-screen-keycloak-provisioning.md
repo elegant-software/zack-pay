@@ -36,7 +36,7 @@ The service account behind `KEYCLOAK_IAM_ADMIN_CLIENT_ID` needs these `realm-man
 
 | Role | Why |
 |---|---|
-| `manage-clients` | Create or update the kitchen client, its protocol mappers and client scopes, and list the realm client scopes (it includes view access to clients) |
+| `manage-clients` | Create the kitchen client on the first enable, with its protocol mappers and client scopes. After that only `view-clients` is used: an existing client is never modified, so fix config drift in Keycloak by hand |
 | `manage-users` | Create, update, enable or disable the kitchen user, reset its password, set group membership, log it out and revoke its offline token (it includes view access to users) |
 | `query-groups` | Look up the `merchants` / `merchant_<id>` / `branch_<id>` groups (already needed by the group sync) |
 
@@ -59,22 +59,12 @@ sequenceDiagram
 
     Note over B,K: 1. Realm client (never deleted: that would end every kitchen offline session)
     B->>K: GET /clients?clientId=blitzpay-kitchen
-    alt client missing
+    opt client missing (first enable only; an existing client is left untouched)
         B->>K: POST /clients (public, standard flow, no direct grants,<br/>PKCE S256, redirect + post-logout URI, webOrigins "+")
-    else client exists
-        B->>K: PUT /clients/{id} (same settings, overwritten in place;<br/>other attributes kept)
-    end
-    B->>K: GET /clients/{id}/protocol-mappers/models
-    alt "groups" group-membership mapper exists
-        B->>K: PUT .../models/{mapperId} (claim groups, access token, full.path=false)
-    else missing
-        B->>K: POST .../models (create "groups" mapper)
-    end
-    B->>K: DELETE other mappers emitting the "groups" claim (no duplicates)
-    B->>K: GET /client-scopes, GET client's default/optional scopes
-    opt offline_access not optional yet
-        B->>K: DELETE .../default-client-scopes/{offline_access} (only if it was default)
-        B->>K: PUT .../optional-client-scopes/{offline_access}
+        B->>K: GET /clients/{id}/protocol-mappers/models
+        B->>K: POST/PUT "groups" group-membership mapper (claim groups, access token, full.path=false)
+        B->>K: DELETE other mappers emitting the "groups" claim (no duplicates)
+        B->>K: make offline_access an optional client scope
     end
 
     Note over B,K: 2. Branch group (MerchantGroupSyncService)

@@ -137,4 +137,14 @@ class KitchenAccessContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isNotFound
     }
+
+    @Test
+    fun `keycloak 403 on enable returns 502 with an actionable error`() {
+        whenever(kitchenAccessService.enable(any())).thenThrow(jakarta.ws.rs.ForbiddenException())
+
+        webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, manager)
+            .exchange()
+            .expectStatus().isEqualTo(502)
+            .expectBody().jsonPath("$.error").value<String> { assert(it.contains("manage-clients")) }
+    }
 }

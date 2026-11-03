@@ -99,33 +99,27 @@ class KitchenAccessService(
 
     // ── realm client ────────────────────────────────────────────────────────
 
-    /** Creates the kitchen client, or overwrites the existing one in place. Never deletes it: that would end every kitchen offline session. */
+    /**
+     * Creates and configures the kitchen client once. An existing client is left untouched, so routine enables
+     * need no client write access; never deleted either: that would end every kitchen offline session.
+     */
     private fun ensureKitchenClient() {
-        val clients = realm().clients()
-        val existing = findClient()
-        val internalId = if (existing == null) {
-            createClient(applyKitchenClientConfig(ClientRepresentation()))
-        } else {
-            clients.get(existing.id).update(applyKitchenClientConfig(existing))
-            existing.id
-        }
-        val client = clients.get(internalId)
+        if (findClient() != null) return
+        // ponytail: config drift on an existing client is not repaired; fix it in Keycloak by hand
+        val internalId = createClient(applyKitchenClientConfig(ClientRepresentation())) ?: return
+        val client = realm().clients().get(internalId)
         ensureGroupsMapper(client)
         ensureOfflineAccessOptional(client)
-        log.info("keycloak kitchen client ensured clientId={} created={}", kitchenProperties.clientId, existing == null)
+        log.info("keycloak kitchen client created clientId={}", kitchenProperties.clientId)
     }
 
     private fun findClient(): ClientRepresentation? =
         realm().clients().findByClientId(kitchenProperties.clientId).firstOrNull { it.clientId == kitchenProperties.clientId }
 
-    private fun createClient(rep: ClientRepresentation): String {
+    /** Returns the new client's id, or null if it was created concurrently (that caller configures it). */
+    private fun createClient(rep: ClientRepresentation): String? {
         val (status, location) = realm().clients().create(rep).use { it.status to it.getHeaderString("Location") }
-        if (status == Response.Status.CONFLICT.statusCode) {
-            // Created concurrently: overwrite that one instead.
-            val raced = findClient() ?: throw IllegalStateException("kitchen client not found after 409: ${kitchenProperties.clientId}")
-            realm().clients().get(raced.id).update(applyKitchenClientConfig(raced))
-            return raced.id
-        }
+        if (status == Response.Status.CONFLICT.statusCode) return null
         check(status in 200..299) { "Keycloak kitchen client creation failed with HTTP $status" }
         return location?.substringAfterLast("/")
             ?: throw IllegalStateException("No Location header in Keycloak client creation response")

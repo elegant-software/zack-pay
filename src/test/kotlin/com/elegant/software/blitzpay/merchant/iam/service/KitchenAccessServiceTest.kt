@@ -39,6 +39,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.slf4j.LoggerFactory
 import java.util.Optional
@@ -165,22 +166,16 @@ class KitchenAccessServiceTest {
     }
 
     @Test
-    fun `overwrites an existing kitchen client in place and never deletes it`() {
+    fun `leaves an existing kitchen client untouched`() {
         givenExistingClient()
         givenNoUser()
 
         service.enable(branch)
 
-        val captor = argumentCaptor<ClientRepresentation>()
-        verify(client).update(captor.capture())
         verify(clients, never()).create(any())
         verify(clients, never()).delete(any())
-        verify(client, never()).remove()
-        val updated = captor.firstValue
-        assertEquals(clientUuid, updated.id)
-        updated.assertKitchenClientConfig()
-        // Unrelated settings (e.g. per-client offline session timeouts) survive the overwrite.
-        assertEquals("2592000", updated.attributes["client.offline.session.idle.timeout"])
+        verify(clients, never()).get(clientUuid)
+        verifyNoInteractions(client, mappers)
     }
 
     private fun ClientRepresentation.assertKitchenClientConfig() {
@@ -199,7 +194,7 @@ class KitchenAccessServiceTest {
 
     @Test
     fun `creates the groups mapper when missing`() {
-        givenExistingClient()
+        givenNoClient()
         givenNoUser()
 
         service.enable(branch)
@@ -218,7 +213,7 @@ class KitchenAccessServiceTest {
 
     @Test
     fun `updates an existing groups mapper instead of adding a duplicate`() {
-        givenExistingClient()
+        givenNoClient()
         givenNoUser()
         whenever(mappers.mappers).thenReturn(listOf(groupsMapper("mapper-1")))
 
@@ -234,7 +229,7 @@ class KitchenAccessServiceTest {
 
     @Test
     fun `removes extra mappers emitting the groups claim and keeps one`() {
-        givenExistingClient()
+        givenNoClient()
         givenNoUser()
         whenever(mappers.mappers).thenReturn(
             listOf(
@@ -257,7 +252,7 @@ class KitchenAccessServiceTest {
 
     @Test
     fun `attaches offline_access as optional client scope once`() {
-        givenExistingClient()
+        givenNoClient()
         givenNoUser()
 
         service.enable(branch)
@@ -270,7 +265,7 @@ class KitchenAccessServiceTest {
 
     @Test
     fun `moves offline_access from default to optional`() {
-        givenExistingClient()
+        givenNoClient()
         givenNoUser()
         whenever(client.defaultClientScopes).thenReturn(listOf(offlineScope))
 

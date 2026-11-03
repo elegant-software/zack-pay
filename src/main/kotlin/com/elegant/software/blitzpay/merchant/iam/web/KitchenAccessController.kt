@@ -7,6 +7,7 @@ import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBra
 import com.elegant.software.blitzpay.merchant.web.MerchantCallerResolver
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.slf4j.LoggerFactory
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -33,6 +34,7 @@ class KitchenAccessController(
     private val branchRepository: MerchantBranchRepository,
     private val callerResolver: MerchantCallerResolver,
 ) {
+    private val log = LoggerFactory.getLogger(KitchenAccessController::class.java)
 
     @Operation(summary = "Enable the Kitchen Screen for the Branch, or reset its login; returns a new password once")
     @PostMapping("/enable")
@@ -77,4 +79,12 @@ class KitchenAccessController(
     @ExceptionHandler(KitchenLoginConflictException::class)
     fun conflict(ex: KitchenLoginConflictException): ResponseEntity<KitchenAccessErrorResponse> =
         ResponseEntity.status(HttpStatus.CONFLICT).body(KitchenAccessErrorResponse(ex.message ?: "Kitchen Login conflict"))
+
+    /** Keycloak refused an admin call: the backend's service account lacks a realm-management role. */
+    @ExceptionHandler(jakarta.ws.rs.ForbiddenException::class)
+    fun keycloakForbidden(ex: jakarta.ws.rs.ForbiddenException): ResponseEntity<KitchenAccessErrorResponse> {
+        log.error("Keycloak admin call forbidden; grant the service account realm-management roles manage-clients, manage-users, query-groups", ex)
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+            .body(KitchenAccessErrorResponse("Keycloak refused the request: the backend service account is missing realm-management roles (manage-clients, manage-users, query-groups)"))
+    }
 }
