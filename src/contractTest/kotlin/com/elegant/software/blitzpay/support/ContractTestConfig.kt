@@ -57,7 +57,8 @@ class ContractTestConfig {
     }
 
     // Accepts any bearer token so contract tests don't need a live Keycloak server.
-    // A `groups` claim in the (unsigned) payload is passed through for branch-scoped endpoints.
+    // A `groups` claim in the (unsigned) payload is passed through for branch-scoped endpoints,
+    // and `realm_access.roles` for endpoints that also admit a platform admin.
     @Bean
     @Primary
     fun mockJwtDecoder(): JwtDecoder = JwtDecoder { token ->
@@ -68,13 +69,19 @@ class ContractTestConfig {
             .issuedAt(Instant.now())
             .expiresAt(Instant.now().plusSeconds(3600))
             .apply { groupsClaim(token)?.let { claim("groups", it) } }
+            .apply { realmRolesClaim(token)?.let { claim("realm_access", mapOf("roles" to it)) } }
             .build()
     }
 
-    private fun groupsClaim(token: String): List<String>? {
+    private fun groupsClaim(token: String): List<String>? = stringArray(token, "\"groups\"\\s*:\\s*\\[([^\\]]*)]")
+
+    private fun realmRolesClaim(token: String): List<String>? =
+        stringArray(token, "\"realm_access\"\\s*:\\s*\\{\\s*\"roles\"\\s*:\\s*\\[([^\\]]*)]")
+
+    private fun stringArray(token: String, pattern: String): List<String>? {
         val payload = token.split('.').getOrNull(1) ?: return null
         val json = runCatching { String(Base64.getUrlDecoder().decode(payload)) }.getOrNull() ?: return null
-        val array = Regex("\"groups\"\\s*:\\s*\\[([^\\]]*)]").find(json)?.groupValues?.get(1) ?: return null
+        val array = Regex(pattern).find(json)?.groupValues?.get(1) ?: return null
         return Regex("\"([^\"]*)\"").findAll(array).map { it.groupValues[1] }.toList()
     }
 }
