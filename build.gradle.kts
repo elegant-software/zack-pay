@@ -109,6 +109,8 @@ dependencies {
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.webflux)
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("tools.jackson.module:jackson-module-kotlin")
+    // Retain Jackson 2 support for adapters and fixture loaders using com.fasterxml APIs.
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework.modulith:spring-modulith-starter-core")
