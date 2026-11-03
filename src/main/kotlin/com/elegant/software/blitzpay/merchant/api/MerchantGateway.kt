@@ -3,6 +3,7 @@ package com.elegant.software.blitzpay.merchant.api
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import org.springframework.modulith.NamedInterface
 import java.time.Instant
+import java.time.ZoneId
 import java.util.UUID
 
 @NamedInterface("MerchantGateway")
@@ -12,6 +13,9 @@ interface MerchantGateway {
     fun requireActiveBranch(merchantId: UUID, branchId: UUID): ActiveBranchInfo
 
     fun getEnabledOfferings(merchantId: UUID): Set<String>
+
+    /** The Branch's configured time zone, or null when unset, invalid or the Branch is unknown. */
+    fun findBranchTimezone(branchId: UUID): ZoneId?
 }
 
 data class MerchantSummary(

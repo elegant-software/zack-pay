@@ -53,6 +53,10 @@ class OrderItem(
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
+
+    /** Already made by the kitchen: the Order was READY when another item was added. Locked items can't change. */
+    @Column(nullable = false)
+    var locked: Boolean = false,
 ) {
     val effectiveUnitPriceMinor: Long
         get() = merchantPriceOverrideMinor ?: unitPriceMinor

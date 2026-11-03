@@ -9,12 +9,18 @@ security:
 - bearerAuth: []
 - oauth2: []
 tags:
+- name: Stripe Connect
+  description: Stripe Connect account onboarding for merchants
+- name: Storefront Orders
+  description: Guest orders for the anonymous web storefront
 - name: Merchant Verticals
   description: Platform-managed industry verticals available for merchant registration
 - name: Voice
   description: Voice query processing for authenticated mobile clients
 - name: Appointments
   description: Merchant-side calendar and appointment management
+- name: Kitchen Screen
+  description: Live Orders of one Branch and their Preparation Status
 - name: Merchant Product Categories
   description: Manage merchant product categories
 - name: Appearances
@@ -23,6 +29,8 @@ tags:
   description: Discover currently active mobile merchant appearances
 - name: Proximity
   description: Mobile geofence enter and exit event recording
+- name: Storefront Payments
+  description: Stripe payment for anonymous web storefront orders
 - name: Admin Appointments
   description: Support-facing branch calendar and appointment override
 - name: Employees
@@ -70,8 +78,6 @@ tags:
   description: Geofence region discovery for mobile clients
 - name: Appointment Policy
   description: Merchant-level appointment scheduling configuration
-- name: Stripe Connect
-  description: Stripe Connect Express account onboarding for merchants
 - name: Merchants
   description: Endpoints for merchant management
 - name: Appearances
@@ -1056,6 +1062,57 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/SyncResult"
+  /{version}/storefront/orders:
+    post:
+      tags:
+      - Storefront Orders
+      summary: Create a guest order priced from the catalog; sets the guest_token
+        session cookie
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StorefrontOrderRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+  /{version}/storefront/orders/{orderId}/payment:
+    post:
+      tags:
+      - Storefront Payments
+      summary: Start Stripe payment for a guest order; requires the guest_token cookie
+        issued for this order
+      operationId: pay
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: guest_token
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StorefrontPaymentRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
   /{version}/shopper/devices:
     post:
       tags:
@@ -1312,7 +1369,7 @@ paths:
       tags:
       - Orders
       summary: Create an order and initiate payment via the chosen provider
-      operationId: create
+      operationId: create_1
       parameters:
       - name: Authorization
         in: header
@@ -1391,7 +1448,7 @@ paths:
       tags:
       - Merchants
       summary: Register a new merchant (directly ACTIVE)
-      operationId: create_1
+      operationId: create_2
       requestBody:
         content:
           application/json:
@@ -1409,7 +1466,7 @@ paths:
     post:
       tags:
       - Stripe Connect
-      summary: Start Stripe Connect onboarding — creates an Express account and returns
+      summary: Start Stripe Connect onboarding — creates a connected account and returns
         the hosted onboarding URL
       operationId: startOnboarding
       parameters:
@@ -1503,7 +1560,7 @@ paths:
       tags:
       - Merchant Products
       summary: Create a product for the merchant
-      operationId: create_2
+      operationId: create_3
       parameters:
       - name: merchantId
         in: path
@@ -1579,7 +1636,7 @@ paths:
       tags:
       - Merchant Product Categories
       summary: Create a product category
-      operationId: create_3
+      operationId: create_4
       parameters:
       - name: merchantId
         in: path
@@ -1641,7 +1698,7 @@ paths:
     post:
       tags:
       - Employees
-      operationId: create_4
+      operationId: create_5
       parameters:
       - name: merchantId
         in: path
@@ -1985,7 +2042,7 @@ paths:
       tags:
       - Merchant Branches
       summary: Create a new branch under a merchant
-      operationId: create_5
+      operationId: create_6
       parameters:
       - name: merchantId
         in: path
@@ -2177,7 +2234,7 @@ paths:
       tags:
       - Appearances
       summary: Create a new appearance for a MOBILE branch
-      operationId: create_6
+      operationId: create_7
       parameters:
       - name: merchantId
         in: path
@@ -2245,7 +2302,7 @@ paths:
     post:
       tags:
       - Appointments
-      operationId: create_7
+      operationId: create_8
       parameters:
       - name: merchantId
         in: path
@@ -2359,7 +2416,7 @@ paths:
       - Merchant Orders
       summary: Create an order from branch products and return a QR code for customer
         payment
-      operationId: create_8
+      operationId: create_9
       parameters:
       - name: Authorization
         in: header
@@ -2463,6 +2520,38 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchant/branches/{branchId}/kitchen/orders/{orderId}/preparation-status:
+    post:
+      tags:
+      - Kitchen Screen
+      summary: "Advance an Order's Preparation Status: RECEIVED → PREPARING → READY"
+      operationId: updatePreparationStatus
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePreparationStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KitchenOrder"
   /{version}/invoices:
     post:
       tags:
@@ -2821,6 +2910,31 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/UserSearchResult"
+  /{version}/storefront/orders/{orderId}:
+    get:
+      tags:
+      - Storefront Orders
+      summary: Get a guest order; requires the guest_token cookie issued for this
+        order
+      operationId: get_5
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: guest_token
+        in: cookie
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
   /{version}/shopper/orders/{orderId}/invoice:
     get:
       tags:
@@ -3041,7 +3155,7 @@ paths:
       tags:
       - Orders
       summary: Get the latest business status for an order
-      operationId: get_5
+      operationId: get_6
       parameters:
       - name: orderId
         in: path
@@ -3210,7 +3324,7 @@ paths:
       tags:
       - Appearances
       summary: Get an appearance by ID
-      operationId: get_6
+      operationId: get_7
       parameters:
       - name: merchantId
         in: path
@@ -3614,6 +3728,50 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/BranchCustomerResponse"
+  /{version}/merchant/branches/{branchId}/kitchen/stream:
+    get:
+      tags:
+      - Kitchen Screen
+      summary: "Stream the Branch's Order events (order.created, order.changed, order.cancelled)\
+        \ as SSE"
+      operationId: stream_1
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
+  /{version}/merchant/branches/{branchId}/kitchen/orders:
+    get:
+      tags:
+      - Kitchen Screen
+      summary: "List today's open Orders of the Branch (not READY, not cancelled),\
+        \ oldest first; used on (re)connect"
+      operationId: listOpenOrders
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KitchenOrder"
   /{version}/geofence/regions:
     get:
       tags:
@@ -3820,18 +3978,6 @@ paths:
             application/json:
               schema:
                 type: object
-  /.well-known/oauth-authorization-server:
-    get:
-      tags:
-      - o-auth-authorization-server-metadata-controller
-      operationId: metadata
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
   /{version}/user-management/users/{userId}/assignments/{assignmentId}:
     delete:
       tags:
@@ -5195,6 +5341,224 @@ components:
       - branchesSynced
       - failures
       - merchantsSynced
+    CreateOrderItemRequest:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          format: int32
+      required:
+      - productId
+      - quantity
+    StorefrontOrderRequest:
+      type: object
+      properties:
+        branchId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateOrderItemRequest"
+      required:
+      - branchId
+      - items
+    BuyerContactResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        street:
+          type: string
+        zip:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+      required:
+      - city
+      - country
+      - name
+      - street
+      - zip
+    OrderItemResponse:
+      type: object
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        quantity:
+          type: integer
+          format: int32
+        unitPriceMinor:
+          type: integer
+          format: int64
+        lineTotalMinor:
+          type: integer
+          format: int64
+        locked:
+          type: boolean
+      required:
+      - itemId
+      - lineTotalMinor
+      - locked
+      - name
+      - productId
+      - quantity
+      - unitPriceMinor
+    OrderResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+        merchantId:
+          type: string
+          format: uuid
+        branchId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        orderType:
+          type: string
+          enum:
+          - PRE_ORDER
+          - WALK_IN_ORDERING
+        usesDeferredPayment:
+          type: boolean
+        targetShopperId:
+          type:
+          - string
+          - "null"
+        dueDate:
+          type:
+          - string
+          - "null"
+          format: date
+        status:
+          type: string
+          enum:
+          - CREATED
+          - PAYMENT_INITIATED
+          - PAID
+          - FAILED
+          - CANCELLED
+        preparationStatus:
+          type: string
+          enum:
+          - RECEIVED
+          - PREPARING
+          - READY
+        pickupNumber:
+          type:
+          - integer
+          - "null"
+          format: int32
+        creatorType:
+          type: string
+          enum:
+          - MERCHANT
+          - SHOPPER
+          - GUEST
+        createdById:
+          type: string
+        currency:
+          type: string
+        totalAmountMinor:
+          type: integer
+          format: int64
+        paymentRetryAllowed:
+          type: boolean
+        paymentSource:
+          type:
+          - string
+          - "null"
+          enum:
+          - APP_PAYMENT
+          - MANUAL_SETTLEMENT
+        checkoutPaymentMethod:
+          type:
+          - string
+          - "null"
+          enum:
+          - BANK_ACCOUNT
+          - CARD
+          - PAY_BY_BANK
+          - TERMINAL
+          - PAYPAL
+        buyerContact:
+          oneOf:
+          - $ref: "#/components/schemas/BuyerContactResponse"
+          - type: "null"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemResponse"
+        createdAt:
+          type: string
+          format: date-time
+        lastPaymentRequestId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        lastPaymentProvider:
+          type:
+          - string
+          - "null"
+        paidAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        paymentReference:
+          oneOf:
+          - $ref: "#/components/schemas/PaymentReferenceResponse"
+          - type: "null"
+      required:
+      - createdAt
+      - createdById
+      - creatorType
+      - currency
+      - items
+      - merchantId
+      - orderId
+      - orderType
+      - paymentRetryAllowed
+      - preparationStatus
+      - status
+      - totalAmountMinor
+      - usesDeferredPayment
+    PaymentReferenceResponse:
+      type: object
+      properties:
+        provider:
+          type: string
+        paymentRequestId:
+          type: string
+          format: uuid
+      required:
+      - paymentRequestId
+      - provider
+    StorefrontPaymentRequest:
+      type: object
+      properties:
+        method:
+          type: string
+          enum:
+          - CARD
+          - PAY_BY_BANK
+      required:
+      - method
     ShopperDeviceRequest:
       type: object
       properties:
@@ -5753,18 +6117,6 @@ components:
       - name
       - street
       - zip
-    CreateOrderItemRequest:
-      type: object
-      properties:
-        productId:
-          type: string
-          format: uuid
-        quantity:
-          type: integer
-          format: int32
-      required:
-      - productId
-      - quantity
     CreateOrderRequest:
       type: object
       properties:
@@ -5835,173 +6187,6 @@ components:
       - capturedAt
       - latitude
       - longitude
-    BuyerContactResponse:
-      type: object
-      properties:
-        name:
-          type: string
-        street:
-          type: string
-        zip:
-          type: string
-        city:
-          type: string
-        country:
-          type: string
-      required:
-      - city
-      - country
-      - name
-      - street
-      - zip
-    OrderItemResponse:
-      type: object
-      properties:
-        itemId:
-          type: string
-          format: uuid
-        productId:
-          type: string
-          format: uuid
-        name:
-          type: string
-        quantity:
-          type: integer
-          format: int32
-        unitPriceMinor:
-          type: integer
-          format: int64
-        lineTotalMinor:
-          type: integer
-          format: int64
-      required:
-      - itemId
-      - lineTotalMinor
-      - name
-      - productId
-      - quantity
-      - unitPriceMinor
-    OrderResponse:
-      type: object
-      properties:
-        orderId:
-          type: string
-        merchantId:
-          type: string
-          format: uuid
-        branchId:
-          type:
-          - string
-          - "null"
-          format: uuid
-        orderType:
-          type: string
-          enum:
-          - PRE_ORDER
-          - WALK_IN_ORDERING
-        usesDeferredPayment:
-          type: boolean
-        targetShopperId:
-          type:
-          - string
-          - "null"
-        dueDate:
-          type:
-          - string
-          - "null"
-          format: date
-        status:
-          type: string
-          enum:
-          - CREATED
-          - PAYMENT_INITIATED
-          - PAID
-          - FAILED
-          - CANCELLED
-        creatorType:
-          type: string
-          enum:
-          - MERCHANT
-          - SHOPPER
-        createdById:
-          type: string
-        currency:
-          type: string
-        totalAmountMinor:
-          type: integer
-          format: int64
-        paymentRetryAllowed:
-          type: boolean
-        paymentSource:
-          type:
-          - string
-          - "null"
-          enum:
-          - APP_PAYMENT
-          - MANUAL_SETTLEMENT
-        checkoutPaymentMethod:
-          type:
-          - string
-          - "null"
-          enum:
-          - BANK_ACCOUNT
-          - CARD
-          - PAY_BY_BANK
-          - TERMINAL
-          - PAYPAL
-        buyerContact:
-          oneOf:
-          - $ref: "#/components/schemas/BuyerContactResponse"
-          - type: "null"
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/OrderItemResponse"
-        createdAt:
-          type: string
-          format: date-time
-        lastPaymentRequestId:
-          type:
-          - string
-          - "null"
-          format: uuid
-        lastPaymentProvider:
-          type:
-          - string
-          - "null"
-        paidAt:
-          type:
-          - string
-          - "null"
-          format: date-time
-        paymentReference:
-          oneOf:
-          - $ref: "#/components/schemas/PaymentReferenceResponse"
-          - type: "null"
-      required:
-      - createdAt
-      - createdById
-      - creatorType
-      - currency
-      - items
-      - merchantId
-      - orderId
-      - orderType
-      - paymentRetryAllowed
-      - status
-      - totalAmountMinor
-      - usesDeferredPayment
-    PaymentReferenceResponse:
-      type: object
-      properties:
-        provider:
-          type: string
-        paymentRequestId:
-          type: string
-          format: uuid
-      required:
-      - paymentRequestId
-      - provider
     AddOrderItemRequest:
       type: object
       properties:
@@ -6806,11 +6991,23 @@ components:
           - PAID
           - FAILED
           - CANCELLED
+        preparationStatus:
+          type: string
+          enum:
+          - RECEIVED
+          - PREPARING
+          - READY
+        pickupNumber:
+          type:
+          - integer
+          - "null"
+          format: int32
         creatorType:
           type: string
           enum:
           - MERCHANT
           - SHOPPER
+          - GUEST
         currency:
           type: string
         totalAmountMinor:
@@ -6848,6 +7045,7 @@ components:
       - orderId
       - orderType
       - paymentRetryAllowed
+      - preparationStatus
       - status
       - totalAmountMinor
       - usesDeferredPayment
@@ -6865,6 +7063,80 @@ components:
           type:
           - string
           - "null"
+    UpdatePreparationStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - RECEIVED
+          - PREPARING
+          - READY
+      required:
+      - status
+    KitchenOrder:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderCode:
+          type: string
+        pickupNumber:
+          type:
+          - integer
+          - "null"
+          format: int32
+        orderType:
+          type: string
+          enum:
+          - PRE_ORDER
+          - WALK_IN_ORDERING
+        shopperFirstName:
+          type:
+          - string
+          - "null"
+        receivedAt:
+          type: string
+          format: date-time
+        preparationStatus:
+          type: string
+          enum:
+          - RECEIVED
+          - PREPARING
+          - READY
+        cancelled:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/KitchenOrderItem"
+      required:
+      - cancelled
+      - items
+      - orderCode
+      - orderId
+      - orderType
+      - preparationStatus
+      - receivedAt
+    KitchenOrderItem:
+      type: object
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        quantity:
+          type: integer
+          format: int32
+        locked:
+          type: boolean
+      required:
+      - itemId
+      - locked
+      - name
+      - quantity
     BankAccountData:
       type: object
       properties:
@@ -7550,6 +7822,17 @@ components:
           - PAID
           - FAILED
           - CANCELLED
+        preparationStatus:
+          type: string
+          enum:
+          - RECEIVED
+          - PREPARING
+          - READY
+        pickupNumber:
+          type:
+          - integer
+          - "null"
+          format: int32
         currency:
           type: string
         totalAmountMinor:
@@ -7584,6 +7867,7 @@ components:
       - orderId
       - orderType
       - paymentRetryAllowed
+      - preparationStatus
       - status
       - totalAmountMinor
       - usesDeferredPayment

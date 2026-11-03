@@ -5,6 +5,7 @@ import com.elegant.software.blitzpay.order.persistence.model.Order
 import com.elegant.software.blitzpay.order.persistence.model.OrderItem
 import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import com.elegant.software.blitzpay.order.persistence.model.OrderType
+import com.elegant.software.blitzpay.order.persistence.model.PreparationStatus
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.time.Instant
 import java.time.LocalDate
@@ -99,6 +100,7 @@ data class OrderItemResponse(
     val quantity: Int,
     val unitPriceMinor: Long,
     val lineTotalMinor: Long,
+    val locked: Boolean = false,
 )
 
 data class PaymentReferenceResponse(
@@ -119,6 +121,8 @@ data class OrderResponse(
     val targetShopperId: String? = null,
     val dueDate: LocalDate? = null,
     val status: OrderStatus,
+    val preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
+    val pickupNumber: Int? = null,
     val creatorType: CreatorType,
     val createdById: String,
     val currency: String,
@@ -144,6 +148,8 @@ data class MerchantOrderResponse(
     val targetShopperId: String? = null,
     val dueDate: LocalDate? = null,
     val status: OrderStatus,
+    val preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
+    val pickupNumber: Int? = null,
     val creatorType: CreatorType,
     val currency: String,
     val totalAmountMinor: Long,
@@ -163,6 +169,8 @@ data class OrderSummaryResponse(
     val targetShopperId: String? = null,
     val dueDate: LocalDate? = null,
     val status: OrderStatus,
+    val preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
+    val pickupNumber: Int? = null,
     val currency: String,
     val totalAmountMinor: Long,
     val paymentRetryAllowed: Boolean,
@@ -196,6 +204,8 @@ internal fun Order.toResponse(items: List<OrderItem>, paymentReference: PaymentR
     targetShopperId = targetShopperId,
     dueDate = dueDate,
     status = status,
+    preparationStatus = preparationStatus,
+    pickupNumber = pickupNumber,
     creatorType = creatorType,
     createdById = createdById,
     currency = currency,
@@ -221,6 +231,7 @@ internal fun Order.toResponse(items: List<OrderItem>, paymentReference: PaymentR
             quantity = it.quantity,
             unitPriceMinor = it.effectiveUnitPriceMinor,
             lineTotalMinor = it.lineTotalMinor,
+            locked = it.locked,
         )
     },
     createdAt = createdAt,
@@ -239,6 +250,8 @@ internal fun Order.toSummaryResponse() = OrderSummaryResponse(
     targetShopperId = targetShopperId,
     dueDate = dueDate,
     status = status,
+    preparationStatus = preparationStatus,
+    pickupNumber = pickupNumber,
     currency = currency,
     totalAmountMinor = totalAmountMinor,
     paymentRetryAllowed = status.paymentRetryAllowed,
@@ -256,6 +269,8 @@ internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: Stri
     targetShopperId = targetShopperId,
     dueDate = dueDate,
     status = status,
+    preparationStatus = preparationStatus,
+    pickupNumber = pickupNumber,
     creatorType = creatorType,
     currency = currency,
     totalAmountMinor = totalAmountMinor,
@@ -270,6 +285,7 @@ internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: Stri
             quantity = it.quantity,
             unitPriceMinor = it.unitPriceMinor,
             lineTotalMinor = it.lineTotalMinor,
+            locked = it.locked,
         )
     },
     createdAt = createdAt,

@@ -131,3 +131,5 @@ databaseChangeLog:
       file: db/changelog/20261031-001-international-menu.sql
   - include:
       file: db/changelog/20261103-001-order-guest-token.sql
+  - include:
+      file: db/changelog/20261103-002-order-kitchen-preparation.sql

@@ -19,6 +19,7 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.web.reactive.function.client.WebClient
 import java.time.Instant
+import java.util.Base64
 
 @TestConfiguration
 @Profile("contract-test")
@@ -56,6 +57,7 @@ class ContractTestConfig {
     }
 
     // Accepts any bearer token so contract tests don't need a live Keycloak server.
+    // A `groups` claim in the (unsigned) payload is passed through for branch-scoped endpoints.
     @Bean
     @Primary
     fun mockJwtDecoder(): JwtDecoder = JwtDecoder { token ->
@@ -65,6 +67,14 @@ class ContractTestConfig {
             .issuer("https://contract-test.local/realms/blitzpay")
             .issuedAt(Instant.now())
             .expiresAt(Instant.now().plusSeconds(3600))
+            .apply { groupsClaim(token)?.let { claim("groups", it) } }
             .build()
+    }
+
+    private fun groupsClaim(token: String): List<String>? {
+        val payload = token.split('.').getOrNull(1) ?: return null
+        val json = runCatching { String(Base64.getUrlDecoder().decode(payload)) }.getOrNull() ?: return null
+        val array = Regex("\"groups\"\\s*:\\s*\\[([^\\]]*)]").find(json)?.groupValues?.get(1) ?: return null
+        return Regex("\"([^\"]*)\"").findAll(array).map { it.groupValues[1] }.toList()
     }
 }
