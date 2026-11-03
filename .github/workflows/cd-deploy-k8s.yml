@@ -98,6 +98,23 @@ jobs:
       - name: Verify cluster connectivity
         run: kubectl cluster-info --request-timeout=10s
 
+      # The concurrency group above means no other pipeline deploy is running, so a
+      # pending-* revision was left behind by a run that died (runner lost, API server down).
+      # Helm treats it as an operation still in progress and refuses every upgrade until it's cleared.
+      # ponytail: a manual `helm upgrade` running at that moment would also be rolled back; add a lease if people deploy by hand.
+      - name: Clear stuck Helm release
+        run: |
+          ns="blitzpay-$ENV_SUFFIX"
+          status=$(helm history "$APP_NAME" -n "$ns" --max 1 -o json 2>/dev/null | jq -r '.[0].status // empty')
+          case "$status" in
+            pending-upgrade|pending-rollback)
+              echo "::warning title=Stuck Helm release::$APP_NAME is '$status'; rolling back to the previous revision"
+              helm rollback "$APP_NAME" -n "$ns" --wait --timeout 5m ;;
+            pending-install)
+              echo "::error title=Stuck Helm release::$APP_NAME is 'pending-install' with no earlier revision; run 'helm uninstall $APP_NAME -n $ns' by hand"
+              exit 1 ;;
+          esac
+
       - name: Deploy to ${{ inputs.environment }}
         id: deploy
         run: |
