@@ -7,7 +7,6 @@
 # -----------------------------------------------------------------------------
 [plugins]
 # Core platform plugins
-skillsjars           = { id = "com.skillsjars.gradle-plugin", version.ref = "skillsjars-plugin" }
 kotlin-jvm           = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-spring        = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 kotlin-jpa           = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin-jpa" }
@@ -24,7 +23,6 @@ spring-cloud-contract = { id = "org.springframework.cloud.contract", version.ref
 # -----------------------------------------------------------------------------
 [versions]
 # Platform & Core
-skillsjars-plugin    = "0.0.2"
 kotlin               = "2.4.0"
 kotlin-jpa           = "2.4.0"
 spring-boot          = "4.1.0"
@@ -56,7 +54,6 @@ braintree-java       = "3.50.0"
 spring-cloud-aws     = "4.0.2"
 
 # Optional runtime integrations
-dr-jskill            = "2026_02_19-a951a5e"
 # Contract stubs publishing
 spring-cloud-contract = "5.0.3"
 jooq                 = "3.21.5"
@@ -69,11 +66,6 @@ dependency-track     = "1.4.4"
 # [Libraries] - Dependency Declarations Organized by Module
 # -----------------------------------------------------------------------------
 [libraries]
-# -----------------------------------------------------------------------------
-# Optional: SkillsJars runtime integration
-# Purpose: External skills/runtime features (conditional inclusion)
-# -----------------------------------------------------------------------------
-dr-jskill            = { module = "com.skillsjars:jdubois__dr-jskill", version.ref = "dr-jskill" }
 bootui-spring-boot-starter = { module = "com.julien-dubois.bootui:bootui-spring-boot-starter", version.ref = "bootui" }
 # -----------------------------------------------------------------------------
 # Modulith: `invoice`

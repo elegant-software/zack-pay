@@ -2,7 +2,6 @@ import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 
 plugins {
-    alias(libs.plugins.skillsjars)
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.spring)
     alias(libs.plugins.spring.boot)
@@ -36,7 +35,6 @@ tasks.named<BootJar>("bootJar") {
 
 
 val mavenProxyUrl = providers.gradleProperty("mavenProxyUrl").orNull
-val skillsJarsRepositoryUrl = providers.gradleProperty("skillsJarsRepositoryUrl").orNull
 val sourceSets = the<org.gradle.api.tasks.SourceSetContainer>()
 val contractTestSourceSet = sourceSets.maybeCreate("contractTest").apply {
     java.setSrcDirs(listOf("src/contractTest/kotlin"))
@@ -57,17 +55,9 @@ repositories {
     }
 
     maven { url = uri("https://repo.spring.io/snapshot") }
-
-    if (skillsJarsRepositoryUrl != null) {
-        maven { url = uri(skillsJarsRepositoryUrl) }
-    }
 }
 
 dependencies {
-    if (providers.gradleProperty("includeSkillsJars").map(String::toBoolean).orElse(false).get()) {
-        // Optional: `com.skillsjars:jdubois__dr-jskill` runtime integration
-        runtimeOnly(libs.dr.jskill)
-    }
     implementation(libs.bootui.spring.boot.starter)
     // ----------------------------
     // Modulith: `invoice`
