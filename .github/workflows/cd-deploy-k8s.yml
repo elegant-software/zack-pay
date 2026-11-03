@@ -99,7 +99,9 @@ jobs:
         run: kubectl cluster-info --request-timeout=10s
 
       - name: Deploy to ${{ inputs.environment }}
+        id: deploy
         run: |
+          set -o pipefail
           HELM_ARGS=(
             --namespace blitzpay-$ENV_SUFFIX
             --create-namespace
@@ -116,13 +118,56 @@ jobs:
             HELM_ARGS+=(--set-string config.otlpLogsEndpoint="$OTLP_LOGS_ENDPOINT")
           fi
 
-          helm upgrade --install $APP_NAME $HELM_CHART "${HELM_ARGS[@]}"
+          # tee keeps helm's output for the failure report below.
+          helm upgrade --install $APP_NAME $HELM_CHART "${HELM_ARGS[@]}" 2>&1 | tee "$RUNNER_TEMP/deploy.log"
 
       - name: Verify rollout
+        id: rollout
         run: |
+          set -o pipefail
           kubectl rollout status deployment/$APP_NAME \
             --namespace blitzpay-$ENV_SUFFIX \
-            --timeout=10m
+            --timeout=10m 2>&1 | tee -a "$RUNNER_TEMP/deploy.log"
+
+      # Best-effort diagnostics: every command is guarded so this step never fails or masks the deploy error.
+      - name: Collect failure reason
+        if: failure() && (steps.deploy.outcome == 'failure' || steps.rollout.outcome == 'failure')
+        continue-on-error: true
+        run: |
+          ns="blitzpay-$ENV_SUFFIX"
+          sel="app.kubernetes.io/instance=$APP_NAME"
+          out="$RUNNER_TEMP/failure-reason.txt"
+          pods_json=$(kubectl get pods -n "$ns" -l "$sel" -o json 2>/dev/null || echo '{"items":[]}')
+          pod_reasons=$(echo "$pods_json" | jq -r '.items[] | .metadata.name as $p
+            | ((.status.initContainerStatuses // []) + (.status.containerStatuses // []))[]
+            | (.state.waiting // .state.terminated // .lastState.terminated // empty) as $s
+            | select($s.reason != null and $s.reason != "Completed")
+            | "\($p)/\(.name): \($s.reason)\(if $s.message then " - " + $s.message else "" end) (restarts: \(.restartCount))"' 2>/dev/null || true)
+          crash=$(echo "$pods_json" | jq -r '[.items[] | .metadata.name as $p | (.status.containerStatuses // [])[]
+            | select(.restartCount > 0 or .lastState.terminated != null) | "\($p) \(.name)"][0] // empty' 2>/dev/null || true)
+          {
+            echo "== helm / rollout output (tail) =="
+            tail -n 15 "$RUNNER_TEMP/deploy.log" 2>/dev/null || true
+            echo
+            echo "== pod container states =="
+            echo "${pod_reasons:-(no failing containers found; pods may already be replaced by the rollback)}" | head -n 15
+            echo
+            echo "== warning events (last 10) =="
+            kubectl get events -n "$ns" --field-selector type=Warning --sort-by=.lastTimestamp \
+              -o custom-columns=LAST:.lastTimestamp,OBJECT:.involvedObject.name,REASON:.reason,MESSAGE:.message 2>/dev/null \
+              | tail -n 10 || true
+            if [ -n "$crash" ]; then
+              read -r crash_pod crash_container <<< "$crash"
+              echo
+              echo "== logs --previous ${crash_pod}/${crash_container} (last 30) =="
+              kubectl logs -n "$ns" "$crash_pod" -c "$crash_container" --previous --tail=30 2>&1 || true
+            fi
+          } 2>/dev/null | cut -c1-300 | head -c 6000 > "$out" || true
+          # One-line reason: first failing container state, else helm's error line, else rollout output.
+          line=$(echo "$pod_reasons" | head -n 1 || true)
+          [ -z "$line" ] && line=$(grep -m1 -E '^Error:' "$RUNNER_TEMP/deploy.log" 2>/dev/null || true)
+          [ -z "$line" ] && line=$(tail -n 1 "$RUNNER_TEMP/deploy.log" 2>/dev/null || true)
+          echo "${line:-unknown}" | cut -c1-200 > "$RUNNER_TEMP/failure-reason-line.txt" || true
 
       - name: Add deployment to job summary
         if: always()
@@ -130,8 +175,11 @@ jobs:
           ENVIRONMENT: ${{ inputs.environment }}
           JOB_STATUS: ${{ job.status }}
         run: |
-          revision=$(helm history "$APP_NAME" --namespace "blitzpay-$ENV_SUFFIX" --max 1 -o json 2>/dev/null | jq -r '.[0].revision // empty')
+          last=$(helm history "$APP_NAME" --namespace "blitzpay-$ENV_SUFFIX" --max 1 -o json 2>/dev/null || true)
+          revision=$(echo "$last" | jq -r '.[0].revision // empty' 2>/dev/null || true)
           revision=${revision:-—}
+          # helm --atomic records its rollback as a new revision described "Rollback to N".
+          rolled_back_to=$(echo "$last" | jq -r '.[0].description // ""' 2>/dev/null | sed -nE 's/^Rollback to ([0-9]+).*/\1/p' || true)
           IMAGE_TAG=${IMAGE_TAG:-unresolved}
           if [ "$JOB_STATUS" = "success" ]; then icon="🚀"; result="✅ rolled out"; else icon="❌"; result="❌ ${JOB_STATUS}"; fi
           {
@@ -139,5 +187,20 @@ jobs:
             echo "| Release | Namespace | Image tag | Helm revision | Result |"
             echo "|---|---|---|---|---|"
             echo "| ${APP_NAME} | blitzpay-${ENV_SUFFIX} | \`${IMAGE_TAG}\` | ${revision} | ${result} |"
+            if [ "$JOB_STATUS" != "success" ]; then
+              [ -n "$rolled_back_to" ] && echo && echo "↩️ Rolled back to revision ${rolled_back_to}"
+              if [ -s "$RUNNER_TEMP/failure-reason.txt" ]; then
+                echo
+                echo "#### Reason"
+                echo '```text'
+                cat "$RUNNER_TEMP/failure-reason.txt"
+                echo '```'
+              fi
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "::notice title=Deploy ${JOB_STATUS}::${APP_NAME} ${IMAGE_TAG} → blitzpay-${ENV_SUFFIX} (revision ${revision})"
+          if [ "$JOB_STATUS" = "success" ]; then
+            echo "::notice title=Deploy ${JOB_STATUS}::${APP_NAME} ${IMAGE_TAG} → blitzpay-${ENV_SUFFIX} (revision ${revision})"
+          else
+            reason=$(cat "$RUNNER_TEMP/failure-reason-line.txt" 2>/dev/null || true)
+            echo "::error title=Deploy ${JOB_STATUS}::${APP_NAME} ${IMAGE_TAG} → blitzpay-${ENV_SUFFIX} (revision ${revision}${rolled_back_to:+, rolled back to ${rolled_back_to}}): ${reason:-see job summary}"
+          fi
