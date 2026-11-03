@@ -31,7 +31,8 @@ jobs:
       id-token: write
       attestations: write
       checks: write
-    #needs: ci
+    # Never publish an image unless CI (unit + contract tests, jOOQ freshness) passed for this exact ref.
+    needs: ci
     if: github.event_name == 'release' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     uses: elegant-software/elegant-ci-cd-pipeline/.github/workflows/backend-docker-build.yml@main
     with:
