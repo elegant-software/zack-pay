@@ -34,7 +34,7 @@ class MerchantMcpTools(
         name = "merchant_api_guide",
         description = "Call this before starting any merchant, category, or product workflow. " +
             "Returns tool-selection rules and the recommended operation order.",
-        annotations = McpTool.McpAnnotations(title = "Merchant API Guide")
+        annotations = McpTool.McpAnnotations(title = "Merchant API Guide", readOnlyHint = true, openWorldHint = false)
     )
     fun merchantApiGuide(): String = """
         TOOL SELECTION
@@ -119,7 +119,7 @@ class MerchantMcpTools(
         name = "merchant_list_active_verticals",
         description = "List valid merchant businessType codes and display names from the active merchant vertical catalog. " +
             "Use this before merchant_upsert when businessType is unknown or needs validation.",
-        annotations = McpTool.McpAnnotations(title = "List Active Verticals")
+        annotations = McpTool.McpAnnotations(title = "List Active Verticals", readOnlyHint = true, openWorldHint = false)
     )
     fun listActiveMerchantVerticals(): List<MerchantVerticalResponse> =
         merchantVerticalService.listActive()
@@ -127,7 +127,7 @@ class MerchantMcpTools(
     @McpTool(
         name = "merchant_id_by_name",
         description = "Get merchant ID by merchant name",
-        annotations = McpTool.McpAnnotations(title = "Merchant ID by Name")
+        annotations = McpTool.McpAnnotations(title = "Merchant ID by Name", readOnlyHint = true, openWorldHint = false)
     )
     fun getMerchantIdByName(merchantName: String): String {
         return merchantRegistrationService.findByName(merchantName)?.id?.toString()
@@ -142,7 +142,7 @@ class MerchantMcpTools(
             "Optionally uploads a logo via logoBase64 and logoContentType only; use a clear, high-quality merchant logo in JPEG, PNG, or WebP format. " +
             "Pass originalMenuLanguage (ISO 639-1 code, e.g. \"de\", \"en\", \"tr\") for the language the source menu is written in. " +
             "Returns full merchant details; use the returned merchantId as merchantId in subsequent branch and product calls.",
-        annotations = McpTool.McpAnnotations(title = "Merchant Upsert")
+        annotations = McpTool.McpAnnotations(title = "Merchant Upsert", idempotentHint = true, openWorldHint = false)
     )
     fun upsertMerchant(
         merchantName: String,
