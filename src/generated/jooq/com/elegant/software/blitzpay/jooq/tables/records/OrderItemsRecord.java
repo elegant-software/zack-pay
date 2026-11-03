@@ -219,6 +219,20 @@ public class OrderItemsRecord extends UpdatableRecordImpl<OrderItemsRecord> {
         return (OffsetDateTime) get(13);
     }
 
+    /**
+     * Setter for <code>blitzpay.order_items.locked</code>.
+     */
+    public void setLocked(Boolean value) {
+        set(14, value);
+    }
+
+    /**
+     * Getter for <code>blitzpay.order_items.locked</code>.
+     */
+    public Boolean getLocked() {
+        return (Boolean) get(14);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -242,7 +256,7 @@ public class OrderItemsRecord extends UpdatableRecordImpl<OrderItemsRecord> {
     /**
      * Create a detached, initialised OrderItemsRecord
      */
-    public OrderItemsRecord(UUID id, UUID orderIdFk, UUID merchantProductId, UUID merchantApplicationId, UUID merchantBranchId, String productName, String productDescription, Integer quantity, Long unitPriceMinor, Long lineTotalMinor, OffsetDateTime createdAt, Long merchantPriceOverrideMinor, String overriddenBy, OffsetDateTime overriddenAt) {
+    public OrderItemsRecord(UUID id, UUID orderIdFk, UUID merchantProductId, UUID merchantApplicationId, UUID merchantBranchId, String productName, String productDescription, Integer quantity, Long unitPriceMinor, Long lineTotalMinor, OffsetDateTime createdAt, Long merchantPriceOverrideMinor, String overriddenBy, OffsetDateTime overriddenAt, Boolean locked) {
         super(OrderItems.ORDER_ITEMS);
 
         setId(id);
@@ -259,6 +273,7 @@ public class OrderItemsRecord extends UpdatableRecordImpl<OrderItemsRecord> {
         setMerchantPriceOverrideMinor(merchantPriceOverrideMinor);
         setOverriddenBy(overriddenBy);
         setOverriddenAt(overriddenAt);
+        setLocked(locked);
         resetTouchedOnNotNull();
     }
 }

@@ -132,6 +132,11 @@ public class OrderItems extends TableImpl<OrderItemsRecord> {
      */
     public final TableField<OrderItemsRecord, OffsetDateTime> OVERRIDDEN_AT = createField(DSL.name("overridden_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
+    /**
+     * The column <code>blitzpay.order_items.locked</code>.
+     */
+    public final TableField<OrderItemsRecord, Boolean> LOCKED = createField(DSL.name("locked"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "");
+
     private OrderItems(Name alias, Table<OrderItemsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

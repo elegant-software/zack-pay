@@ -442,6 +442,34 @@ public class OrderOrdersRecord extends UpdatableRecordImpl<OrderOrdersRecord> {
         return (OffsetDateTime) get(29);
     }
 
+    /**
+     * Setter for <code>blitzpay.order_orders.preparation_status</code>.
+     */
+    public void setPreparationStatus(String value) {
+        set(30, value);
+    }
+
+    /**
+     * Getter for <code>blitzpay.order_orders.preparation_status</code>.
+     */
+    public String getPreparationStatus() {
+        return (String) get(30);
+    }
+
+    /**
+     * Setter for <code>blitzpay.order_orders.pickup_number</code>.
+     */
+    public void setPickupNumber(Integer value) {
+        set(31, value);
+    }
+
+    /**
+     * Getter for <code>blitzpay.order_orders.pickup_number</code>.
+     */
+    public Integer getPickupNumber() {
+        return (Integer) get(31);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -465,7 +493,7 @@ public class OrderOrdersRecord extends UpdatableRecordImpl<OrderOrdersRecord> {
     /**
      * Create a detached, initialised OrderOrdersRecord
      */
-    public OrderOrdersRecord(UUID id, String orderId, UUID merchantApplicationId, UUID merchantBranchId, String status, String currency, Long totalAmountMinor, Integer itemCount, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime paidAt, UUID lastPaymentRequestId, String lastPaymentProvider, String creatorType, String createdById, String orderType, Boolean usesDeferredPayment, String paymentSource, String settlementNote, String checkoutPaymentMethod, UUID appointmentId, String buyerContactName, String buyerContactStreet, String buyerContactZip, String buyerContactCity, String buyerContactCountry, String targetShopperId, LocalDate dueDate, String guestTokenHash, OffsetDateTime guestTokenExpiresAt) {
+    public OrderOrdersRecord(UUID id, String orderId, UUID merchantApplicationId, UUID merchantBranchId, String status, String currency, Long totalAmountMinor, Integer itemCount, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime paidAt, UUID lastPaymentRequestId, String lastPaymentProvider, String creatorType, String createdById, String orderType, Boolean usesDeferredPayment, String paymentSource, String settlementNote, String checkoutPaymentMethod, UUID appointmentId, String buyerContactName, String buyerContactStreet, String buyerContactZip, String buyerContactCity, String buyerContactCountry, String targetShopperId, LocalDate dueDate, String guestTokenHash, OffsetDateTime guestTokenExpiresAt, String preparationStatus, Integer pickupNumber) {
         super(OrderOrders.ORDER_ORDERS);
 
         setId(id);
@@ -498,6 +526,8 @@ public class OrderOrdersRecord extends UpdatableRecordImpl<OrderOrdersRecord> {
         setDueDate(dueDate);
         setGuestTokenHash(guestTokenHash);
         setGuestTokenExpiresAt(guestTokenExpiresAt);
+        setPreparationStatus(preparationStatus);
+        setPickupNumber(pickupNumber);
         resetTouchedOnNotNull();
     }
 }

@@ -213,6 +213,16 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
      */
     public final TableField<OrderOrdersRecord, OffsetDateTime> GUEST_TOKEN_EXPIRES_AT = createField(DSL.name("guest_token_expires_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
+    /**
+     * The column <code>blitzpay.order_orders.preparation_status</code>.
+     */
+    public final TableField<OrderOrdersRecord, String> PREPARATION_STATUS = createField(DSL.name("preparation_status"), SQLDataType.VARCHAR(16).nullable(false).defaultValue(DSL.field(DSL.raw("'RECEIVED'::character varying"), SQLDataType.VARCHAR)), this, "");
+
+    /**
+     * The column <code>blitzpay.order_orders.pickup_number</code>.
+     */
+    public final TableField<OrderOrdersRecord, Integer> PICKUP_NUMBER = createField(DSL.name("pickup_number"), SQLDataType.INTEGER, this, "");
+
     private OrderOrders(Name alias, Table<OrderOrdersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -282,7 +292,7 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_ORDER_ORDERS_TARGET_SHOPPER_ID, Indexes.IX_ORDER_ORDERS_CREATED_BY_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_APPLICATION_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_BRANCH_ID, Indexes.IX_ORDER_ORDERS_STATUS, Indexes.UQ_ORDER_APPOINTMENT_ID, Indexes.UX_ORDER_ORDERS_ORDER_ID);
+        return Arrays.asList(Indexes.IDX_ORDER_ORDERS_TARGET_SHOPPER_ID, Indexes.IX_ORDER_ORDERS_CREATED_BY_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_APPLICATION_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_BRANCH_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_BRANCH_ID_CREATED_AT, Indexes.IX_ORDER_ORDERS_STATUS, Indexes.UQ_ORDER_APPOINTMENT_ID, Indexes.UX_ORDER_ORDERS_ORDER_ID);
     }
 
     @Override
