@@ -33,8 +33,9 @@ class KitchenServiceTest {
     private val orderItemRepository = mock<OrderItemRepository>()
     private val allocator = mock<PickupNumberAllocator>()
     private val bus = mock<KitchenOrderBus>()
+    private val storefrontOrderBus = mock<StorefrontOrderBus>()
     private val eventPublisher = mock<ApplicationEventPublisher>()
-    private val service = KitchenService(orderRepository, orderItemRepository, allocator, bus, eventPublisher)
+    private val service = KitchenService(orderRepository, orderItemRepository, allocator, bus, storefrontOrderBus, eventPublisher)
 
     private val branchId = UUID.randomUUID()
 
@@ -112,6 +113,7 @@ class KitchenServiceTest {
 
         assertEquals(PreparationStatus.READY, result.preparationStatus)
         verify(bus, org.mockito.kotlin.times(2)).publishAfterCommit(eq(branchId), eq(KitchenEventType.CHANGED), any())
+        verify(storefrontOrderBus, org.mockito.kotlin.times(2)).publishAfterCommit(eq(order), any())
         val captor = argumentCaptor<OrderReadyForPickup>()
         verify(eventPublisher).publishEvent(captor.capture())
         assertEquals("shopper-1", captor.firstValue.shopperId)

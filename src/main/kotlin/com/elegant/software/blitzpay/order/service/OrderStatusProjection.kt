@@ -23,6 +23,7 @@ class OrderStatusProjection(
     private val orderItemRepository: OrderItemRepository,
     private val eventPublisher: ApplicationEventPublisher,
     private val shopperProfileGateway: ShopperProfileGateway,
+    private val storefrontOrderBus: StorefrontOrderBus,
 ) {
     private val log = LoggerFactory.getLogger(OrderStatusProjection::class.java)
 
@@ -62,6 +63,9 @@ class OrderStatusProjection(
                 if (wasUpdated) {
                     orderRepository.save(order)
                     log.info("order status updated status={} paidAt={}", order.status, order.paidAt)
+                    if (order.creatorType == CreatorType.GUEST) {
+                        storefrontOrderBus.publishAfterCommit(order, orderItemRepository.findAllByOrderIdFk(order.id))
+                    }
                     if (order.status == OrderStatus.PAID) {
                         val items = orderItemRepository.findAllByOrderIdFk(order.id)
                             .filter { it.quantity > 0 }

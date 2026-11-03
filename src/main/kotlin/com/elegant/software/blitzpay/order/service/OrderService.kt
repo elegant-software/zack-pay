@@ -61,6 +61,7 @@ class OrderService(
     private val eventPublisher: ApplicationEventPublisher,
     private val pickupNumberAllocator: PickupNumberAllocator,
     private val kitchenOrderBus: KitchenOrderBus,
+    private val storefrontOrderBus: StorefrontOrderBus,
 ) {
     private val log = LoggerFactory.getLogger(OrderService::class.java)
 
@@ -354,6 +355,7 @@ class OrderService(
         order.manualSettle(request.note, merchantUserId)
         orderRepository.save(order)
         val items = orderItemRepository.findAllByOrderIdFk(order.id)
+        storefrontOrderBus.publishAfterCommit(order, items)
         return order.toResponse(items)
     }
 
@@ -396,7 +398,9 @@ class OrderService(
         }
     }
 
+    /** Also pushes guest orders to their storefront stream: item edits can re-open a READY order's Preparation Status. */
     private fun notifyKitchen(order: Order, items: List<OrderItem>, type: KitchenEventType) {
+        storefrontOrderBus.publishAfterCommit(order, items)
         if (order.appointmentId != null) return
         kitchenOrderBus.publishAfterCommit(order.merchantBranchId, type, order.toKitchenOrder(items))
     }

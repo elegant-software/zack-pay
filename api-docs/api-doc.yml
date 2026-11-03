@@ -2989,6 +2989,32 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/storefront/orders/{orderId}/events:
+    get:
+      tags:
+      - Storefront Orders
+      summary: "Stream a guest order as SSE: an `order.changed` event (id = orderId,\
+        \ data = OrderResponse) right after connecting and after every Preparation\
+        \ Status or payment status change; requires the guest_token cookie"
+      operationId: events
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: guest_token
+        in: cookie
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
   /{version}/shopper/orders/{orderId}/invoice:
     get:
       tags:
@@ -7521,6 +7547,12 @@ components:
       - enabled
       - groups
       - id
+    SseEmitter:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          format: int64
     InvoiceDownloadResponse:
       type: object
       properties:
@@ -7870,12 +7902,6 @@ components:
       - paymentMethodFrequency
       - revenue
       - to
-    SseEmitter:
-      type: object
-      properties:
-        timeout:
-          type: integer
-          format: int64
     PaymentStatusResponse:
       type: object
       properties:
