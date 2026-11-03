@@ -49,7 +49,7 @@ class OrderServiceTest {
     private val kitchenOrderBus = mock<KitchenOrderBus>()
     private val service = OrderService(
         merchantGateway, orderRepository, orderItemRepository, paymentAttemptRepository, shopperProfileGateway, eventPublisher,
-        pickupNumberAllocator, kitchenOrderBus,
+        pickupNumberAllocator, kitchenOrderBus, mock<StorefrontOrderBus>(),
     )
 
     private val merchantId = UUID.fromString("11111111-1111-1111-1111-111111111111")

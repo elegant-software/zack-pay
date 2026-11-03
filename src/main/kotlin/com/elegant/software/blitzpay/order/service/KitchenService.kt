@@ -24,6 +24,7 @@ class KitchenService(
     private val orderItemRepository: OrderItemRepository,
     private val pickupNumberAllocator: PickupNumberAllocator,
     private val kitchenOrderBus: KitchenOrderBus,
+    private val storefrontOrderBus: StorefrontOrderBus,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val log = LoggerFactory.getLogger(KitchenService::class.java)
@@ -60,8 +61,10 @@ class KitchenService(
         }
         order.advancePreparation(next)
         orderRepository.save(order)
-        val kitchenOrder = order.toKitchenOrder(orderItemRepository.findAllByOrderIdFk(order.id))
+        val items = orderItemRepository.findAllByOrderIdFk(order.id)
+        val kitchenOrder = order.toKitchenOrder(items)
         kitchenOrderBus.publishAfterCommit(branchId, KitchenEventType.CHANGED, kitchenOrder)
+        storefrontOrderBus.publishAfterCommit(order, items)
         log.info("preparation status changed orderId={} branchId={} status={}", order.orderId, branchId, next)
 
         if (next == PreparationStatus.READY) {

@@ -43,7 +43,7 @@ class OrderPreparationRulesTest {
     private val kitchenOrderBus = mock<KitchenOrderBus>()
     private val service = OrderService(
         merchantGateway, orderRepository, orderItemRepository, mock<PaymentAttemptRepository>(),
-        mock<ShopperProfileGateway>(), mock<ApplicationEventPublisher>(), pickupNumberAllocator, kitchenOrderBus,
+        mock<ShopperProfileGateway>(), mock<ApplicationEventPublisher>(), pickupNumberAllocator, kitchenOrderBus, mock<StorefrontOrderBus>(),
     )
 
     private val merchantId = UUID.randomUUID()
