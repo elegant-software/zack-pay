@@ -368,6 +368,18 @@ _Avoid_: standalone invoice entity, bill, payment request, receipt
 The shopper account designated to see and pay an Invoice Order, identified by the shopper's Keycloak subject ID. Recorded on the Order separately from the creator. For non-invoice orders this is absent; the shopper self-associates through the existing QR or ordering flow.
 _Avoid_: recipient, payee, invoice recipient
 
+**Preparation Status**:
+The kitchen-side lifecycle of an Order (`RECEIVED → PREPARING → READY`), independent from payment status. Preparation starts as soon as the Order is received, whether or not it has been paid. Items may be changed while RECEIVED or PREPARING; once READY, existing items are locked and only new items may be added, which returns the Order to RECEIVED.
+_Avoid_: order status (for payment), fulfilment status, kitchen status
+
+**Pickup Number**:
+A short sequential number identifying an Order within its Branch for the current day, used by kitchen staff and customers to call out and collect orders. Resets daily per Branch; not a substitute for the Order code.
+_Avoid_: order number, ticket number, queue number
+
+**Kitchen Screen**:
+The low-interaction display where kitchen staff see incoming Orders and advance their Preparation Status. Bound to exactly one Branch and shows only that Branch's Orders.
+_Avoid_: KDS, kitchen app, order board
+
 **Invoice Due Date**:
 An optional merchant-set date on an Invoice Order indicating when payment is expected. Display-only; no enforcement or late penalties. Shown to the Target Shopper alongside the order.
 _Avoid_: payment deadline, expiry date, mandatory due date
