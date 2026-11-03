@@ -247,3 +247,7 @@ keycloak:
     realm: ${KEYCLOAK_IAM_REALM:blitzpay}
     admin-client-id: ${KEYCLOAK_IAM_ADMIN_CLIENT_ID:}
     admin-client-secret: ${KEYCLOAK_IAM_ADMIN_CLIENT_SECRET:}
+    kitchen:
+      client-id: ${KEYCLOAK_IAM_KITCHEN_CLIENT_ID:blitzpay-kitchen}
+      redirect-uri: ${KEYCLOAK_IAM_KITCHEN_REDIRECT_URI:app://kitchen/renderer/index.html}
+      api-base-url: ${API_BASE_URL:${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}}

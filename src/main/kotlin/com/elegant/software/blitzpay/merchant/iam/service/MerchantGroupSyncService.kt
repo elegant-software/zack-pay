@@ -33,11 +33,13 @@ class MerchantGroupSyncService(
         log.info("keycloak merchant group ensured merchantId={}", merchantId)
     }
 
-    fun ensureBranchGroupExists(merchantId: UUID, merchantName: String, branchId: UUID, branchName: String) {
+    /** Ensures the `branch_<branchId>` group (and its parents) exists and returns its Keycloak group id. */
+    fun ensureBranchGroupExists(merchantId: UUID, merchantName: String, branchId: UUID, branchName: String): String {
         val rootId = ensureRootGroup()
         val merchantGroupId = ensureMerchantGroup(rootId, merchantId, merchantName)
-        ensureBranchGroup(merchantGroupId, branchId, branchName, merchantId)
+        val branchGroupId = ensureBranchGroup(merchantGroupId, branchId, branchName, merchantId)
         log.info("keycloak branch group ensured branchId={} merchantId={}", branchId, merchantId)
+        return branchGroupId
     }
 
     fun syncAll(): SyncResult {

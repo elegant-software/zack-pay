@@ -3,6 +3,7 @@ package com.elegant.software.blitzpay.contract
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.iam.repository.MerchantUserAssignmentRepository
+import com.elegant.software.blitzpay.merchant.iam.service.KitchenAccessService
 import com.elegant.software.blitzpay.merchant.iam.service.UserManagementService
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
@@ -172,6 +173,9 @@ abstract class ContractVerifierBase {
 
     @MockitoBean
     protected lateinit var userManagementService: UserManagementService
+
+    @MockitoBean
+    protected lateinit var kitchenAccessService: KitchenAccessService
 
     @MockitoBean
     protected lateinit var voiceGateway: VoiceGateway
