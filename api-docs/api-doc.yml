@@ -37,6 +37,8 @@ tags:
   description: Employee management for appointment booking
 - name: Dashboard
   description: KPI dashboards for platform admins and merchant app users
+- name: Kitchen Access
+  description: "Enable, reset and disable the Kitchen Login of a Branch"
 - name: Invoices
   description: EU-standard ZUGFeRD / Factur-X invoice generation
 - name: Payment Status
@@ -2552,6 +2554,58 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/KitchenOrder"
+  /{version}/merchant/branches/{branchId}/kitchen/enable:
+    post:
+      tags:
+      - Kitchen Access
+      summary: "Enable the Kitchen Screen for the Branch, or reset its login; returns\
+        \ a new password once"
+      operationId: enable_1
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KitchenLoginResponse"
+  /{version}/merchant/branches/{branchId}/kitchen/disable:
+    post:
+      tags:
+      - Kitchen Access
+      summary: "Disable the Branch's Kitchen Login and revoke its sessions, offline\
+        \ sessions included"
+      operationId: disable_1
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KitchenAccessStatusResponse"
   /{version}/invoices:
     post:
       tags:
@@ -3728,6 +3782,31 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/BranchCustomerResponse"
+  /{version}/merchant/branches/{branchId}/kitchen:
+    get:
+      tags:
+      - Kitchen Access
+      summary: Kitchen Login status of the Branch (never includes the password)
+      operationId: status
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KitchenAccessStatusResponse"
   /{version}/merchant/branches/{branchId}/kitchen/stream:
     get:
       tags:
@@ -7137,6 +7216,43 @@ components:
       - locked
       - name
       - quantity
+    KitchenLoginResponse:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        keycloakUrl:
+          type: string
+        realm:
+          type: string
+        clientId:
+          type: string
+        apiBaseUrl:
+          type: string
+        branchId:
+          type: string
+          format: uuid
+      required:
+      - apiBaseUrl
+      - branchId
+      - clientId
+      - keycloakUrl
+      - password
+      - realm
+      - username
+    KitchenAccessStatusResponse:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        username:
+          type:
+          - string
+          - "null"
+      required:
+      - enabled
     BankAccountData:
       type: object
       properties:
