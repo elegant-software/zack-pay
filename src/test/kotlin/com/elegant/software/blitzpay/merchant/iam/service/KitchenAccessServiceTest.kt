@@ -72,6 +72,7 @@ class KitchenAccessServiceTest {
     private val merchantId = UUID.randomUUID()
     private val branch = MerchantBranch(merchantId = merchantId, name = "Altstadt", branchCode = "BR-1A2B3C4D5E6F")
     private val username = "kitchen-br-1a2b3c4d5e6f"
+    private val emailUsername = "kitchen-br-1a2b3c4d5e6f@kitchen.invalid"
     private val clientUuid = "client-uuid"
     private val userId = "user-id"
     private val branchGroupId = "branch-group-id"
@@ -404,6 +405,37 @@ class KitchenAccessServiceTest {
         assertEquals(false, status.enabled)
         assertNull(status.username)
         verify(users, never()).get(any())
+    }
+
+    // Realms with "Email as username" store the email as username, so an exact username search misses the user.
+    private fun givenUserStoredUnderEmail(enabled: Boolean = true) {
+        whenever(users.searchByUsername(username, true)).thenReturn(emptyList())
+        whenever(users.searchByEmail(emailUsername, true)).thenReturn(
+            listOf(UserRepresentation().apply { id = userId; this.username = emailUsername; isEnabled = enabled })
+        )
+    }
+
+    @Test
+    fun `status finds a kitchen user stored under its email`() {
+        givenUserStoredUnderEmail()
+
+        val status = service.status(branch)
+
+        assertEquals(true, status.enabled)
+        assertEquals(emailUsername, status.username)
+    }
+
+    @Test
+    fun `enable reuses a kitchen user stored under its email and returns the stored username`() {
+        givenExistingClient()
+        givenUserStoredUnderEmail(enabled = false)
+        // Keycloak returns a fresh representation per call.
+        whenever(user.toRepresentation()).thenAnswer { UserRepresentation().apply { id = userId; this.username = emailUsername } }
+
+        val login = service.enable(branch)
+
+        verify(users, never()).create(any())
+        assertEquals(emailUsername, login.username)
     }
 
     @Test

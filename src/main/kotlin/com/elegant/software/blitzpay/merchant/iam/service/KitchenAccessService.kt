@@ -52,6 +52,8 @@ class KitchenAccessService(
         val username = kitchenUsername(branch.branchCode)
         val userId = ensureKitchenUser(username, branch)
         val user = realm().users().get(userId)
+        // The username Keycloak stored: the email in realms with "Email as username".
+        val storedUsername = user.toRepresentation().username ?: username
         user.joinGroup(branchGroupId)
 
         val password = passwordGenerator.generate()
@@ -60,10 +62,10 @@ class KitchenAccessService(
             value = password
             isTemporary = false
         })
-        log.info("kitchen login provisioned branchId={} username={}", branch.id, username)
+        log.info("kitchen login provisioned branchId={} username={}", branch.id, storedUsername)
 
         return KitchenLoginResponse(
-            username = username,
+            username = storedUsername,
             password = password,
             keycloakUrl = keycloakProperties.serverUrl,
             realm = keycloakProperties.realm,
@@ -88,7 +90,7 @@ class KitchenAccessService(
         } catch (_: NotFoundException) {
         }
         log.info("kitchen login disabled branchId={} username={}", branch.id, username)
-        return KitchenAccessStatusResponse(enabled = false, username = username)
+        return KitchenAccessStatusResponse(enabled = false, username = existing.username)
     }
 
     fun status(branch: MerchantBranch): KitchenAccessStatusResponse {
@@ -229,12 +231,19 @@ class KitchenAccessService(
         requiredActions = emptyList()
         firstName = "Kitchen"
         lastName = branch.name
-        email = "$username@${kitchenProperties.emailDomain}"
+        email = kitchenEmail(username)
         isEmailVerified = true
     }
 
-    private fun findUser(username: String): UserRepresentation? =
-        realm().users().searchByUsername(username, true).firstOrNull { it.username.equals(username, ignoreCase = true) }
+    /** By username, else by the placeholder email: realms with "Email as username" store the email as username. */
+    private fun findUser(username: String): UserRepresentation? {
+        val users = realm().users()
+        val email = kitchenEmail(username)
+        return users.searchByUsername(username, true).firstOrNull { it.username.equals(username, ignoreCase = true) }
+            ?: users.searchByEmail(email, true).firstOrNull { it.email.equals(email, ignoreCase = true) || it.username.equals(email, ignoreCase = true) }
+    }
+
+    private fun kitchenEmail(username: String) = "$username@${kitchenProperties.emailDomain}"
 
     private fun realm(): RealmResource = keycloak.realm(keycloakProperties.realm)
 
