@@ -380,6 +380,10 @@ _Avoid_: order number, ticket number, queue number
 The low-interaction display where kitchen staff see incoming Orders and advance their Preparation Status. Bound to exactly one Branch and shows only that Branch's Orders.
 _Avoid_: KDS, kitchen app, order board
 
+**Kitchen Login**:
+The one shared login per Branch that its Kitchen Screens sign in with. A Merchant Manager enables, resets or disables it; enabling or resetting shows a new password once, and the password is never stored or shown again.
+_Avoid_: kitchen account, kitchen user, device login
+
 **Invoice Due Date**:
 An optional merchant-set date on an Invoice Order indicating when payment is expected. Display-only; no enforcement or late penalties. Shown to the Target Shopper alongside the order.
 _Avoid_: payment deadline, expiry date, mandatory due date
