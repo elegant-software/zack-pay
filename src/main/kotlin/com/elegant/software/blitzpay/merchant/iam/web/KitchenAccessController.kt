@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -23,8 +25,9 @@ import java.util.UUID
 class KitchenAccessDeniedException(message: String) : RuntimeException(message)
 
 /**
- * Kitchen Login provisioning for a Branch, used by the web admin. Only a Merchant Manager of the Branch's Merchant
- * may call it (the rule used for Branch-scoped management such as opening hours and appearances).
+ * Kitchen Login provisioning for a Branch, used by the web admin. A Merchant Manager of the Branch's Merchant
+ * (the rule used for Branch-scoped management such as opening hours and appearances) or a platform admin
+ * (realm role `blitzpay-admin`, see [PlatformAdminAccess]) may call it.
  */
 @Tag(name = "Kitchen Access", description = "Enable, reset and disable the Kitchen Login of a Branch")
 @RestController
@@ -41,27 +44,31 @@ class KitchenAccessController(
     fun enable(
         @PathVariable branchId: UUID,
         @RequestHeader("Authorization", required = false) auth: String?,
-    ): ResponseEntity<KitchenLoginResponse> = noStore(service.enable(authorizedBranch(branchId, auth)))
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): ResponseEntity<KitchenLoginResponse> = noStore(service.enable(authorizedBranch(branchId, auth, jwt)))
 
     @Operation(summary = "Disable the Branch's Kitchen Login and revoke its sessions, offline sessions included")
     @PostMapping("/disable")
     fun disable(
         @PathVariable branchId: UUID,
         @RequestHeader("Authorization", required = false) auth: String?,
-    ): ResponseEntity<KitchenAccessStatusResponse> = noStore(service.disable(authorizedBranch(branchId, auth)))
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): ResponseEntity<KitchenAccessStatusResponse> = noStore(service.disable(authorizedBranch(branchId, auth, jwt)))
 
     @Operation(summary = "Kitchen Login status of the Branch (never includes the password)")
     @GetMapping
     fun status(
         @PathVariable branchId: UUID,
         @RequestHeader("Authorization", required = false) auth: String?,
-    ): ResponseEntity<KitchenAccessStatusResponse> = noStore(service.status(authorizedBranch(branchId, auth)))
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): ResponseEntity<KitchenAccessStatusResponse> = noStore(service.status(authorizedBranch(branchId, auth, jwt)))
 
-    private fun authorizedBranch(branchId: UUID, auth: String?): MerchantBranch {
+    private fun authorizedBranch(branchId: UUID, auth: String?, jwt: Jwt?): MerchantBranch {
         val branch = branchRepository.findById(branchId).orElseThrow { NoSuchElementException("Branch not found: $branchId") }
+        if (PlatformAdminAccess.isPlatformAdmin(jwt)) return branch
         val isManager = runCatching { callerResolver.resolve(auth, branch.merchantId).isManagerFor(branch.merchantId) }
             .getOrDefault(false)
-        if (!isManager) throw KitchenAccessDeniedException("Caller is not a Merchant Manager for this Branch's Merchant")
+        if (!isManager) throw KitchenAccessDeniedException("Caller is neither a Merchant Manager for this Branch's Merchant nor a platform admin")
         return branch
     }
 

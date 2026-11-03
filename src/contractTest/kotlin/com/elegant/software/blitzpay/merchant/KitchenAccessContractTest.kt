@@ -30,13 +30,19 @@ class KitchenAccessContractTest : ContractVerifierBase() {
     )
     private val base = "/v1/merchant/branches/${branch.id}/kitchen"
 
-    private fun bearer(sub: UUID): String {
-        val payload = Base64.getUrlEncoder().withoutPadding().encodeToString("""{"sub":"$sub"}""".toByteArray())
+    private val adminId = UUID.fromString("77777777-7777-7777-7777-777777777777")
+
+    private fun bearer(sub: UUID, realmRoles: List<String>? = null): String {
+        val roles = realmRoles?.joinToString(",", prefix = ""","realm_access":{"roles":[""", postfix = "]}") { "\"$it\"" }.orEmpty()
+        val payload = Base64.getUrlEncoder().withoutPadding().encodeToString("""{"sub":"$sub"$roles}""".toByteArray())
         return "Bearer fakeheader.$payload.fakesig"
     }
 
     private val manager = bearer(managerId)
     private val employee = bearer(employeeId)
+    /** A platform admin (the web admin's `blitzpay-admin` realm role) with no Merchant assignment. */
+    private val platformAdmin = bearer(adminId, listOf("offline_access", "blitzpay-admin"))
+    private val otherRealmRole = bearer(adminId, listOf("offline_access", "uma_authorization"))
 
     @BeforeEach
     fun givenBranchAndAssignments() {
@@ -111,8 +117,8 @@ class KitchenAccessContractTest : ContractVerifierBase() {
     }
 
     @Test
-    fun `callers who are not a Merchant Manager of the branch's merchant get 403`() {
-        listOf(employee, "Bearer $fakeJwt").forEach { token ->
+    fun `callers who are neither a Merchant Manager of the branch's merchant nor a platform admin get 403`() {
+        listOf(employee, otherRealmRole, "Bearer $fakeJwt").forEach { token ->
             webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, token)
                 .exchange()
                 .expectStatus().isForbidden
@@ -122,6 +128,53 @@ class KitchenAccessContractTest : ContractVerifierBase() {
         }
         verify(kitchenAccessService, never()).enable(any())
         verify(kitchenAccessService, never()).disable(any())
+    }
+
+    @Test
+    fun `a platform admin without a Merchant assignment can read, enable and disable the kitchen login`() {
+        whenever(merchantUserAssignmentRepository.findAllByKeycloakUserId(adminId)).thenReturn(emptyList())
+        whenever(kitchenAccessService.status(any())).thenReturn(KitchenAccessStatusResponse(true, "kitchen-br-1a2b3c4d5e6f"))
+        whenever(kitchenAccessService.enable(any())).thenReturn(
+            KitchenLoginResponse(
+                username = "kitchen-br-1a2b3c4d5e6f",
+                password = "s3cret-Generated_Password-0123456",
+                keycloakUrl = "https://auth.example",
+                realm = "blitzpay",
+                clientId = "blitzpay-kitchen",
+                apiBaseUrl = "https://api.example",
+                branchId = branch.id,
+            )
+        )
+        whenever(kitchenAccessService.disable(any())).thenReturn(KitchenAccessStatusResponse(false, "kitchen-br-1a2b3c4d5e6f"))
+
+        webTestClient.get().uri(base).header(HttpHeaders.AUTHORIZATION, platformAdmin)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().valueEquals(HttpHeaders.CACHE_CONTROL, "no-store")
+            .expectBody()
+            .jsonPath("$.enabled").isEqualTo(true)
+            .jsonPath("$.username").isEqualTo("kitchen-br-1a2b3c4d5e6f")
+        webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, platformAdmin)
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().valueEquals(HttpHeaders.CACHE_CONTROL, "no-store")
+            .expectBody().jsonPath("$.password").isEqualTo("s3cret-Generated_Password-0123456")
+        webTestClient.post().uri("$base/disable").header(HttpHeaders.AUTHORIZATION, platformAdmin)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody().jsonPath("$.enabled").isEqualTo(false)
+        verify(kitchenAccessService).enable(branch)
+        verify(kitchenAccessService).disable(branch)
+    }
+
+    @Test
+    fun `unknown branch returns 404 for a platform admin too`() {
+        val unknown = UUID.fromString("99999999-9999-9999-9999-999999999999")
+        whenever(merchantBranchRepository.findById(unknown)).thenReturn(Optional.empty())
+
+        webTestClient.get().uri("/v1/merchant/branches/$unknown/kitchen").header(HttpHeaders.AUTHORIZATION, platformAdmin)
+            .exchange()
+            .expectStatus().isNotFound
     }
 
     @Test
