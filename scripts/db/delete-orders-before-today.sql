@@ -78,4 +78,4 @@ DELETE FROM blitzpay.order_items            WHERE order_id_fk IN (SELECT id FROM
 -- Orders
 DELETE FROM blitzpay.order_orders WHERE id IN (SELECT id FROM doomed_orders);
 
-COMMIT;  -- change to COMMIT after checking the counts
+ROLLBACK;  -- change to COMMIT after checking the counts
