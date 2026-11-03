@@ -40,7 +40,7 @@ class ProductMcpTools(
             "To clear description or category, pass an empty string. " +
             "Supply categoryName to have the server resolve or create the category automatically, or supply categoryId directly. " +
             "Optional product image — see the image parameter descriptions or merchant_api_guide (PRODUCT IMAGES) for choosing imageUrl vs imageBase64.",
-        annotations = McpTool.McpAnnotations(title = "Product Update")
+        annotations = McpTool.McpAnnotations(title = "Product Update", idempotentHint = true)
     )
     fun updateProduct(
         merchantId: String,
@@ -111,7 +111,7 @@ class ProductMcpTools(
         name = "product_get",
         description = "Read one product (name, description, unitPrice, imageUrl, category, productCode, active, status), including inactive products. " +
             "Give exactly one of productId or productName. Use it to check current values before merchant_product_update.",
-        annotations = McpTool.McpAnnotations(title = "Product Get", readOnlyHint = true)
+        annotations = McpTool.McpAnnotations(title = "Product Get", readOnlyHint = true, openWorldHint = false)
     )
     fun getProduct(
         merchantId: String,
@@ -141,7 +141,7 @@ class ProductMcpTools(
         description = "List a branch's products sorted by name, optionally filtered by category. " +
             "Includes inactive products unless includeInactive is false. " +
             "Returns at most limit items (default 50, max 200) starting at offset; page with offset until fewer than limit come back.",
-        annotations = McpTool.McpAnnotations(title = "Products List", readOnlyHint = true)
+        annotations = McpTool.McpAnnotations(title = "Products List", readOnlyHint = true, openWorldHint = false)
     )
     fun listProducts(
         merchantId: String,
@@ -174,7 +174,7 @@ class ProductMcpTools(
     @McpTool(
         name = "product_id_by_name",
         description = "Get product ID by product name, merchant ID, and branch ID",
-        annotations = McpTool.McpAnnotations(title = "Product ID by Name")
+        annotations = McpTool.McpAnnotations(title = "Product ID by Name", readOnlyHint = true, openWorldHint = false)
     )
     fun getProductIdByName(merchantId: String, branchId: String, productName: String): String {
         return merchantProductService.findByNameIncludingInactive(
@@ -191,7 +191,7 @@ class ProductMcpTools(
             "Optional product image — see the image parameter descriptions or merchant_api_guide (PRODUCT IMAGES) for choosing imageUrl vs imageBase64. " +
             "If the product already exists, only a given image is applied; its other stored fields are kept (use merchant_product_update to change them). " +
             "WARNING: if you need to create or update 2 or more products, call products_bulk_upsert instead — do NOT call this tool in a loop.",
-        annotations = McpTool.McpAnnotations(title = "Product: Get or Create")
+        annotations = McpTool.McpAnnotations(title = "Product: Get or Create", destructiveHint = false, idempotentHint = true)
     )
     fun getOrCreateProductId(
         merchantId: String,
@@ -274,7 +274,7 @@ class ProductMcpTools(
             "Accepts categoryName per item (resolved or created automatically) or categoryId. " +
             "Re-running the same payload is safe — existing products are updated, not duplicated. " +
             "Max 200 items per call. Images are not supported in bulk; use merchant_product_update after import (see merchant_api_guide, PRODUCT IMAGES).",
-        annotations = McpTool.McpAnnotations(title = "Products: Bulk Upsert")
+        annotations = McpTool.McpAnnotations(title = "Products: Bulk Upsert", idempotentHint = true, openWorldHint = false)
     )
     fun bulkUpsertProducts(
         merchantId: String,

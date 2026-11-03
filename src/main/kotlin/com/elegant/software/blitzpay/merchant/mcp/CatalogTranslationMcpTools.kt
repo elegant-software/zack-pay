@@ -23,7 +23,7 @@ class CatalogTranslationMcpTools(
             "when origin is MERCHANT the merchant edited it by hand, so keep their wording and terminology and only adapt what changed. " +
             "Supported Menu Languages are configured by the merchant in the admin dashboard, not via MCP. " +
             "Translate the items, then call catalog_translations_bulk_upsert; repeat until totalPending is 0.",
-        annotations = McpTool.McpAnnotations(title = "Catalog: Pending Translations", readOnlyHint = true)
+        annotations = McpTool.McpAnnotations(title = "Catalog: Pending Translations", readOnlyHint = true, openWorldHint = false)
     )
     fun pendingTranslations(
         @McpToolParam(description = "Merchant id") merchantId: String,
@@ -43,7 +43,7 @@ class CatalogTranslationMcpTools(
             "Translate faithfully from the Original Menu Language; keep dish names that are proper nouns as they are. " +
             "Translations the merchant edited by hand are skipped unless the original text changed since. " +
             "Returns created, updated, skipped and failed items. Max 200 items per call.",
-        annotations = McpTool.McpAnnotations(title = "Catalog: Bulk Upsert Translations")
+        annotations = McpTool.McpAnnotations(title = "Catalog: Bulk Upsert Translations", idempotentHint = true, openWorldHint = false)
     )
     fun bulkUpsertTranslations(
         @McpToolParam(description = "Merchant id") merchantId: String,
