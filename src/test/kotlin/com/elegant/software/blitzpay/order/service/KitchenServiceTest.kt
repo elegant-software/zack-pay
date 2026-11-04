@@ -35,7 +35,7 @@ class KitchenServiceTest {
     private val bus = mock<KitchenOrderBus>()
     private val storefrontOrderBus = mock<StorefrontOrderBus>()
     private val eventPublisher = mock<ApplicationEventPublisher>()
-    private val service = KitchenService(orderRepository, orderItemRepository, allocator, bus, storefrontOrderBus, eventPublisher)
+    private val service = KitchenService(orderRepository, orderItemRepository, allocator, bus, storefrontOrderBus, eventPublisher, org.mockito.kotlin.mock<com.elegant.software.blitzpay.merchant.api.TableGateway>())
 
     private val branchId = UUID.randomUUID()
 

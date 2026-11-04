@@ -30,6 +30,7 @@ class MerchantManagementService(
     private val storageService: StorageService,
     private val eventPublisher: ApplicationEventPublisher,
     private val menuLanguageService: MenuLanguageService,
+    private val tableService: MerchantTableService,
 ) {
     private val log = LoggerFactory.getLogger(MerchantManagementService::class.java)
 
@@ -101,6 +102,7 @@ class MerchantManagementService(
     fun deleteMerchant(merchantId: UUID) {
         val merchant = repository.findById(merchantId)
             .orElseThrow { NoSuchElementException("Merchant not found: $merchantId") }
+        tableService.deleteAllForBranches(branchRepository.findAllByMerchantId(merchantId).map { it.id })
         branchRepository.deleteAllByMerchantId(merchantId)
         menuLanguageService.deleteAllFor(merchantId)
         repository.delete(merchant)

@@ -15,7 +15,8 @@ enum class PaymentMethod { TRUELAYER, QRPAY, BRAINTREE, STRIPE }
 
 enum class PaymentSource { APP_PAYMENT, MANUAL_SETTLEMENT }
 
-enum class CheckoutPaymentMethod { BANK_ACCOUNT, CARD, PAY_BY_BANK, TERMINAL, PAYPAL }
+/** CASH: a Cash Payment outside BlitzPay; the order stays unpaid until staff settle it (`POST /v1/merchant/orders/{orderId}/settle`). */
+enum class CheckoutPaymentMethod { BANK_ACCOUNT, CARD, PAY_BY_BANK, TERMINAL, PAYPAL, CASH }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AddOrderItemRequest(
@@ -73,6 +74,10 @@ data class CreateOrderRequest(
     val paymentMethod: PaymentMethod? = null,
     val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
     val buyerContact: BuyerContactRequest? = null,
+    /** Table Code from a Table Link; requires a WALK_IN_ORDERING order at the Table's Branch. */
+    val tableCode: String? = null,
+    /** Guest Count (1..50) for the Table; applied only when the Table has none yet, ignored otherwise. */
+    val guestCount: Int? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -137,6 +142,9 @@ data class OrderResponse(
     val lastPaymentProvider: String? = null,
     val paidAt: Instant? = null,
     val paymentReference: PaymentReferenceResponse? = null,
+    /** The Table the order was placed at, and its Table Name at order time. */
+    val tableId: UUID? = null,
+    val tableName: String? = null,
 )
 
 data class MerchantOrderResponse(
@@ -239,6 +247,8 @@ internal fun Order.toResponse(items: List<OrderItem>, paymentReference: PaymentR
     lastPaymentProvider = lastPaymentProvider,
     paidAt = paidAt,
     paymentReference = paymentReference,
+    tableId = tableId,
+    tableName = tableName,
 )
 
 internal fun Order.toSummaryResponse() = OrderSummaryResponse(
@@ -291,9 +301,18 @@ internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: Stri
     createdAt = createdAt,
 )
 
-/** Web storefront guest order: prices, merchant and order type are resolved on the server. */
+/**
+ * Web storefront guest order: prices and merchant are resolved on the server. Without a Table it is a PRE_ORDER;
+ * with a `tableCode` it is a WALK_IN_ORDERING order at that Table and needs `customerLocation`. Guests pay immediately
+ * or choose CASH as `checkoutPaymentMethod`; Deferred Payment is never available to them.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class StorefrontOrderRequest(
     val branchId: UUID,
     val items: List<CreateOrderItemRequest> = emptyList(),
+    val tableCode: String? = null,
+    val customerLocation: OrderCustomerLocationRequest? = null,
+    val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
+    /** Guest Count (1..50) for the Table; applied only when the Table has none yet, ignored otherwise. */
+    val guestCount: Int? = null,
 )

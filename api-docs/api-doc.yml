@@ -11,6 +11,8 @@ security:
 tags:
 - name: Stripe Connect
   description: Stripe Connect account onboarding for merchants
+- name: Tables
+  description: "Tables, Floor Plans, Table Placements and live Table Status of a Branch"
 - name: Storefront Orders
   description: Guest orders for the anonymous web storefront
 - name: Merchant Verticals
@@ -82,6 +84,8 @@ tags:
   description: Merchant-level appointment scheduling configuration
 - name: Merchants
   description: Endpoints for merchant management
+- name: Storefront Tables
+  description: Resolve a Table Link and show how many Tables are free
 - name: Appearances
   description: Manage scheduled location appearances for MOBILE merchants
 - name: Orders
@@ -736,6 +740,115 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BranchResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/tables/{tableId}/placement:
+    put:
+      tags:
+      - Tables
+      summary: Place a Table on one of the Branch's Floor Plans; x and y are fractions
+        (0..1) of the picture
+      operationId: placeTable
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaceTableRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TableResponse"
+    delete:
+      tags:
+      - Tables
+      summary: Remove a Table from its Floor Plan
+      operationId: unplaceTable
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TableResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/tables/{tableId}/guests:
+    put:
+      tags:
+      - Tables
+      summary: Set a Table's Guest Count; on a free Table this makes it Occupied.
+        Staff of the Branch only (403 for a Platform Admin)
+      operationId: setGuestCount
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetGuestCountRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TableLiveResponse"
   /{version}/merchants/{merchantId}/branches/{branchId}/image:
     put:
       tags:
@@ -2065,6 +2178,97 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BranchResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/tables:
+    get:
+      tags:
+      - Tables
+      summary: "List the Branch's Tables, active and deactivated"
+      operationId: listTables
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TableResponse"
+    post:
+      tags:
+      - Tables
+      summary: "Create Tables in bulk, one per name; each gets a permanent Table Code\
+        \ and Table Link"
+      operationId: createTables
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTablesRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TableResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/tables/{tableId}/clear:
+    post:
+      tags:
+      - Tables
+      summary: Clear an Occupied Table; staff of the Branch only (403 for a Platform
+        Admin)
+      operationId: clearTable
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
   /{version}/merchants/{merchantId}/branches/{branchId}/opening-hours:
     get:
       tags:
@@ -2199,6 +2403,105 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BranchOpeningExceptionResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/floor-plans:
+    get:
+      tags:
+      - Tables
+      summary: List the Branch's Floor Plans
+      operationId: listFloorPlans
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FloorPlanResponse"
+    post:
+      tags:
+      - Tables
+      summary: Create a Floor Plan; upload its picture with the upload-url endpoint
+      operationId: createFloorPlan
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFloorPlanRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FloorPlanResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/floor-plans/{floorPlanId}/image/upload-url:
+    post:
+      tags:
+      - Tables
+      summary: Create a presigned upload URL for the Floor Plan picture
+      description: "Supported content types: image/jpeg, image/png, image/webp. PUT\
+        \ the picture to uploadUrl; the Floor Plan's imageUrl then shows it."
+      operationId: createFloorPlanImageUploadUrl
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: floorPlanId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FloorPlanImageUploadRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FloorPlanImageUploadResponse"
   /{version}/merchants/{merchantId}/branches/{branchId}/appearances:
     get:
       tags:
@@ -2733,6 +3036,138 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/tables/{tableId}:
+    delete:
+      tags:
+      - Tables
+      summary: Delete a Table without orders; 409 when it has orders (deactivate it
+        instead)
+      operationId: deleteTable
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+    patch:
+      tags:
+      - Tables
+      summary: "Rename, deactivate or reactivate a Table; its Table Code and Table\
+        \ Link never change"
+      operationId: updateTable
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTableRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TableResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/floor-plans/{floorPlanId}:
+    delete:
+      tags:
+      - Tables
+      summary: Delete a Floor Plan; Tables placed on it become unplaced
+      operationId: deleteFloorPlan
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: floorPlanId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+    patch:
+      tags:
+      - Tables
+      summary: Rename a Floor Plan
+      operationId: renameFloorPlan
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: floorPlanId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFloorPlanRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FloorPlanResponse"
   /{version}/merchants/{merchantId}/appointments/{appointmentId}:
     delete:
       tags:
@@ -2964,6 +3399,27 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/UserSearchResult"
+  /{version}/storefront/tables/{tableCode}:
+    get:
+      tags:
+      - Storefront Tables
+      summary: "Resolve a Table Code to its Merchant, Branch and Table"
+      description: "A deactivated Table returns active=false and no tableId: open\
+        \ the Branch storefront for counter pickup."
+      operationId: resolve
+      parameters:
+      - name: tableCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StorefrontTableResponse"
   /{version}/storefront/orders/{orderId}:
     get:
       tags:
@@ -3015,6 +3471,26 @@ paths:
             text/event-stream:
               schema:
                 $ref: "#/components/schemas/SseEmitter"
+  /{version}/storefront/branches/{branchId}/table-availability:
+    get:
+      tags:
+      - Storefront Tables
+      summary: How many of the Branch's active Tables are free; never includes orders
+      operationId: availability
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TableAvailabilityResponse"
   /{version}/shopper/orders/{orderId}/invoice:
     get:
       tags:
@@ -3399,6 +3875,61 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CatalogTranslationResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/floor:
+    get:
+      tags:
+      - Tables
+      summary: "Live floor: Floor Plans and every active Table with its Table Status\
+        \ and current orders"
+      operationId: floor
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FloorResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/floor/events:
+    get:
+      tags:
+      - Tables
+      summary: "Stream the live floor as SSE: a `table` event (id = tableId, data\
+        \ = TableLiveResponse) whenever a Table changes. Load /floor first; reload\
+        \ it after reconnecting"
+      operationId: floorEvents
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
   /{version}/merchants/{merchantId}/branches/{branchId}/appearances/{appearanceId}:
     get:
       tags:
@@ -4918,6 +5449,11 @@ components:
           type:
           - string
           - "null"
+        capacity:
+          type:
+          - integer
+          - "null"
+          format: int32
       required:
       - active
       - name
@@ -5026,6 +5562,11 @@ components:
         updatedAt:
           type: string
           format: date-time
+        capacity:
+          type:
+          - integer
+          - "null"
+          format: int32
       required:
       - active
       - branchCode
@@ -5035,6 +5576,133 @@ components:
       - name
       - status
       - updatedAt
+    PlaceTableRequest:
+      type: object
+      properties:
+        floorPlanId:
+          type: string
+          format: uuid
+        x:
+          type: number
+          format: double
+        "y":
+          type: number
+          format: double
+      required:
+      - floorPlanId
+      - x
+      - "y"
+    TablePlacementResponse:
+      type: object
+      properties:
+        floorPlanId:
+          type: string
+          format: uuid
+        x:
+          type: number
+          format: double
+        "y":
+          type: number
+          format: double
+      required:
+      - floorPlanId
+      - x
+      - "y"
+    TableResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        active:
+          type: boolean
+        link:
+          type: string
+        placement:
+          oneOf:
+          - $ref: "#/components/schemas/TablePlacementResponse"
+          - type: "null"
+        seats:
+          type:
+          - integer
+          - "null"
+          format: int32
+      required:
+      - active
+      - code
+      - id
+      - link
+      - name
+    SetGuestCountRequest:
+      type: object
+      properties:
+        guestCount:
+          type: integer
+          format: int32
+      required:
+      - guestCount
+    TableLiveResponse:
+      type: object
+      properties:
+        table:
+          $ref: "#/components/schemas/TableResponse"
+        status:
+          type: string
+          enum:
+          - FREE
+          - OCCUPIED
+          - RESERVED
+        occupiedSince:
+          type:
+          - string
+          - "null"
+          format: date-time
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/TableOrderSummary"
+        guestCount:
+          type:
+          - integer
+          - "null"
+          format: int32
+      required:
+      - orders
+      - status
+      - table
+    TableOrderSummary:
+      type: object
+      properties:
+        orderId:
+          type: string
+        pickupNumber:
+          type:
+          - integer
+          - "null"
+          format: int32
+        totalAmountMinor:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        paymentStatus:
+          type: string
+        preparationStatus:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - currency
+      - orderId
+      - paymentStatus
+      - preparationStatus
+      - totalAmountMinor
     SetBranchImageRequest:
       type: object
       properties:
@@ -5458,6 +6126,26 @@ components:
       required:
       - productId
       - quantity
+    OrderCustomerLocationRequest:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        accuracyMeters:
+          type: number
+          format: double
+        capturedAt:
+          type: string
+          format: date-time
+      required:
+      - accuracyMeters
+      - capturedAt
+      - latitude
+      - longitude
     StorefrontOrderRequest:
       type: object
       properties:
@@ -5468,6 +6156,30 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CreateOrderItemRequest"
+        tableCode:
+          type:
+          - string
+          - "null"
+        customerLocation:
+          oneOf:
+          - $ref: "#/components/schemas/OrderCustomerLocationRequest"
+          - type: "null"
+        checkoutPaymentMethod:
+          type:
+          - string
+          - "null"
+          enum:
+          - BANK_ACCOUNT
+          - CARD
+          - PAY_BY_BANK
+          - TERMINAL
+          - PAYPAL
+          - CASH
+        guestCount:
+          type:
+          - integer
+          - "null"
+          format: int32
       required:
       - branchId
       - items
@@ -5600,6 +6312,7 @@ components:
           - PAY_BY_BANK
           - TERMINAL
           - PAYPAL
+          - CASH
         buyerContact:
           oneOf:
           - $ref: "#/components/schemas/BuyerContactResponse"
@@ -5629,6 +6342,15 @@ components:
           oneOf:
           - $ref: "#/components/schemas/PaymentReferenceResponse"
           - type: "null"
+        tableId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        tableName:
+          type:
+          - string
+          - "null"
       required:
       - createdAt
       - createdById
@@ -6264,34 +6986,24 @@ components:
           - PAY_BY_BANK
           - TERMINAL
           - PAYPAL
+          - CASH
         buyerContact:
           oneOf:
           - $ref: "#/components/schemas/BuyerContactRequest"
           - type: "null"
+        tableCode:
+          type:
+          - string
+          - "null"
+        guestCount:
+          type:
+          - integer
+          - "null"
+          format: int32
       required:
       - items
       - orderType
       - usesDeferredPayment
-    OrderCustomerLocationRequest:
-      type: object
-      properties:
-        latitude:
-          type: number
-          format: double
-        longitude:
-          type: number
-          format: double
-        accuracyMeters:
-          type: number
-          format: double
-        capturedAt:
-          type: string
-          format: date-time
-      required:
-      - accuracyMeters
-      - capturedAt
-      - latitude
-      - longitude
     AddOrderItemRequest:
       type: object
       properties:
@@ -6638,8 +7350,27 @@ components:
           type:
           - string
           - "null"
+        capacity:
+          type:
+          - integer
+          - "null"
+          format: int32
       required:
       - name
+    CreateTablesRequest:
+      type: object
+      properties:
+        names:
+          type: array
+          items:
+            type: string
+        seats:
+          type:
+          - integer
+          - "null"
+          format: int32
+      required:
+      - names
     BranchOpeningWindowRequest:
       type: object
       properties:
@@ -6747,6 +7478,49 @@ components:
       - date
       - id
       - type
+    CreateFloorPlanRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+      - name
+    FloorPlanResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        imageUrl:
+          type:
+          - string
+          - "null"
+      required:
+      - id
+      - name
+    FloorPlanImageUploadRequest:
+      type: object
+      properties:
+        contentType:
+          type: string
+      required:
+      - contentType
+    FloorPlanImageUploadResponse:
+      type: object
+      properties:
+        storageKey:
+          type: string
+        uploadUrl:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+      - expiresAt
+      - storageKey
+      - uploadUrl
     CreateAppearanceRequest:
       type: object
       properties:
@@ -7130,6 +7904,7 @@ components:
           - PAY_BY_BANK
           - TERMINAL
           - PAYPAL
+          - CASH
         qrCode:
           oneOf:
           - $ref: "#/components/schemas/QrCodeResponse"
@@ -7216,6 +7991,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/KitchenOrderItem"
+        tableId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        tableName:
+          type:
+          - string
+          - "null"
       required:
       - cancelled
       - items
@@ -7423,6 +8207,29 @@ components:
           format: int32
       required:
       - quantity
+    UpdateTableRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - "null"
+        active:
+          type:
+          - boolean
+          - "null"
+        seats:
+          type:
+          - integer
+          - "null"
+          format: int32
+    UpdateFloorPlanRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+      - name
     UpdateAppointmentDetailsRequest:
       type: object
       properties:
@@ -7547,12 +8354,61 @@ components:
       - enabled
       - groups
       - id
+    StorefrontTableResponse:
+      type: object
+      properties:
+        merchantId:
+          type: string
+          format: uuid
+        merchantName:
+          type: string
+        branchId:
+          type: string
+          format: uuid
+        branchName:
+          type: string
+        tableId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        tableName:
+          type:
+          - string
+          - "null"
+        active:
+          type: boolean
+        occupied:
+          type: boolean
+      required:
+      - active
+      - branchId
+      - branchName
+      - merchantId
+      - merchantName
+      - occupied
     SseEmitter:
       type: object
       properties:
         timeout:
           type: integer
           format: int64
+    TableAvailabilityResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int32
+        free:
+          type: integer
+          format: int32
+        freeSeats:
+          type: integer
+          format: int32
+      required:
+      - free
+      - freeSeats
+      - total
     InvoiceDownloadResponse:
       type: object
       properties:
@@ -7999,6 +8855,7 @@ components:
           - PAY_BY_BANK
           - TERMINAL
           - PAYPAL
+          - CASH
         createdAt:
           type: string
           format: date-time
@@ -8059,6 +8916,45 @@ components:
       - connected
       - detailsSubmitted
       - enabledPaymentFlows
+    FloorResponse:
+      type: object
+      properties:
+        floorPlans:
+          type: array
+          items:
+            $ref: "#/components/schemas/FloorPlanResponse"
+        tables:
+          type: array
+          items:
+            $ref: "#/components/schemas/TableLiveResponse"
+        totalTables:
+          type: integer
+          format: int32
+        occupiedTables:
+          type: integer
+          format: int32
+        seatedCapacity:
+          type: integer
+          format: int32
+        occupiedSeats:
+          type: integer
+          format: int32
+        branchCapacity:
+          type:
+          - integer
+          - "null"
+          format: int32
+        totalGuests:
+          type: integer
+          format: int32
+      required:
+      - floorPlans
+      - occupiedSeats
+      - occupiedTables
+      - seatedCapacity
+      - tables
+      - totalGuests
+      - totalTables
     AppearanceHistoryPageResponse:
       type: object
       properties:

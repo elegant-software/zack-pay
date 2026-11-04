@@ -223,6 +223,16 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
      */
     public final TableField<OrderOrdersRecord, Integer> PICKUP_NUMBER = createField(DSL.name("pickup_number"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column <code>blitzpay.order_orders.table_id</code>.
+     */
+    public final TableField<OrderOrdersRecord, UUID> TABLE_ID = createField(DSL.name("table_id"), SQLDataType.UUID, this, "");
+
+    /**
+     * The column <code>blitzpay.order_orders.table_name</code>.
+     */
+    public final TableField<OrderOrdersRecord, String> TABLE_NAME = createField(DSL.name("table_name"), SQLDataType.VARCHAR(100), this, "");
+
     private OrderOrders(Name alias, Table<OrderOrdersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -292,7 +302,7 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_ORDER_ORDERS_TARGET_SHOPPER_ID, Indexes.IX_ORDER_ORDERS_CREATED_BY_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_APPLICATION_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_BRANCH_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_BRANCH_ID_CREATED_AT, Indexes.IX_ORDER_ORDERS_STATUS, Indexes.UQ_ORDER_APPOINTMENT_ID, Indexes.UX_ORDER_ORDERS_ORDER_ID);
+        return Arrays.asList(Indexes.IDX_ORDER_ORDERS_TARGET_SHOPPER_ID, Indexes.IX_ORDER_ORDERS_CREATED_BY_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_APPLICATION_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_BRANCH_ID, Indexes.IX_ORDER_ORDERS_MERCHANT_BRANCH_ID_CREATED_AT, Indexes.IX_ORDER_ORDERS_STATUS, Indexes.IX_ORDER_ORDERS_TABLE_ID_CREATED_AT, Indexes.UQ_ORDER_APPOINTMENT_ID, Indexes.UX_ORDER_ORDERS_ORDER_ID);
     }
 
     @Override

@@ -449,6 +449,20 @@ public class MerchantBranchesRecord extends UpdatableRecordImpl<MerchantBranches
         return (String) get(29);
     }
 
+    /**
+     * Setter for <code>blitzpay.merchant_branches.capacity</code>.
+     */
+    public void setCapacity(Integer value) {
+        set(30, value);
+    }
+
+    /**
+     * Getter for <code>blitzpay.merchant_branches.capacity</code>.
+     */
+    public Integer getCapacity() {
+        return (Integer) get(30);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -472,7 +486,7 @@ public class MerchantBranchesRecord extends UpdatableRecordImpl<MerchantBranches
     /**
      * Create a detached, initialised MerchantBranchesRecord
      */
-    public MerchantBranchesRecord(UUID id, UUID merchantId, String name, Boolean active, Double latitude, Double longitude, Integer geofenceRadiusM, String googlePlaceId, OffsetDateTime createdAt, OffsetDateTime updatedAt, String addressLine1, String addressLine2, String city, String postalCode, String country, String placeFormattedAddress, Double placeRating, Integer placeReviewCount, String placeEnrichmentStatus, String placeEnrichmentError, OffsetDateTime placeEnrichedAt, String contactFullName, String contactEmail, String contactPhoneNumber, String imageStorageKey, String status, String branchCode, String websiteOverride, String stripeTerminalLocationId, String timezone) {
+    public MerchantBranchesRecord(UUID id, UUID merchantId, String name, Boolean active, Double latitude, Double longitude, Integer geofenceRadiusM, String googlePlaceId, OffsetDateTime createdAt, OffsetDateTime updatedAt, String addressLine1, String addressLine2, String city, String postalCode, String country, String placeFormattedAddress, Double placeRating, Integer placeReviewCount, String placeEnrichmentStatus, String placeEnrichmentError, OffsetDateTime placeEnrichedAt, String contactFullName, String contactEmail, String contactPhoneNumber, String imageStorageKey, String status, String branchCode, String websiteOverride, String stripeTerminalLocationId, String timezone, Integer capacity) {
         super(MerchantBranches.MERCHANT_BRANCHES);
 
         setId(id);
@@ -505,6 +519,7 @@ public class MerchantBranchesRecord extends UpdatableRecordImpl<MerchantBranches
         setWebsiteOverride(websiteOverride);
         setStripeTerminalLocationId(stripeTerminalLocationId);
         setTimezone(timezone);
+        setCapacity(capacity);
         resetTouchedOnNotNull();
     }
 }

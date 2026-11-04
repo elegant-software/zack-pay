@@ -15,6 +15,8 @@ import com.elegant.software.blitzpay.QuickpayApplication
 import com.elegant.software.blitzpay.merchant.service.MerchantProductCategoryService
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantFloorPlanRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantTableRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantMenuLanguageRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductCategoryTranslationRepository
@@ -128,6 +130,12 @@ abstract class ContractVerifierBase {
 
     @MockitoBean
     protected lateinit var merchantProductRepository: MerchantProductRepository
+
+    @MockitoBean
+    protected lateinit var merchantTableRepository: MerchantTableRepository
+
+    @MockitoBean
+    protected lateinit var merchantFloorPlanRepository: MerchantFloorPlanRepository
 
     @MockitoBean
     protected lateinit var merchantOfferingRepository: MerchantOfferingRepository

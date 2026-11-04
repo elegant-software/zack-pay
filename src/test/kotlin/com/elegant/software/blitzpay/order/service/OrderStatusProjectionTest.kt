@@ -29,7 +29,7 @@ class OrderStatusProjectionTest {
     private val eventPublisher = mock<ApplicationEventPublisher>()
     private val shopperProfileGateway = mock<ShopperProfileGateway>()
     private val storefrontOrderBus = mock<StorefrontOrderBus>()
-    private val projection = OrderStatusProjection(orderRepository, paymentAttemptRepository, orderItemRepository, eventPublisher, shopperProfileGateway, storefrontOrderBus)
+    private val projection = OrderStatusProjection(orderRepository, paymentAttemptRepository, orderItemRepository, eventPublisher, shopperProfileGateway, storefrontOrderBus, org.mockito.kotlin.mock<com.elegant.software.blitzpay.merchant.api.TableGateway>())
 
     @Test
     fun `settled event marks order as paid`() {

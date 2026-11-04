@@ -4,6 +4,8 @@ import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
 import com.elegant.software.blitzpay.merchant.api.BranchLocationInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
 import com.elegant.software.blitzpay.merchant.api.OrderableMerchantProduct
+import com.elegant.software.blitzpay.merchant.api.TableGateway
+import com.elegant.software.blitzpay.merchant.api.TableInfo
 import com.elegant.software.blitzpay.order.OrderFixtureLoader
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
@@ -47,9 +49,10 @@ class OrderServiceTest {
     private val eventPublisher = mock<org.springframework.context.ApplicationEventPublisher>()
     private val pickupNumberAllocator = mock<PickupNumberAllocator>()
     private val kitchenOrderBus = mock<KitchenOrderBus>()
+    private val tableGateway = mock<TableGateway>()
     private val service = OrderService(
         merchantGateway, orderRepository, orderItemRepository, paymentAttemptRepository, shopperProfileGateway, eventPublisher,
-        pickupNumberAllocator, kitchenOrderBus, mock<StorefrontOrderBus>(),
+        pickupNumberAllocator, kitchenOrderBus, mock<StorefrontOrderBus>(), tableGateway,
     )
 
     private val merchantId = UUID.fromString("11111111-1111-1111-1111-111111111111")
@@ -397,5 +400,144 @@ class OrderServiceTest {
         }
         assertFalse(GuestToken.matches(saved, created.token, now = saved.guestTokenExpiresAt!!.plusSeconds(1)))
     }
-}
 
+    // --- ordering at a Table ---
+
+    private val tableId = UUID.fromString("44444444-4444-4444-4444-444444444444")
+    private val nearBranch = OrderCustomerLocationRequest(latitude = 52.5201, longitude = 13.4051, accuracyMeters = 15.0, capturedAt = Instant.now())
+
+    private fun stubTableCatalog(productId: UUID, vararg offerings: String = arrayOf("WALK_IN_ORDERING")) {
+        stubActiveMerchantContext(*offerings)
+        whenever(merchantGateway.findOrderableProducts(any())).thenReturn(
+            listOf(OrderableMerchantProduct(productId, merchantId, branchId, "Coffee", null, BigDecimal("3.50"), true)),
+        )
+        whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
+        whenever(orderItemRepository.saveAll(any<List<OrderItem>>())).thenAnswer { it.arguments[0] }
+    }
+
+    private fun tableOrder(productId: UUID, tableCode: String = "K7M2QX", orderType: OrderType = OrderType.WALK_IN_ORDERING) =
+        com.elegant.software.blitzpay.order.api.CreateOrderRequest(
+            branchId = branchId,
+            orderType = orderType,
+            customerLocation = nearBranch,
+            items = listOf(CreateOrderItemRequest(productId, 1)),
+            tableCode = tableCode,
+        )
+
+    @Test
+    fun `createShopperOrder at a Table snapshots the Table and its name`() {
+        val productId = UUID.randomUUID()
+        stubTableCatalog(productId)
+        whenever(tableGateway.findTableByCode("K7M2QX")).thenReturn(TableInfo(tableId, branchId, "Terrace 3", true))
+
+        val response = service.createShopperOrder(tableOrder(productId), "shopper-abc")
+
+        val saved = argumentCaptor<Order>().also { verify(orderRepository).save(it.capture()) }.firstValue
+        assertEquals(tableId, saved.tableId)
+        assertEquals("Terrace 3", saved.tableName)
+        assertEquals(tableId, response.tableId)
+        assertEquals("Terrace 3", response.tableName)
+        assertEquals(OrderType.WALK_IN_ORDERING, response.orderType)
+        verify(tableGateway, never()).seatGuestsIfUnset(any(), any())
+    }
+
+    @Test
+    fun `createShopperOrder passes the Guest Count to the Table and rejects out of range counts`() {
+        val productId = UUID.randomUUID()
+        stubTableCatalog(productId)
+        whenever(tableGateway.findTableByCode("K7M2QX")).thenReturn(TableInfo(tableId, branchId, "5", true))
+
+        service.createShopperOrder(tableOrder(productId).copy(guestCount = 3), "shopper-abc")
+
+        verify(tableGateway).seatGuestsIfUnset(tableId, 3)
+        assertFailsWith<IllegalArgumentException> { service.createShopperOrder(tableOrder(productId).copy(guestCount = 51), "s") }
+    }
+
+    @Test
+    fun `createShopperOrder at a Table must be a walk in order`() {
+        val productId = UUID.randomUUID()
+        stubTableCatalog(productId, "PRE_ORDER", "WALK_IN_ORDERING")
+        whenever(tableGateway.findTableByCode("K7M2QX")).thenReturn(TableInfo(tableId, branchId, "5", true))
+
+        assertFailsWith<IllegalArgumentException> {
+            service.createShopperOrder(tableOrder(productId, orderType = OrderType.PRE_ORDER), "shopper-abc")
+        }
+        verify(orderRepository, never()).save(any())
+    }
+
+    @Test
+    fun `createShopperOrder rejects unknown, inactive and other branch Tables`() {
+        val productId = UUID.randomUUID()
+        stubTableCatalog(productId)
+        whenever(tableGateway.findTableByCode("UNKNWN")).thenReturn(null)
+        whenever(tableGateway.findTableByCode("OFF111")).thenReturn(TableInfo(tableId, branchId, "5", false))
+        whenever(tableGateway.findTableByCode("OTHER2")).thenReturn(TableInfo(tableId, UUID.randomUUID(), "5", true))
+
+        assertFailsWith<NoSuchElementException> { service.createShopperOrder(tableOrder(productId, "UNKNWN"), "s") }
+        assertFailsWith<OrderCreationConflictException> { service.createShopperOrder(tableOrder(productId, "OFF111"), "s") }
+        assertFailsWith<OrderCreationConflictException> { service.createShopperOrder(tableOrder(productId, "OTHER2"), "s") }
+        verify(orderRepository, never()).save(any())
+    }
+
+    @Test
+    fun `createShopperOrder at a Table needs Walk-In Ordering and a nearby location`() {
+        val productId = UUID.randomUUID()
+        stubTableCatalog(productId, "PRE_ORDER")
+        whenever(tableGateway.findTableByCode("K7M2QX")).thenReturn(TableInfo(tableId, branchId, "5", true))
+        assertFailsWith<OrderCreationConflictException> { service.createShopperOrder(tableOrder(productId), "s") }
+
+        stubTableCatalog(productId)
+        assertFailsWith<IllegalArgumentException> {
+            service.createShopperOrder(tableOrder(productId).copy(customerLocation = null), "s")
+        }
+        val farAway = nearBranch.copy(latitude = 48.1372, longitude = 11.5756)
+        assertFailsWith<OrderCreationConflictException> {
+            service.createShopperOrder(tableOrder(productId).copy(customerLocation = farAway), "s")
+        }
+    }
+
+    @Test
+    fun `createGuestOrder with a tableCode is a walk in order at the Table, never deferred`() {
+        val productId = UUID.randomUUID()
+        stubTableCatalog(productId)
+        whenever(tableGateway.findTableByCode("K7M2QX")).thenReturn(TableInfo(tableId, branchId, "7", true))
+
+        val created = service.createGuestOrder(
+            StorefrontOrderRequest(
+                branchId = branchId,
+                items = listOf(CreateOrderItemRequest(productId, 1)),
+                tableCode = "K7M2QX",
+                customerLocation = nearBranch,
+                checkoutPaymentMethod = CheckoutPaymentMethod.CASH,
+            )
+        )
+
+        val saved = argumentCaptor<Order>().also { verify(orderRepository).save(it.capture()) }.firstValue
+        assertEquals(OrderType.WALK_IN_ORDERING, saved.orderType)
+        assertFalse(saved.usesDeferredPayment)
+        assertEquals(tableId, saved.tableId)
+        assertEquals("7", created.order.tableName)
+        assertEquals(CheckoutPaymentMethod.CASH, created.order.checkoutPaymentMethod)
+        assertEquals(OrderStatus.CREATED, created.order.status)
+    }
+
+    @Test
+    fun `createGuestOrder accepts only CASH as checkout payment method`() {
+        assertFailsWith<IllegalArgumentException> {
+            service.createGuestOrder(
+                StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(UUID.randomUUID(), 1)), checkoutPaymentMethod = CheckoutPaymentMethod.CARD)
+            )
+        }
+    }
+
+    @Test
+    fun `createGuestOrder with a tableCode requires the customer location`() {
+        val productId = UUID.randomUUID()
+        stubTableCatalog(productId)
+        whenever(tableGateway.findTableByCode("K7M2QX")).thenReturn(TableInfo(tableId, branchId, "7", true))
+
+        assertFailsWith<IllegalArgumentException> {
+            service.createGuestOrder(StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(productId, 1)), tableCode = "K7M2QX"))
+        }
+    }
+}

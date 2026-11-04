@@ -38,6 +38,7 @@ class MerchantBranchService(
             "latitude and longitude must both be provided or both be omitted"
         }
         request.geofenceRadiusMeters?.let { require(it > 0) { "geofenceRadiusMeters must be positive" } }
+        requireValidCapacity(request.capacity)
         if (active) {
             require(request.addressLine1?.isNotBlank() == true) { "addressLine1 must not be blank for active branches" }
             require(request.city?.isNotBlank() == true) { "city must not be blank for active branches" }
@@ -64,6 +65,7 @@ class MerchantBranchService(
             contactEmail = request.contactEmail,
             contactPhoneNumber = request.contactPhoneNumber,
             location = request.toLocation(),
+            capacity = request.capacity,
         )
         val saved = merchantBranchRepository.save(branch)
         if (active) {
@@ -193,6 +195,7 @@ class MerchantBranchService(
             "latitude and longitude must both be provided or both be omitted"
         }
         request.geofenceRadiusMeters?.let { require(it > 0) { "geofenceRadiusMeters must be positive" } }
+        requireValidCapacity(request.capacity)
         val merchant = requireMerchant(merchantId)
 
         val branch = merchantBranchRepository.findById(branchId)
@@ -217,6 +220,7 @@ class MerchantBranchService(
             contactPhoneNumber = request.contactPhoneNumber,
             location = request.toLocation(),
         )
+        branch.capacity = request.capacity
         validateActiveBranch(branch)
 
         val saved = merchantBranchRepository.saveAndFlush(branch)
@@ -304,7 +308,12 @@ class MerchantBranchService(
         status = status,
         createdAt = createdAt,
         updatedAt = updatedAt,
+        capacity = capacity,
     )
+
+    private fun requireValidCapacity(capacity: Int?) {
+        capacity?.let { require(it in 1..MAX_BRANCH_CAPACITY) { "capacity must be between 1 and $MAX_BRANCH_CAPACITY" } }
+    }
 
     private fun CreateBranchRequest.toLocation(): MerchantLocation? =
         toLocation(latitude, longitude, geofenceRadiusMeters, googlePlaceId)
@@ -401,3 +410,5 @@ class MerchantBranchService(
         }
     }
 }
+
+private const val MAX_BRANCH_CAPACITY = 100_000

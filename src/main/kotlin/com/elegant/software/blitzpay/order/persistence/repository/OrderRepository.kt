@@ -47,4 +47,12 @@ interface OrderRepository : JpaRepository<Order, UUID> {
     fun findDistinctShopperIdsByBranch(branchId: UUID): List<String>
 
     fun findAllByAppointmentId(appointmentId: UUID): List<Order>
+
+    fun findAllByTableIdInAndCreatedAtAfterAndStatusNot(
+        tableIds: Collection<UUID>,
+        after: Instant,
+        status: OrderStatus,
+    ): List<Order>
+
+    fun existsByTableId(tableId: UUID): Boolean
 }

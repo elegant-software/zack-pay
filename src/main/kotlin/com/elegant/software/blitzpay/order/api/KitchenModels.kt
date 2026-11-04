@@ -22,6 +22,9 @@ data class KitchenOrder(
     val preparationStatus: PreparationStatus,
     val cancelled: Boolean,
     val items: List<KitchenOrderItem>,
+    /** The Table to bring the order to; absent for counter pickup. */
+    val tableId: UUID? = null,
+    val tableName: String? = null,
 )
 
 data class KitchenOrderItem(
@@ -53,4 +56,6 @@ internal fun Order.toKitchenOrder(items: List<OrderItem>) = KitchenOrder(
     preparationStatus = preparationStatus,
     cancelled = status == OrderStatus.CANCELLED,
     items = items.sortedBy { it.createdAt }.map { KitchenOrderItem(it.id, it.productName, it.quantity, it.locked) },
+    tableId = tableId,
+    tableName = tableName,
 )
