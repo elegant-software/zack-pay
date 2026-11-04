@@ -211,10 +211,12 @@ class MerchantBranchServiceTest {
                 contactPhoneNumber = "+4930123456",
                 latitude = 53.0758,
                 longitude = 8.8072,
-                geofenceRadiusMeters = 250
+                geofenceRadiusMeters = 250,
+                capacity = 60,
             )
         )
 
+        assertEquals(60, response.capacity)
         assertEquals("Bremen Nord", response.name)
         assertEquals(false, response.active)
         assertEquals("Branch Lead", response.contactFullName)

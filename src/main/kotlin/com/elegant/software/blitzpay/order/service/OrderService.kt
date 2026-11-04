@@ -4,6 +4,8 @@ import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
 import com.elegant.software.blitzpay.merchant.api.OrderableMerchantProduct
+import com.elegant.software.blitzpay.merchant.api.TableGateway
+import com.elegant.software.blitzpay.merchant.api.TableInfo
 import com.elegant.software.blitzpay.order.api.PaymentMethod
 import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import com.elegant.software.blitzpay.order.api.AddOrderItemRequest
@@ -62,6 +64,7 @@ class OrderService(
     private val pickupNumberAllocator: PickupNumberAllocator,
     private val kitchenOrderBus: KitchenOrderBus,
     private val storefrontOrderBus: StorefrontOrderBus,
+    private val tableGateway: TableGateway,
 ) {
     private val log = LoggerFactory.getLogger(OrderService::class.java)
 
@@ -79,9 +82,23 @@ class OrderService(
     fun createGuestOrder(request: StorefrontOrderRequest): GuestOrderCreated {
         require(request.items.size <= MAX_GUEST_ORDER_LINES) { "Order must not contain more than $MAX_GUEST_ORDER_LINES items" }
         request.items.forEach { require(it.quantity <= MAX_GUEST_ITEM_QUANTITY) { "quantity must be <= $MAX_GUEST_ITEM_QUANTITY for product ${it.productId}" } }
+        // Guests pay immediately (card / Pay by Bank on the payment endpoint) or in cash; never Deferred Payment.
+        require(request.checkoutPaymentMethod == null || request.checkoutPaymentMethod == CheckoutPaymentMethod.CASH) {
+            "checkoutPaymentMethod must be CASH or omitted for storefront orders"
+        }
+        val tableCode = request.tableCode?.takeIf { it.isNotBlank() }
         val token = GuestToken.generate()
         val order = createCustomerOrder(
-            CreateOrderRequest(branchId = request.branchId, orderType = OrderType.PRE_ORDER, items = request.items),
+            CreateOrderRequest(
+                branchId = request.branchId,
+                orderType = if (tableCode != null) OrderType.WALK_IN_ORDERING else OrderType.PRE_ORDER,
+                usesDeferredPayment = false,
+                customerLocation = request.customerLocation,
+                items = request.items,
+                checkoutPaymentMethod = request.checkoutPaymentMethod,
+                tableCode = tableCode,
+                guestCount = request.guestCount,
+            ),
             CreatorType.GUEST,
             GUEST_CREATOR_ID,
             guestTokenHash = GuestToken.hash(token),
@@ -109,12 +126,14 @@ class OrderService(
         requireNotNull(request.branchId) { "branchId is required" }
         require(request.items.isNotEmpty()) { "Order must contain at least one item" }
         request.items.forEach { require(it.quantity > 0) { "quantity must be > 0 for product ${it.productId}" } }
+        request.guestCount?.let { require(it in 1..MAX_GUEST_COUNT) { "guestCount must be between 1 and $MAX_GUEST_COUNT" } }
 
         val products = merchantGateway.findOrderableProducts(request.items.map { it.productId }.distinct())
         val productsById = products.associateBy { it.productId }
         validateProducts(request, productsById)
         val merchantId = products.map { it.merchantId }.distinct().single()
         val branch = requireActiveBranch(merchantId, request.branchId)
+        val table = request.tableCode?.takeIf { it.isNotBlank() }?.let { requireOrderableTable(it, request) }
         validateOfferingRules(merchantId, request.orderType, request.usesDeferredPayment)
         validateWalkInLocationIfNeeded(branch, request.orderType, request.customerLocation)
 
@@ -140,16 +159,19 @@ class OrderService(
             buyerContactCity = resolvedBuyerContact?.city,
             buyerContactCountry = resolvedBuyerContact?.country,
             pickupNumber = pickupNumberAllocator.next(request.branchId),
+            tableId = table?.tableId,
+            tableName = table?.name,
         )
         val savedOrder = orderRepository.save(order)
         val savedItems = orderItemRepository.saveAll(
             request.items.map { OrderItem.fromProduct(savedOrder.id, productsById.getValue(it.productId), it.quantity) }
         )
+        if (table != null && request.guestCount != null) tableGateway.seatGuestsIfUnset(table.tableId, request.guestCount)
         notifyKitchen(savedOrder, savedItems, KitchenEventType.CREATED)
         LogContext.with(LogContext.ORDER_ID to savedOrder.orderId) {
             log.info(
-                "order saved orderId={} merchantId={} branchId={} totalAmountMinor={} currency={} itemCount={}",
-                savedOrder.orderId, savedOrder.merchantApplicationId, savedOrder.merchantBranchId,
+                "order saved orderId={} merchantId={} branchId={} tableId={} totalAmountMinor={} currency={} itemCount={}",
+                savedOrder.orderId, savedOrder.merchantApplicationId, savedOrder.merchantBranchId, savedOrder.tableId,
                 savedOrder.totalAmountMinor, savedOrder.currency, savedOrder.itemCount,
             )
         }
@@ -356,6 +378,7 @@ class OrderService(
         orderRepository.save(order)
         val items = orderItemRepository.findAllByOrderIdFk(order.id)
         storefrontOrderBus.publishAfterCommit(order, items)
+        notifyTable(order)
         return order.toResponse(items)
     }
 
@@ -401,8 +424,16 @@ class OrderService(
     /** Also pushes guest orders to their storefront stream: item edits can re-open a READY order's Preparation Status. */
     private fun notifyKitchen(order: Order, items: List<OrderItem>, type: KitchenEventType) {
         storefrontOrderBus.publishAfterCommit(order, items)
+        notifyTable(order)
         if (order.appointmentId != null) return
         kitchenOrderBus.publishAfterCommit(order.merchantBranchId, type, order.toKitchenOrder(items))
+    }
+
+    /** Orders at a Table show on the live floor, so every change to one updates it. */
+    private fun notifyTable(order: Order) {
+        val tableId = order.tableId ?: return
+        val branchId = order.merchantBranchId ?: return
+        tableGateway.tableChanged(branchId, tableId)
     }
 
     private fun requireOrderItem(orderIdFk: UUID, itemId: UUID): OrderItem {
@@ -455,6 +486,20 @@ class OrderService(
         if (wrongMerchant.isNotEmpty()) throw OrderCreationConflictException("Products do not belong to merchant: ${wrongMerchant.joinToString(",")}")
         val wrongBranch = productsById.values.filter { it.branchId != request.branchId }.map { it.productId }
         if (wrongBranch.isNotEmpty()) throw OrderCreationConflictException("Products do not belong to branch: ${wrongBranch.joinToString(",")}")
+    }
+
+    /**
+     * Ordering at a Table: a Walk-In order (geolocation still proves presence, ADR-0023) at an active Table of the
+     * ordered Branch. Walk-In Ordering being enabled is checked with the other offering rules.
+     */
+    private fun requireOrderableTable(tableCode: String, request: CreateOrderRequest): TableInfo {
+        require(request.orderType == OrderType.WALK_IN_ORDERING) { "Orders at a Table must be WALK_IN_ORDERING" }
+        val table = tableGateway.findTableByCode(tableCode) ?: throw NoSuchElementException("Table not found: $tableCode")
+        if (table.branchId != request.branchId) {
+            throw OrderCreationConflictException("Table $tableCode does not belong to branch ${request.branchId}")
+        }
+        if (!table.active) throw OrderCreationConflictException("Table $tableCode is not active")
+        return table
     }
 
     private fun requireActiveBranch(merchantId: UUID, branchId: UUID): ActiveBranchInfo =
@@ -531,6 +576,7 @@ class OrderService(
         private const val GUEST_CREATOR_ID = "guest"
         private const val MAX_GUEST_ORDER_LINES = 50
         private const val MAX_GUEST_ITEM_QUANTITY = 99
+        private const val MAX_GUEST_COUNT = 50
         private val MAX_WALK_IN_LOCATION_AGE = ChronoUnit.MINUTES.duration.multipliedBy(5)
         private const val MAX_WALK_IN_ACCURACY_METERS = 100.0
     }

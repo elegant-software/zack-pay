@@ -214,6 +214,11 @@ blitzpay:
     base-url: ${GOOGLE_MAPS_BASE_URL:https://maps.googleapis.com}
     enrichment-interval-ms: ${GOOGLE_MAPS_ENRICHMENT_INTERVAL_MS:300000}
     batch-size: ${GOOGLE_MAPS_BATCH_SIZE:50}
+  tables:
+    # An Occupied Table is freed automatically when no order was placed at it for this long (ISO-8601 or 4h).
+    auto-clear: ${TABLES_AUTO_CLEAR:4h}
+    # Table Links are ${storefront-url}/t/{tableCode}; same host as the guest checkout redirects.
+    storefront-url: ${STOREFRONT_URL:http://localhost:4200}
   geofence:
     proximity-cooldown-seconds: ${GEOFENCE_PROXIMITY_COOLDOWN_SECONDS:30}
     default-radius-meters: ${GEOFENCE_DEFAULT_RADIUS_METERS:500}

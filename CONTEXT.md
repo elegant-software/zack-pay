@@ -76,6 +76,22 @@ _Avoid_: using the code as display label
 The single link that identifies one Table. A QR code and an NFC tag for the same Table carry the same Table Link, so both resolve to the same Merchant, Branch and Table.
 _Avoid_: table QR, NFC ID, tag ID
 
+**Table Seats**:
+The number of guests a Table is set up for. Optional; informational for ordering, used by Reservation to fit parties.
+_Avoid_: covers, size
+
+**Seated Capacity**:
+The total Table Seats of a Branch's active Tables; always derived, never entered.
+_Avoid_: branch capacity, max guests
+
+**Branch Capacity**:
+The maximum number of guests a Branch accepts at the same time, set by the merchant. Optional; may be lower or higher than Seated Capacity.
+_Avoid_: seated capacity, occupancy limit, legal maximum
+
+**Guest Count**:
+The number of people at an Occupied Table right now. Set by the first shopper ordering at a free Table and editable by staff; cleared when the Table is cleared.
+_Avoid_: party size (that is a Reservation term), covers, seats
+
 **Branch Opening Hours**:
 The recurring weekly time windows when a Branch is open for customer-facing activity.
 _Avoid_: employee availability, branch status, appointment slots
@@ -512,6 +528,10 @@ _Avoid_: branch report, manager report, caller-supplied merchant filter
 - A Platform Admin may view every **Branch**'s **Floor Plan**s and full **Table Status** detail in the web admin, but never clears Tables or takes or confirms payments
 - A **Table Link** is permanent; it never rotates, so a written NFC tag can be locked read-only
 - Checking in at a **Table** does not prove presence; **Walk-In Ordering** at a Table still requires geolocation
+- **Branch Capacity** never blocks ordering; a **Reservation** may not exceed it
+- Setup warns, but does not block, when **Seated Capacity** exceeds **Branch Capacity**
+- Staff setting a **Guest Count** on a free **Table** makes it **Occupied** before any order
+- Later shoppers at an **Occupied Table** are not asked for **Guest Count**
 - A **Branch** must have exactly one **Branch Address**
 - A **Branch** must have exactly one **Branch Location**
 - An **Order** belongs to exactly one **Branch**

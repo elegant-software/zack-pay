@@ -18,6 +18,8 @@ data class CreateBranchRequest(
     val longitude: Double? = null,
     val geofenceRadiusMeters: Int? = null,
     val googlePlaceId: String? = null,
+    /** Branch Capacity: maximum guests at the same time; optional, never blocks ordering. */
+    val capacity: Int? = null,
 )
 
 data class UpdateBranchRequest(
@@ -36,6 +38,8 @@ data class UpdateBranchRequest(
     val longitude: Double? = null,
     val geofenceRadiusMeters: Int? = null,
     val googlePlaceId: String? = null,
+    /** Branch Capacity; like the other fields of this full update, omitting it clears it. */
+    val capacity: Int? = null,
 )
 
 data class BranchResponse(
@@ -66,6 +70,7 @@ data class BranchResponse(
     val status: String,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val capacity: Int? = null,
 )
 
 data class BulkBranchInput(

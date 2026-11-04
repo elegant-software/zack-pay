@@ -89,6 +89,45 @@ class StorefrontCheckoutContractTest : ContractVerifierBase() {
     }
 
     @Test
+    fun `guest order at a Table accepts tableCode, location, guest count and cash, and returns the Table`() {
+        val tableId = UUID.fromString("44444444-4444-4444-4444-444444444444")
+        whenever(orderService.createGuestOrder(any())).thenReturn(
+            GuestOrderCreated(
+                order.copy(
+                    orderType = com.elegant.software.blitzpay.order.persistence.model.OrderType.WALK_IN_ORDERING,
+                    checkoutPaymentMethod = com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod.CASH,
+                    tableId = tableId,
+                    tableName = "Terrace 3",
+                ),
+                "tok-secret",
+            )
+        )
+
+        anonymous.post().uri("/v1/storefront/orders")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """{"branchId": "$branchId", "items": [{"productId": "22222222-2222-2222-2222-222222222221", "quantity": 1}],
+                   "tableCode": "K7M2QX", "guestCount": 3, "checkoutPaymentMethod": "CASH",
+                   "customerLocation": {"latitude": 52.52, "longitude": 13.405, "accuracyMeters": 12.0, "capturedAt": "2026-11-04T10:00:00Z"}}"""
+            )
+            .exchange()
+            .expectStatus().isCreated
+            .expectBody()
+            .jsonPath("$.orderType").isEqualTo("WALK_IN_ORDERING")
+            .jsonPath("$.checkoutPaymentMethod").isEqualTo("CASH")
+            .jsonPath("$.status").isEqualTo("CREATED")
+            .jsonPath("$.tableId").isEqualTo(tableId.toString())
+            .jsonPath("$.tableName").isEqualTo("Terrace 3")
+
+        val request = org.mockito.kotlin.argumentCaptor<com.elegant.software.blitzpay.order.api.StorefrontOrderRequest>()
+            .also { org.mockito.kotlin.verify(orderService).createGuestOrder(it.capture()) }.firstValue
+        assert(request.tableCode == "K7M2QX") { request }
+        assert(request.guestCount == 3) { request }
+        assert(request.checkoutPaymentMethod == com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod.CASH) { request }
+        assert(request.customerLocation?.accuracyMeters == 12.0) { request }
+    }
+
+    @Test
     fun `get guest order requires the cookie`() {
         whenever(orderService.getGuestOrder("ORDER-123", "tok-secret")).thenReturn(order)
         whenever(orderService.getGuestOrder("ORDER-123", null))

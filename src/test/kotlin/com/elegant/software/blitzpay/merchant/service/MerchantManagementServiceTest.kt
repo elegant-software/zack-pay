@@ -34,6 +34,7 @@ class MerchantManagementServiceTest {
     private val merchantOfferingAssignmentRepository = mock<MerchantOfferingAssignmentRepository>()
     private val storageService = mock<StorageService>()
     private val eventPublisher = mock<ApplicationEventPublisher>()
+    private val tableService = mock<MerchantTableService>()
     private val service = MerchantManagementService(
         repository,
         branchRepository,
@@ -42,6 +43,7 @@ class MerchantManagementServiceTest {
         storageService,
         eventPublisher,
         mock<MenuLanguageService>(),
+        tableService,
     )
 
     private fun merchant(name: String = "Old Name GmbH") = Merchant(
@@ -119,7 +121,8 @@ class MerchantManagementServiceTest {
 
         service.deleteMerchant(m.id)
 
-        inOrder(branchRepository, repository) {
+        inOrder(tableService, branchRepository, repository) {
+            verify(tableService).deleteAllForBranches(any())
             verify(branchRepository).deleteAllByMerchantId(m.id)
             verify(repository).delete(m)
         }

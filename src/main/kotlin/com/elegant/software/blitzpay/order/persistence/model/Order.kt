@@ -113,6 +113,14 @@ class Order(
     /** Short per-Branch, per-day number; null for orders created before Pickup Numbers existed or without a Branch. */
     @Column(name = "pickup_number", updatable = false)
     val pickupNumber: Int? = null,
+
+    /** The Table a Walk-In order was placed at (null: collected at the counter). */
+    @Column(name = "table_id", updatable = false)
+    val tableId: UUID? = null,
+
+    /** Table Name snapshot taken at order time, so renaming a Table never rewrites history. */
+    @Column(name = "table_name", updatable = false, length = 100)
+    val tableName: String? = null,
 ) {
     fun advancePreparation(next: PreparationStatus, at: Instant = Instant.now()) {
         require(preparationStatus.canAdvanceTo(next)) {

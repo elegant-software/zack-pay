@@ -68,6 +68,10 @@ class MerchantBranch(
     @Column(name = "timezone", length = 64)
     var timezone: String? = null,
 
+    /** Branch Capacity: maximum guests at the same time, set by the merchant; optional. */
+    @Column(name = "capacity")
+    var capacity: Int? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 

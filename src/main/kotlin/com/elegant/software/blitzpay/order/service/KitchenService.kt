@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.order.service
 
+import com.elegant.software.blitzpay.merchant.api.TableGateway
 import com.elegant.software.blitzpay.order.api.KitchenEventType
 import com.elegant.software.blitzpay.order.api.KitchenOrder
 import com.elegant.software.blitzpay.order.api.OrderReadyForPickup
@@ -26,6 +27,7 @@ class KitchenService(
     private val kitchenOrderBus: KitchenOrderBus,
     private val storefrontOrderBus: StorefrontOrderBus,
     private val eventPublisher: ApplicationEventPublisher,
+    private val tableGateway: TableGateway,
 ) {
     private val log = LoggerFactory.getLogger(KitchenService::class.java)
 
@@ -65,6 +67,7 @@ class KitchenService(
         val kitchenOrder = order.toKitchenOrder(items)
         kitchenOrderBus.publishAfterCommit(branchId, KitchenEventType.CHANGED, kitchenOrder)
         storefrontOrderBus.publishAfterCommit(order, items)
+        order.tableId?.let { tableGateway.tableChanged(branchId, it) }
         log.info("preparation status changed orderId={} branchId={} status={}", order.orderId, branchId, next)
 
         if (next == PreparationStatus.READY) {

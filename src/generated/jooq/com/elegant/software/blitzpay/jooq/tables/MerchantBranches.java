@@ -216,6 +216,11 @@ public class MerchantBranches extends TableImpl<MerchantBranchesRecord> {
      */
     public final TableField<MerchantBranchesRecord, String> TIMEZONE = createField(DSL.name("timezone"), SQLDataType.VARCHAR(64), this, "");
 
+    /**
+     * The column <code>blitzpay.merchant_branches.capacity</code>.
+     */
+    public final TableField<MerchantBranchesRecord, Integer> CAPACITY = createField(DSL.name("capacity"), SQLDataType.INTEGER, this, "");
+
     private MerchantBranches(Name alias, Table<MerchantBranchesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -319,7 +324,8 @@ public class MerchantBranches extends TableImpl<MerchantBranchesRecord> {
     public List<Check<MerchantBranchesRecord>> getChecks() {
         return Arrays.asList(
             Internal.createCheck(this, DSL.name("chk_branch_geofence_requires_location"), "(((geofence_radius_m IS NULL) OR (latitude IS NOT NULL)))", true),
-            Internal.createCheck(this, DSL.name("chk_branch_lat_lng_both_or_neither"), "(((latitude IS NULL) = (longitude IS NULL)))", true)
+            Internal.createCheck(this, DSL.name("chk_branch_lat_lng_both_or_neither"), "(((latitude IS NULL) = (longitude IS NULL)))", true),
+            Internal.createCheck(this, DSL.name("ck_merchant_branches_capacity"), "(((capacity IS NULL) OR (capacity > 0)))", true)
         );
     }
 

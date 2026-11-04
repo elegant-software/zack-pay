@@ -1,6 +1,7 @@
 package com.elegant.software.blitzpay.order.service
 
 import com.elegant.software.blitzpay.config.LogContext
+import com.elegant.software.blitzpay.merchant.api.TableGateway
 import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
 import com.elegant.software.blitzpay.order.api.OrderPaid
 import com.elegant.software.blitzpay.order.persistence.model.CreatorType
@@ -24,6 +25,7 @@ class OrderStatusProjection(
     private val eventPublisher: ApplicationEventPublisher,
     private val shopperProfileGateway: ShopperProfileGateway,
     private val storefrontOrderBus: StorefrontOrderBus,
+    private val tableGateway: TableGateway,
 ) {
     private val log = LoggerFactory.getLogger(OrderStatusProjection::class.java)
 
@@ -66,6 +68,9 @@ class OrderStatusProjection(
                     if (order.creatorType == CreatorType.GUEST) {
                         storefrontOrderBus.publishAfterCommit(order, orderItemRepository.findAllByOrderIdFk(order.id))
                     }
+                    val tableId = order.tableId
+                    val branchId = order.merchantBranchId
+                    if (tableId != null && branchId != null) tableGateway.tableChanged(branchId, tableId)
                     if (order.status == OrderStatus.PAID) {
                         val items = orderItemRepository.findAllByOrderIdFk(order.id)
                             .filter { it.quantity > 0 }
