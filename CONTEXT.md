@@ -40,6 +40,42 @@ _Avoid_: using code as display label
 The operational lifecycle state of a Branch, independent from the Merchant's status.
 _Avoid_: deriving all branch availability from merchant status alone
 
+**Table**:
+A seating place within a Branch where a customer can sit and place a Walk-In order. Identified to the shopper by a Table Link carried by a QR code or NFC tag.
+_Avoid_: seat, spot, location
+
+**Branch Link**:
+The permanent link that opens a Branch's storefront without a Table, typically printed as a QR code on a standee at the counter or entrance. Walk-In orders placed from it are collected at the counter.
+_Avoid_: branch QR, store link
+
+**Occupied Table**:
+A Table where at least one Walk-In order has been placed and staff have not yet cleared it. Purely informational for staff; it never blocks other customers from ordering at that Table.
+_Avoid_: reserved table, booked table (Reservation means booking in advance)
+
+**Floor Plan**:
+A named picture of a Branch's room or area, such as "Inside" or "Terrace", on which staff place Tables to see their live status.
+_Avoid_: map, layout, seating chart
+
+**Table Placement**:
+The position of a Table on one Floor Plan, expressed relative to the picture so it is independent of screen size.
+_Avoid_: coordinates, table location
+
+**Table Status**:
+The current state of a Table: `FREE`, `OCCUPIED` or `RESERVED`. Occupied takes precedence over Reserved, because people are sitting there now.
+_Avoid_: table state, availability (availability is the shopper-facing view of Table Status)
+
+**Table Code**:
+A stable system-generated short identifier for a Table, unique across the platform, and the only identifier inside a Table Link.
+_Avoid_: table number, table name, UUID in links
+
+**Table Name**:
+An editable display label for a Table, such as "5" or "Terrace 3", separate from its stable Table Code.
+_Avoid_: using the code as display label
+
+**Table Link**:
+The single link that identifies one Table. A QR code and an NFC tag for the same Table carry the same Table Link, so both resolve to the same Merchant, Branch and Table.
+_Avoid_: table QR, NFC ID, tag ID
+
 **Branch Opening Hours**:
 The recurring weekly time windows when a Branch is open for customer-facing activity.
 _Avoid_: employee availability, branch status, appointment slots
@@ -107,6 +143,10 @@ _Avoid_: Ordering, walk-in order, in-place order
 **Walk-In Ordering**:
 The ability for a customer to place an order only while physically present at the branch.
 _Avoid_: Ordering, walking order
+
+**Cash Payment**:
+A payment made in cash outside BlitzPay that staff confirm on the Order in the merchant app. The shopper may choose it when ordering; the Order stays unpaid until staff confirm the cash was received.
+_Avoid_: manual payment, offline payment
 
 **Deferred Payment**:
 The ability for a customer to pay after an order is created rather than immediately at order time, for either Pre-Order or Walk-In Ordering.
@@ -448,6 +488,30 @@ _Avoid_: branch report, manager report, caller-supplied merchant filter
 - A **Branch** may have zero or more **Branch Opening Exception** entries
 - A **Branch Opening Exception** changes opening for a specific date without changing recurring **Branch Opening Hours**
 - A **Branch** may have zero or one **Branch Contact Override**
+- A **Branch** may have zero or more **Table**s
+- A **Table** belongs to exactly one **Branch**
+- A **Table** has exactly one **Table Link**; QR and NFC are carriers of it, not separate identities
+- A **Table** has exactly one **Table Code**, unique across the platform, and exactly one editable **Table Name**
+- Renaming a **Table** never changes its **Table Code** or **Table Link**
+- A **Walk-In** order may have zero or one **Table**; with a Table it is brought to that Table, without one it is collected at the counter
+- A **Table** becomes **Occupied** when the first order is placed at it, not when its Table Link is opened
+- Several customers may order independently at the same **Occupied Table**
+- An **Occupied Table** is freed when staff clear it, or automatically after a period with no new orders
+- A **Branch** may have zero or more **Floor Plan**s
+- A **Table** may have zero or one **Table Placement**, on a **Floor Plan** of its own **Branch**
+- A **Floor Plan** shows each placed **Table**'s occupancy and its open orders with **Pickup Number**, payment status and **Preparation Status**
+- **Table Status** is always derived on demand; it is never stale
+- Staff see full **Table Status** detail (orders, payment, preparation); shoppers see only availability, never other customers' orders
+- Card payment for a Table's order may be taken by the shopper in their app or by staff via Tap to Pay; either way the order becomes paid only when the payment provider confirms it
+- A **Table** without orders may be deleted; a **Table** with orders may only be deactivated, and reactivating it restores the same **Table Code**
+- Opening the **Table Link** of a deactivated **Table** opens its **Branch** storefront without a Table, for collection at the counter
+- Only a **Merchant Manager** (or Platform Admin) sets up **Table**s, **Floor Plan**s and **Table Placement**s, and writes NFC tags
+- Any merchant user working a **Branch** may view its **Floor Plan**s, take payment for its Tables' orders and clear its **Occupied Table**s
+- Ordering at a **Table** requires the **Merchant** to have **Walk-In Ordering** enabled
+- A web storefront guest ordering at a **Table** pays immediately or chooses **Cash Payment**; **Deferred Payment** at a Table is only for signed-in shoppers
+- A Platform Admin may view every **Branch**'s **Floor Plan**s and full **Table Status** detail in the web admin, but never clears Tables or takes or confirms payments
+- A **Table Link** is permanent; it never rotates, so a written NFC tag can be locked read-only
+- Checking in at a **Table** does not prove presence; **Walk-In Ordering** at a Table still requires geolocation
 - A **Branch** must have exactly one **Branch Address**
 - A **Branch** must have exactly one **Branch Location**
 - An **Order** belongs to exactly one **Branch**
