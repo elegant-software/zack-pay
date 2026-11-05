@@ -52,6 +52,10 @@ class MerchantTable(
     @Column(name = "cleared_at")
     var clearedAt: Instant? = null,
 
+    /** When an NFC tag carrying the Table Link was last written; null when none was. */
+    @Column(name = "nfc_tag_written_at")
+    var nfcTagWrittenAt: Instant? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 
@@ -79,6 +83,12 @@ class MerchantTable(
         guestCount = null
         guestsSetAt = null
         updatedAt = at
+    }
+
+    /** [at] null forgets the tag, for example after it was lost or replaced by a QR code only. */
+    fun recordNfcTag(at: Instant?) {
+        nfcTagWrittenAt = at
+        updatedAt = Instant.now()
     }
 
     fun seatGuests(count: Int, at: Instant = Instant.now()) {

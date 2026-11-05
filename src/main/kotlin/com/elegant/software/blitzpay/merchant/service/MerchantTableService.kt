@@ -79,6 +79,14 @@ class MerchantTableService(
         return tableRepository.save(table).toResponse()
     }
 
+    /** The merchant app reports writing an NFC tag (now) or forgetting it (null). */
+    fun recordNfcTag(branchId: UUID, tableId: UUID, writtenAt: Instant?): TableResponse {
+        val table = requireTable(branchId, tableId)
+        table.recordNfcTag(writtenAt)
+        log.info("table nfc tag {} branchId={} tableId={}", if (writtenAt == null) "cleared" else "written", branchId, tableId)
+        return tableRepository.save(table).toResponse()
+    }
+
     fun deleteTable(branchId: UUID, tableId: UUID) {
         val table = requireTable(branchId, tableId)
         if (tableOrderLookup.hasOrders(table.id)) {
@@ -185,6 +193,7 @@ class MerchantTableService(
             if (px != null && py != null) TablePlacementResponse(planId, px, py) else null
         },
         seats = seats,
+        nfcTagWrittenAt = nfcTagWrittenAt,
     )
 
     private fun MerchantFloorPlan.toResponse() = FloorPlanResponse(

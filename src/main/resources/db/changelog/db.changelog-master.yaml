@@ -137,3 +137,5 @@ databaseChangeLog:
       file: db/changelog/20261104-001-merchant-tables.sql
   - include:
       file: db/changelog/20261104-002-order-table.sql
+  - include:
+      file: db/changelog/20261106-001-merchant-tables-nfc-tag.sql

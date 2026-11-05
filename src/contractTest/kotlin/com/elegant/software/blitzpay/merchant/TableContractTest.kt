@@ -180,6 +180,21 @@ class TableContractTest : ContractVerifierBase() {
     }
 
     @Test
+    fun `NFC tag status is recorded with PUT, cleared with DELETE and only by setup callers`() {
+        webTestClient.put().uri("$base/tables/${table.id}/nfc-tag").header(HttpHeaders.AUTHORIZATION, manager)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody().jsonPath("$.nfcTagWrittenAt").exists()
+        webTestClient.put().uri("$base/tables/${table.id}/nfc-tag").header(HttpHeaders.AUTHORIZATION, employee)
+            .exchange()
+            .expectStatus().isForbidden
+        webTestClient.delete().uri("$base/tables/${table.id}/nfc-tag").header(HttpHeaders.AUTHORIZATION, manager)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody().jsonPath("$.nfcTagWrittenAt").isEmpty()
+    }
+
+    @Test
     fun `a Table with orders cannot be deleted, one without can`() {
         whenever(orderRepository.existsByTableId(table.id)).thenReturn(true)
         webTestClient.delete().uri("$base/tables/${table.id}").header(HttpHeaders.AUTHORIZATION, manager)
