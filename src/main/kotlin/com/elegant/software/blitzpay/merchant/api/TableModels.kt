@@ -22,6 +22,8 @@ data class TableResponse(
     val placement: TablePlacementResponse?,
     /** Table Seats (1..50), or null when not set. */
     val seats: Int? = null,
+    /** When an NFC tag carrying [link] was last written for this Table; null when none was. */
+    val nfcTagWrittenAt: Instant? = null,
 )
 
 data class FloorPlanResponse(

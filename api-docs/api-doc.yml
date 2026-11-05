@@ -810,6 +810,70 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/TableResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/tables/{tableId}/nfc-tag:
+    put:
+      tags:
+      - Tables
+      summary: Record that an NFC tag carrying the Table Link was written for this
+        Table (now)
+      operationId: recordNfcTag
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TableResponse"
+    delete:
+      tags:
+      - Tables
+      summary: "Forget the Table's NFC tag, for example after it was lost"
+      operationId: clearNfcTag
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TableResponse"
   /{version}/merchants/{merchantId}/branches/{branchId}/tables/{tableId}/guests:
     put:
       tags:
@@ -5631,6 +5695,11 @@ components:
           - integer
           - "null"
           format: int32
+        nfcTagWrittenAt:
+          type:
+          - string
+          - "null"
+          format: date-time
       required:
       - active
       - code

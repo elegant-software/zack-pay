@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.time.Instant
 import java.util.UUID
 
 data class TableErrorResponse(val error: String)
@@ -112,6 +113,30 @@ class MerchantTableController(
     ): TableResponse {
         access.requireSetup(merchantId, branchId, jwt)
         return tableService.unplaceTable(branchId, tableId)
+    }
+
+    @Operation(summary = "Record that an NFC tag carrying the Table Link was written for this Table (now)")
+    @PutMapping("/tables/{tableId}/nfc-tag")
+    fun recordNfcTag(
+        @PathVariable merchantId: UUID,
+        @PathVariable branchId: UUID,
+        @PathVariable tableId: UUID,
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): TableResponse {
+        access.requireSetup(merchantId, branchId, jwt)
+        return tableService.recordNfcTag(branchId, tableId, Instant.now())
+    }
+
+    @Operation(summary = "Forget the Table's NFC tag, for example after it was lost")
+    @DeleteMapping("/tables/{tableId}/nfc-tag")
+    fun clearNfcTag(
+        @PathVariable merchantId: UUID,
+        @PathVariable branchId: UUID,
+        @PathVariable tableId: UUID,
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): TableResponse {
+        access.requireSetup(merchantId, branchId, jwt)
+        return tableService.recordNfcTag(branchId, tableId, null)
     }
 
     @Operation(summary = "Delete a Table without orders; 409 when it has orders (deactivate it instead)")
