@@ -129,6 +129,9 @@ abstract class ContractVerifierBase {
     protected lateinit var merchantBranchRepository: MerchantBranchRepository
 
     @MockitoBean
+    protected lateinit var preparationConfigurationRepository: com.elegant.software.blitzpay.merchant.persistence.repository.MerchantPreparationConfigurationRepository
+
+    @MockitoBean
     protected lateinit var merchantProductRepository: MerchantProductRepository
 
     @MockitoBean

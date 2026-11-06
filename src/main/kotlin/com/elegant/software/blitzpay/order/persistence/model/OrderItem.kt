@@ -10,6 +10,7 @@ import java.time.Instant
 import java.util.UUID
 
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Table(name = "order_items", schema = "blitzpay")
 class OrderItem(
     @Id
@@ -57,6 +58,15 @@ class OrderItem(
     /** Already made by the kitchen: the Order was READY when another item was added. Locked items can't change. */
     @Column(nullable = false)
     var locked: Boolean = false,
+
+    /** Immutable routing snapshot: catalog changes never move submitted work. */
+    @Column(name = "preparation_station_id", nullable = false, updatable = false)
+    val preparationStationId: UUID = UUID(0, 0),
+    @Column(name = "preparation_station_name", nullable = false, updatable = false, length = 100)
+    val preparationStationName: String = "Unassigned",
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "preparation_status", nullable = false, length = 16)
+    var preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
 ) {
     val effectiveUnitPriceMinor: Long
         get() = merchantPriceOverrideMinor ?: unitPriceMinor
@@ -83,6 +93,8 @@ class OrderItem(
                 merchantApplicationId = product.merchantId,
                 merchantBranchId = product.branchId,
                 productName = product.name,
+                preparationStationId = product.preparationStationId,
+                preparationStationName = product.preparationStationName,
                 productDescription = product.description,
                 quantity = quantity,
                 unitPriceMinor = unitPriceMinor,

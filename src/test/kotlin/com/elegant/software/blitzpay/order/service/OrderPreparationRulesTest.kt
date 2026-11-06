@@ -41,9 +41,10 @@ class OrderPreparationRulesTest {
     private val orderItemRepository = mock<OrderItemRepository>()
     private val pickupNumberAllocator = mock<PickupNumberAllocator>()
     private val kitchenOrderBus = mock<KitchenOrderBus>()
+    private val events = mock<ApplicationEventPublisher>()
     private val service = OrderService(
         merchantGateway, orderRepository, orderItemRepository, mock<PaymentAttemptRepository>(),
-        mock<ShopperProfileGateway>(), mock<ApplicationEventPublisher>(), pickupNumberAllocator, kitchenOrderBus, mock<StorefrontOrderBus>(),
+        mock<ShopperProfileGateway>(), events, pickupNumberAllocator, kitchenOrderBus, mock<StorefrontOrderBus>(),
         mock<com.elegant.software.blitzpay.merchant.api.TableGateway>(),
     )
 
@@ -179,5 +180,19 @@ class OrderPreparationRulesTest {
         verify(kitchenOrderBus).publishAfterCommit(eq(branchId), eq(KitchenEventType.CANCELLED), captor.capture())
         assertTrue(captor.firstValue.cancelled)
         assertEquals(OrderStatus.CANCELLED, order.status)
+    }
+
+    @Test
+    fun `removing the last pending line makes only the remaining prepared order ready`() {
+        val order = order(PreparationStatus.PREPARING)
+        val drinks = item(order, locked = true).also { it.preparationStatus = PreparationStatus.READY }
+        val food = item(order)
+        stubItems(order, drinks, food)
+
+        service.removeItem(order.orderId, food.id, "merchant")
+
+        assertEquals(PreparationStatus.READY, order.preparationStatus)
+        assertEquals(OrderStatus.CREATED, order.status)
+        verify(events).publishEvent(any<com.elegant.software.blitzpay.order.api.OrderReadyForPickup>())
     }
 }

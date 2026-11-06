@@ -32,6 +32,9 @@ data class KitchenOrderItem(
     val name: String,
     val quantity: Int,
     val locked: Boolean,
+    val stationId: UUID = UUID(0, 0),
+    val stationName: String = "Unassigned",
+    val preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -55,7 +58,18 @@ internal fun Order.toKitchenOrder(items: List<OrderItem>) = KitchenOrder(
     receivedAt = createdAt,
     preparationStatus = preparationStatus,
     cancelled = status == OrderStatus.CANCELLED,
-    items = items.sortedBy { it.createdAt }.map { KitchenOrderItem(it.id, it.productName, it.quantity, it.locked) },
+    items = items.sortedBy { it.createdAt }.map { KitchenOrderItem(it.id, it.productName, it.quantity, it.locked, it.preparationStationId, it.preparationStationName, if (it.locked) PreparationStatus.READY else it.preparationStatus) },
     tableId = tableId,
     tableName = tableName,
 )
+
+/** A station ticket keeps the customer order identity and table, but owns only its preparation work. */
+fun KitchenOrder.forStation(stationId: UUID): KitchenOrder {
+    val selected = items.filter { it.stationId == stationId }
+    val progress = when {
+        selected.isEmpty() || selected.all { it.locked || it.preparationStatus == PreparationStatus.READY } -> PreparationStatus.READY
+        selected.any { it.preparationStatus != PreparationStatus.RECEIVED || it.locked } -> PreparationStatus.PREPARING
+        else -> PreparationStatus.RECEIVED
+    }
+    return copy(items = selected, preparationStatus = progress, cancelled = cancelled && selected.isNotEmpty())
+}

@@ -288,7 +288,7 @@ class OrderService(
         val product = products.firstOrNull { it.productId == request.productId }
             ?: throw NoSuchElementException("Product not found: ${request.productId}")
         if (!product.active) throw OrderMutationConflictException("Product is not orderable: ${request.productId}")
-        if (product.merchantId != order.merchantApplicationId) {
+        if (product.merchantId != order.merchantApplicationId || (product.branchId != null && product.branchId != order.merchantBranchId)) {
             throw OrderMutationConflictException("Product does not belong to the order's merchant")
         }
         if (order.preparationStatus == PreparationStatus.READY) {
@@ -333,6 +333,13 @@ class OrderService(
             orderItemRepository.deleteById(itemId)
             val remaining = allItems.filter { it.id != itemId }
             order.recalculateTotals(remaining)
+            if (remaining.all { it.locked || it.preparationStatus == PreparationStatus.READY } && order.preparationStatus != PreparationStatus.READY) {
+                order.preparationStatus = PreparationStatus.READY
+                val shopper = order.targetShopperId ?: order.createdById.takeIf { order.creatorType == CreatorType.SHOPPER }
+                shopper?.let { eventPublisher.publishEvent(com.elegant.software.blitzpay.order.api.OrderReadyForPickup(
+                    order.orderId, order.id, order.merchantBranchId, order.pickupNumber, it
+                )) }
+            }
             orderRepository.save(order)
             notifyKitchen(order, remaining, KitchenEventType.CHANGED)
             order.toResponse(remaining)
@@ -401,6 +408,7 @@ class OrderService(
     }
 
     private fun requireMutableOrder(orderId: String): Order {
+        orderRepository.lockForItemMutation(orderId)
         val order = orderRepository.findByOrderId(orderId)
             ?: throw NoSuchElementException("Order not found: $orderId")
         if (order.status != OrderStatus.CREATED) {
@@ -416,7 +424,7 @@ class OrderService(
         if (order.preparationStatus == PreparationStatus.READY) {
             throw OrderMutationConflictException("Order is ready for pickup; existing items cannot be changed, only added")
         }
-        if (item.locked) {
+        if (item.locked || item.preparationStatus == PreparationStatus.READY) {
             throw OrderMutationConflictException("Order item is already prepared and cannot be changed: ${item.productName}")
         }
     }

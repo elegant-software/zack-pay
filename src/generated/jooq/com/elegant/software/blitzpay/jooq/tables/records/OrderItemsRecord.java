@@ -233,6 +233,48 @@ public class OrderItemsRecord extends UpdatableRecordImpl<OrderItemsRecord> {
         return (Boolean) get(14);
     }
 
+    /**
+     * Setter for <code>blitzpay.order_items.preparation_station_id</code>.
+     */
+    public void setPreparationStationId(UUID value) {
+        set(15, value);
+    }
+
+    /**
+     * Getter for <code>blitzpay.order_items.preparation_station_id</code>.
+     */
+    public UUID getPreparationStationId() {
+        return (UUID) get(15);
+    }
+
+    /**
+     * Setter for <code>blitzpay.order_items.preparation_station_name</code>.
+     */
+    public void setPreparationStationName(String value) {
+        set(16, value);
+    }
+
+    /**
+     * Getter for <code>blitzpay.order_items.preparation_station_name</code>.
+     */
+    public String getPreparationStationName() {
+        return (String) get(16);
+    }
+
+    /**
+     * Setter for <code>blitzpay.order_items.preparation_status</code>.
+     */
+    public void setPreparationStatus(String value) {
+        set(17, value);
+    }
+
+    /**
+     * Getter for <code>blitzpay.order_items.preparation_status</code>.
+     */
+    public String getPreparationStatus() {
+        return (String) get(17);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -256,7 +298,7 @@ public class OrderItemsRecord extends UpdatableRecordImpl<OrderItemsRecord> {
     /**
      * Create a detached, initialised OrderItemsRecord
      */
-    public OrderItemsRecord(UUID id, UUID orderIdFk, UUID merchantProductId, UUID merchantApplicationId, UUID merchantBranchId, String productName, String productDescription, Integer quantity, Long unitPriceMinor, Long lineTotalMinor, OffsetDateTime createdAt, Long merchantPriceOverrideMinor, String overriddenBy, OffsetDateTime overriddenAt, Boolean locked) {
+    public OrderItemsRecord(UUID id, UUID orderIdFk, UUID merchantProductId, UUID merchantApplicationId, UUID merchantBranchId, String productName, String productDescription, Integer quantity, Long unitPriceMinor, Long lineTotalMinor, OffsetDateTime createdAt, Long merchantPriceOverrideMinor, String overriddenBy, OffsetDateTime overriddenAt, Boolean locked, UUID preparationStationId, String preparationStationName, String preparationStatus) {
         super(OrderItems.ORDER_ITEMS);
 
         setId(id);
@@ -274,6 +316,9 @@ public class OrderItemsRecord extends UpdatableRecordImpl<OrderItemsRecord> {
         setOverriddenBy(overriddenBy);
         setOverriddenAt(overriddenAt);
         setLocked(locked);
+        setPreparationStationId(preparationStationId);
+        setPreparationStationName(preparationStationName);
+        setPreparationStatus(preparationStatus);
         resetTouchedOnNotNull();
     }
 }

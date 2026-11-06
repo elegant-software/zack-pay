@@ -49,6 +49,8 @@ data class OrderableMerchantProduct(
     val description: String?,
     val unitPrice: BigDecimal,
     val active: Boolean,
+    val preparationStationId: UUID = UUID(0, 0),
+    val preparationStationName: String = "Unassigned",
 )
 
 data class BulkProductInput(

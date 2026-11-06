@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.order.service
 
 import com.elegant.software.blitzpay.order.api.KitchenEventType
 import com.elegant.software.blitzpay.order.api.KitchenOrder
+import com.elegant.software.blitzpay.order.api.forStation
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.scheduling.annotation.Scheduled
@@ -19,7 +20,10 @@ class KitchenOrderBus {
     private val log = LoggerFactory.getLogger(KitchenOrderBus::class.java)
     private val emitters = ConcurrentHashMap<UUID, CopyOnWriteArrayList<SseEmitter>>()
 
-    fun register(branchId: UUID, emitter: SseEmitter) {
+    private val stationFilters = ConcurrentHashMap<SseEmitter, UUID>()
+
+    fun register(branchId: UUID, emitter: SseEmitter, stationId: UUID? = null) {
+        if (stationId != null) stationFilters[emitter] = stationId
         emitters.computeIfAbsent(branchId) { CopyOnWriteArrayList() }.add(emitter)
         emitter.onCompletion { remove(branchId, emitter) }
         emitter.onTimeout { remove(branchId, emitter) }
@@ -40,8 +44,12 @@ class KitchenOrderBus {
 
     fun emit(branchId: UUID, type: KitchenEventType, order: KitchenOrder) {
         val list = emitters[branchId] ?: return
-        send(branchId, list) {
-            SseEmitter.event().id(order.orderId.toString()).name(type.eventName).data(order, MediaType.APPLICATION_JSON)
+        send(branchId, list) { emitter ->
+            val ticket = stationFilters[emitter]?.let { order.forStation(it) } ?: order
+            // Empty READY tickets clear work removed from a station while the display was connected.
+            SseEmitter.event().id(order.orderId.toString())
+                .name(if (ticket.items.isEmpty()) KitchenEventType.CHANGED.eventName else type.eventName)
+                .data(ticket, MediaType.APPLICATION_JSON)
         }
     }
 
@@ -51,14 +59,15 @@ class KitchenOrderBus {
         emitters.forEach { (branchId, list) -> send(branchId, list) { SseEmitter.event().comment("heartbeat") } }
     }
 
-    private fun send(branchId: UUID, list: List<SseEmitter>, event: () -> SseEmitter.SseEventBuilder) {
-        val dead = list.filter { emitter -> runCatching { emitter.send(event()) }.isFailure }
+    private fun send(branchId: UUID, list: List<SseEmitter>, event: (SseEmitter) -> SseEmitter.SseEventBuilder) {
+        val dead = list.filter { emitter -> runCatching { emitter.send(event(emitter)) }.isFailure }
         if (dead.isNotEmpty()) log.debug("dropping {} dead kitchen emitters branchId={}", dead.size, branchId)
         dead.forEach { remove(branchId, it) }
     }
 
     private fun remove(branchId: UUID, emitter: SseEmitter) {
         emitters[branchId]?.remove(emitter)
+        stationFilters.remove(emitter)
     }
 
     companion object {

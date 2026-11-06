@@ -137,6 +137,21 @@ public class OrderItems extends TableImpl<OrderItemsRecord> {
      */
     public final TableField<OrderItemsRecord, Boolean> LOCKED = createField(DSL.name("locked"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "");
 
+    /**
+     * The column <code>blitzpay.order_items.preparation_station_id</code>.
+     */
+    public final TableField<OrderItemsRecord, UUID> PREPARATION_STATION_ID = createField(DSL.name("preparation_station_id"), SQLDataType.UUID.nullable(false).defaultValue(DSL.field(DSL.raw("'00000000-0000-0000-0000-000000000000'::uuid"), SQLDataType.UUID)), this, "");
+
+    /**
+     * The column <code>blitzpay.order_items.preparation_station_name</code>.
+     */
+    public final TableField<OrderItemsRecord, String> PREPARATION_STATION_NAME = createField(DSL.name("preparation_station_name"), SQLDataType.VARCHAR(100).nullable(false).defaultValue(DSL.field(DSL.raw("'Unassigned'::character varying"), SQLDataType.VARCHAR)), this, "");
+
+    /**
+     * The column <code>blitzpay.order_items.preparation_status</code>.
+     */
+    public final TableField<OrderItemsRecord, String> PREPARATION_STATUS = createField(DSL.name("preparation_status"), SQLDataType.VARCHAR(16).nullable(false).defaultValue(DSL.field(DSL.raw("'RECEIVED'::character varying"), SQLDataType.VARCHAR)), this, "");
+
     private OrderItems(Name alias, Table<OrderItemsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
