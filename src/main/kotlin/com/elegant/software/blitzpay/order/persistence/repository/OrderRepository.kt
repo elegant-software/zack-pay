@@ -11,6 +11,14 @@ import java.util.UUID
 interface OrderRepository : JpaRepository<Order, UUID> {
     fun findByOrderId(orderId: String): Order?
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from Order o where o.id = :id")
+    fun findByIdForPreparationUpdate(id: UUID): Order?
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from Order o where o.orderId = :code")
+    fun lockForItemMutation(code: String): Order?
+
     fun findByMerchantBranchIdAndCreatedAtBetween(
         branchId: UUID,
         from: Instant,

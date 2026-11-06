@@ -35,8 +35,22 @@ class KitchenServiceTest {
     private val bus = mock<KitchenOrderBus>()
     private val storefrontOrderBus = mock<StorefrontOrderBus>()
     private val eventPublisher = mock<ApplicationEventPublisher>()
-    private val service = KitchenService(orderRepository, orderItemRepository, allocator, bus, storefrontOrderBus, eventPublisher, org.mockito.kotlin.mock<com.elegant.software.blitzpay.merchant.api.TableGateway>())
+    private val service = KitchenService(orderRepository, orderItemRepository, allocator, bus, storefrontOrderBus, eventPublisher, org.mockito.kotlin.mock<com.elegant.software.blitzpay.merchant.api.TableGateway>(), org.mockito.kotlin.mock<com.elegant.software.blitzpay.merchant.api.MerchantGateway>())
 
+    @Test
+    fun `retrying completion returns the ready ticket without notifying the shopper again`() {
+        val order = order(preparationStatus = PreparationStatus.PREPARING)
+        whenever(orderItemRepository.findAllByOrderIdFk(order.id)).thenReturn(emptyList())
+
+        val completed = service.updatePreparationStatus(branchId, order.id, PreparationStatus.READY)
+        val retried = service.updatePreparationStatus(branchId, order.id, PreparationStatus.READY)
+
+        assertEquals(completed, retried)
+        assertEquals(OrderStatus.CREATED, order.status)
+        verify(eventPublisher, org.mockito.kotlin.times(1)).publishEvent(any<OrderReadyForPickup>())
+        verify(bus, org.mockito.kotlin.times(1)).publishAfterCommit(eq(branchId), eq(KitchenEventType.CHANGED), any())
+        verify(storefrontOrderBus, org.mockito.kotlin.times(1)).publishAfterCommit(eq(order), any())
+    }
     private val branchId = UUID.randomUUID()
 
     private fun order(
@@ -62,7 +76,7 @@ class KitchenServiceTest {
         buyerContactName = "Anna Maria Schmidt",
         preparationStatus = preparationStatus,
         pickupNumber = 3,
-    ).also { whenever(orderRepository.findById(it.id)).thenReturn(Optional.of(it)) }
+    ).also { whenever(orderRepository.findByIdForPreparationUpdate(it.id)).thenReturn(it) }
 
     @Test
     fun `only RECEIVED to PREPARING and PREPARING to READY are valid transitions`() {
@@ -155,5 +169,52 @@ class KitchenServiceTest {
         }
         assertTrue(received.preparationStatus == PreparationStatus.RECEIVED)
         verify(bus, never()).publishAfterCommit(any(), any(), any())
+    }
+
+    @Test
+    fun `drinks completion leaves food pending and only final completion notifies the shopper`() {
+        val order = order()
+        val food = UUID.fromString("44444444-4444-4444-4444-444444444441")
+        val drinks = UUID.fromString("44444444-4444-4444-4444-444444444442")
+        fun item(name: String, station: UUID) = OrderItem(
+            orderIdFk = order.id, merchantProductId = UUID.randomUUID(), merchantApplicationId = order.merchantApplicationId,
+            merchantBranchId = branchId, productName = name, quantity = 2, unitPriceMinor = 100, lineTotalMinor = 200,
+            preparationStationId = station, preparationStationName = name,
+        )
+        val burger = item("Burger", food)
+        val cola = item("Cola", drinks)
+        whenever(orderItemRepository.findAllByOrderIdFk(order.id)).thenReturn(listOf(burger, cola))
+
+        assertFailsWith<OrderMutationConflictException> {
+            service.updatePreparationStatus(branchId, order.id, PreparationStatus.PREPARING)
+        }
+        val drinkTicket = service.updateStationPreparationStatus(branchId, order.id, drinks, PreparationStatus.PREPARING)
+        assertEquals(listOf("Cola"), drinkTicket.items.map { it.name })
+        assertEquals(2, drinkTicket.items.single().quantity)
+        val readyDrinks = service.updateStationPreparationStatus(branchId, order.id, drinks, PreparationStatus.READY)
+        assertEquals(PreparationStatus.READY, readyDrinks.preparationStatus)
+        assertEquals(PreparationStatus.PREPARING, order.preparationStatus)
+        assertEquals(PreparationStatus.RECEIVED, burger.preparationStatus)
+        verify(eventPublisher, never()).publishEvent(any<Any>())
+        assertEquals(readyDrinks, service.updateStationPreparationStatus(branchId, order.id, drinks, PreparationStatus.READY))
+
+        service.updateStationPreparationStatus(branchId, order.id, food, PreparationStatus.PREPARING)
+        service.updateStationPreparationStatus(branchId, order.id, food, PreparationStatus.READY)
+        assertEquals(PreparationStatus.READY, order.preparationStatus)
+        assertEquals(OrderStatus.CREATED, order.status)
+        verify(eventPublisher, org.mockito.kotlin.times(1)).publishEvent(any<OrderReadyForPickup>())
+    }
+
+    @Test
+    fun `station completion rejects cancelled orders and orders from another branch`() {
+        val cancelled = order(status = OrderStatus.CANCELLED)
+        assertFailsWith<OrderMutationConflictException> {
+            service.updateStationPreparationStatus(branchId, cancelled.id, UUID.randomUUID(), PreparationStatus.READY)
+        }
+        val active = order()
+        assertFailsWith<NoSuchElementException> {
+            service.updateStationPreparationStatus(UUID.randomUUID(), active.id, UUID.randomUUID(), PreparationStatus.READY)
+        }
+        verify(eventPublisher, never()).publishEvent(any<Any>())
     }
 }

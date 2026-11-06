@@ -31,6 +31,21 @@ class KitchenContractTest : ContractVerifierBase() {
     @Autowired
     private lateinit var kitchenOrderBus: KitchenOrderBus
 
+    @Test
+    fun `repeated completion requests return the ready ticket`() {
+        whenever(kitchenService.updatePreparationStatus(branchId, orderId, PreparationStatus.READY))
+            .thenReturn(kitchenOrder(PreparationStatus.READY))
+
+        repeat(2) {
+            webTestClient.post().uri("$base/orders/$orderId/preparation-status")
+                .header(HttpHeaders.AUTHORIZATION, member)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"status":"READY"}""")
+                .exchange().expectStatus().isOk
+                .expectBody()
+                .jsonPath("$.preparationStatus").isEqualTo("READY")
+                .jsonPath("$.pickupNumber").isEqualTo(42)
+        }
+    }
     private val branchId = UUID.fromString("33333333-3333-3333-3333-333333333333")
     private val orderId = UUID.fromString("55555555-5555-5555-5555-555555555555")
     private val base = "/v1/merchant/branches/$branchId/kitchen"
@@ -170,5 +185,63 @@ class KitchenContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isOk
             .expectHeader().valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "app://kitchen")
+    }
+
+    @Test
+    fun `station endpoints preserve order and table references and use station preparation`() {
+        val stationId = UUID.fromString("44444444-4444-4444-4444-444444444442")
+        val ticket = kitchenOrder().copy(tableName = "Table 7", items = listOf(
+            KitchenOrderItem(UUID.randomUUID(), "Cola", 2, false, stationId, "Drinks Bar")
+        ))
+        whenever(kitchenService.stations(branchId)).thenReturn(listOf(com.elegant.software.blitzpay.merchant.api.PreparationStation(stationId, "Drinks Bar")))
+        whenever(kitchenService.listStationOrders(branchId, stationId)).thenReturn(listOf(ticket))
+        whenever(kitchenService.updateStationPreparationStatus(branchId, orderId, stationId, PreparationStatus.PREPARING))
+            .thenReturn(ticket.copy(preparationStatus = PreparationStatus.PREPARING))
+        webTestClient.get().uri("$base/stations").header(HttpHeaders.AUTHORIZATION, member).exchange()
+            .expectStatus().isOk.expectBody().jsonPath("$[0].name").isEqualTo("Drinks Bar")
+        webTestClient.get().uri("$base/stations/$stationId/orders").header(HttpHeaders.AUTHORIZATION, member).exchange()
+            .expectStatus().isOk.expectBody().jsonPath("$[0].pickupNumber").isEqualTo(42)
+            .jsonPath("$[0].tableName").isEqualTo("Table 7").jsonPath("$[0].items[0].name").isEqualTo("Cola")
+        webTestClient.post().uri("$base/stations/$stationId/orders/$orderId/preparation-status")
+            .header(HttpHeaders.AUTHORIZATION, member).contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"status":"PREPARING"}""").exchange().expectStatus().isOk.expectBody()
+            .jsonPath("$.preparationStatus").isEqualTo("PREPARING")
+    }
+
+    @Test
+    fun `station selection snapshots subscriptions and completion reject callers outside the branch`() {
+        val stationId = UUID.randomUUID()
+        val outsider = token("branch_${UUID.randomUUID()}")
+        for (path in listOf("/stations", "/stations/$stationId/orders", "/stations/$stationId/stream")) {
+            webTestClient.get().uri(base + path).header(HttpHeaders.AUTHORIZATION, outsider).exchange().expectStatus().isForbidden
+        }
+        webTestClient.post().uri("$base/stations/$stationId/orders/$orderId/preparation-status")
+            .header(HttpHeaders.AUTHORIZATION, outsider).contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"status":"READY"}""").exchange().expectStatus().isForbidden
+    }
+
+    @Test
+    fun `station stream filters food out of drinks and clears tickets whose last item was removed`() {
+        val food = UUID.fromString("44444444-4444-4444-4444-444444444441")
+        val drinks = UUID.fromString("44444444-4444-4444-4444-444444444442")
+        val mixed = kitchenOrder().copy(items = listOf(
+            KitchenOrderItem(UUID.randomUUID(), "Burger", 2, false, food, "Food Kitchen"),
+            KitchenOrderItem(UUID.randomUUID(), "Cola", 2, false, drinks, "Drinks Bar"),
+        ))
+        val events = webTestClient.get().uri("$base/stations/$drinks/stream").header(HttpHeaders.AUTHORIZATION, member)
+            .accept(MediaType.TEXT_EVENT_STREAM).exchange().expectStatus().isOk
+            .returnResult(object : ParameterizedTypeReference<ServerSentEvent<String>>() {}).responseBody.filter { it.event() != null }
+        StepVerifier.create(events).then {
+            Thread.sleep(300)
+            kitchenOrderBus.emit(branchId, KitchenEventType.CREATED, mixed)
+            kitchenOrderBus.emit(branchId, KitchenEventType.CANCELLED, mixed.copy(items = mixed.items.filter { it.stationId == food }, cancelled = true))
+        }.assertNext {
+            kotlin.test.assertTrue(it.data()!!.contains("Cola"))
+            kotlin.test.assertFalse(it.data()!!.contains("Burger"))
+        }.assertNext {
+            kotlin.test.assertEquals("order.changed", it.event())
+            kotlin.test.assertTrue(it.data()!!.contains("\"items\":[]"))
+            kotlin.test.assertTrue(it.data()!!.contains("\"preparationStatus\":\"READY\""))
+        }.thenCancel().verify(Duration.ofSeconds(10))
     }
 }

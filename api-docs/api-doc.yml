@@ -9,6 +9,8 @@ security:
 - bearerAuth: []
 - oauth2: []
 tags:
+- name: Preparation stations
+  description: Branch preparation station configuration and catalog routing
 - name: Stripe Connect
   description: Stripe Connect account onboarding for merchants
 - name: Tables
@@ -913,6 +915,63 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/TableLiveResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/preparation-configuration:
+    get:
+      tags:
+      - Preparation stations
+      summary: Get branch preparation stations and routing
+      operationId: getPreparationConfiguration
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PreparationConfiguration"
+    put:
+      tags:
+      - Preparation stations
+      summary: Replace branch preparation stations and routing
+      operationId: savePreparationConfiguration
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreparationConfiguration"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PreparationConfiguration"
   /{version}/merchants/{merchantId}/branches/{branchId}/image:
     put:
       tags:
@@ -2889,6 +2948,43 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/merchant/branches/{branchId}/kitchen/stations/{stationId}/orders/{orderId}/preparation-status:
+    post:
+      tags:
+      - Kitchen Screen
+      operationId: stationStatus
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: stationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePreparationStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KitchenOrder"
   /{version}/merchant/branches/{branchId}/kitchen/orders/{orderId}/preparation-status:
     post:
       tags:
@@ -4449,6 +4545,81 @@ paths:
             text/event-stream:
               schema:
                 $ref: "#/components/schemas/SseEmitter"
+  /{version}/merchant/branches/{branchId}/kitchen/stations:
+    get:
+      tags:
+      - Kitchen Screen
+      summary: "List stations available to this authorized branch, including unassigned\
+        \ work"
+      operationId: stations
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PreparationStation"
+  /{version}/merchant/branches/{branchId}/kitchen/stations/{stationId}/stream:
+    get:
+      tags:
+      - Kitchen Screen
+      operationId: stationStream
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: stationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
+  /{version}/merchant/branches/{branchId}/kitchen/stations/{stationId}/orders:
+    get:
+      tags:
+      - Kitchen Screen
+      operationId: stationOrders
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: stationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KitchenOrder"
   /{version}/merchant/branches/{branchId}/kitchen/orders:
     get:
       tags:
@@ -5772,6 +5943,38 @@ components:
       - paymentStatus
       - preparationStatus
       - totalAmountMinor
+    PreparationConfiguration:
+      type: object
+      properties:
+        stations:
+          type: array
+          items:
+            $ref: "#/components/schemas/PreparationStation"
+        categoryDefaults:
+          type: object
+          additionalProperties:
+            type: string
+            format: uuid
+        productOverrides:
+          type: object
+          additionalProperties:
+            type: string
+            format: uuid
+      required:
+      - categoryDefaults
+      - productOverrides
+      - stations
+    PreparationStation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
     SetBranchImageRequest:
       type: object
       properties:
@@ -8090,11 +8293,25 @@ components:
           format: int32
         locked:
           type: boolean
+        stationId:
+          type: string
+          format: uuid
+        stationName:
+          type: string
+        preparationStatus:
+          type: string
+          enum:
+          - RECEIVED
+          - PREPARING
+          - READY
       required:
       - itemId
       - locked
       - name
+      - preparationStatus
       - quantity
+      - stationId
+      - stationName
     KitchenLoginResponse:
       type: object
       properties:

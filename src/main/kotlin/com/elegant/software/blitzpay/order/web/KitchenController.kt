@@ -70,6 +70,39 @@ class KitchenController(
         return ResponseEntity.ok(kitchenService.updatePreparationStatus(branchId, orderId, request.status))
     }
 
+    @Operation(summary = "List stations available to this authorized branch, including unassigned work")
+    @GetMapping("/stations")
+    fun stations(@PathVariable branchId: UUID, @AuthenticationPrincipal jwt: Jwt?): List<com.elegant.software.blitzpay.merchant.api.PreparationStation> {
+        BranchGroupAccess.require(jwt, branchId)
+        return kitchenService.stations(branchId)
+    }
+
+    @GetMapping("/stations/{stationId}/orders")
+    fun stationOrders(@PathVariable branchId: UUID, @PathVariable stationId: UUID,
+                      @AuthenticationPrincipal jwt: Jwt?): List<KitchenOrder> {
+        BranchGroupAccess.require(jwt, branchId)
+        return kitchenService.listStationOrders(branchId, stationId)
+    }
+
+    @GetMapping("/stations/{stationId}/stream", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    fun stationStream(@PathVariable branchId: UUID, @PathVariable stationId: UUID,
+                      @AuthenticationPrincipal jwt: Jwt?): SseEmitter {
+        BranchGroupAccess.require(jwt, branchId)
+        kitchenService.requireStation(branchId, stationId)
+        return SseEmitter(STREAM_TIMEOUT_MS).also {
+            bus.register(branchId, it, stationId)
+            it.send(SseEmitter.event().comment("connected"))
+        }
+    }
+
+    @PostMapping("/stations/{stationId}/orders/{orderId}/preparation-status")
+    fun stationStatus(@PathVariable branchId: UUID, @PathVariable stationId: UUID,
+                      @PathVariable orderId: UUID, @RequestBody request: UpdatePreparationStatusRequest,
+                      @AuthenticationPrincipal jwt: Jwt?): KitchenOrder {
+        BranchGroupAccess.require(jwt, branchId)
+        return kitchenService.updateStationPreparationStatus(branchId, orderId, stationId, request.status)
+    }
+
     @ExceptionHandler(BranchAccessDeniedException::class)
     fun forbidden(ex: BranchAccessDeniedException): ResponseEntity<OrderErrorResponse> =
         // Explicit content type: the stream endpoint only produces text/event-stream, which can't carry the error body.

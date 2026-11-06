@@ -1,5 +1,8 @@
 package com.elegant.software.blitzpay.order.service
 
+import com.elegant.software.blitzpay.merchant.api.MerchantGateway
+import com.elegant.software.blitzpay.merchant.api.PreparationStation
+import com.elegant.software.blitzpay.order.api.forStation
 import com.elegant.software.blitzpay.merchant.api.TableGateway
 import com.elegant.software.blitzpay.order.api.KitchenEventType
 import com.elegant.software.blitzpay.order.api.KitchenOrder
@@ -28,6 +31,7 @@ class KitchenService(
     private val storefrontOrderBus: StorefrontOrderBus,
     private val eventPublisher: ApplicationEventPublisher,
     private val tableGateway: TableGateway,
+    private val merchantGateway: MerchantGateway,
 ) {
     private val log = LoggerFactory.getLogger(KitchenService::class.java)
 
@@ -50,11 +54,20 @@ class KitchenService(
     }
 
     fun updatePreparationStatus(branchId: UUID, orderId: UUID, next: PreparationStatus): KitchenOrder {
-        val order = orderRepository.findById(orderId).orElse(null)
+        val order = orderRepository.findByIdForPreparationUpdate(orderId)
             ?.takeIf { it.merchantBranchId == branchId }
             ?: throw NoSuchElementException("Order not found: $orderId")
         if (order.status == OrderStatus.CANCELLED) {
             throw OrderMutationConflictException("Order is cancelled: ${order.orderId}")
+        }
+        val items = orderItemRepository.findAllByOrderIdFk(order.id)
+        if (items.any { it.preparationStationId != UUID(0, 0) }) {
+            throw OrderMutationConflictException("Select a preparation station to update this order")
+        }
+        // A screen may retry after losing the response to a successful update.
+        // Return the current ticket without repeating events or shopper notifications.
+        if (next != PreparationStatus.RECEIVED && order.preparationStatus == next) {
+            return order.toKitchenOrder(items)
         }
         if (!order.preparationStatus.canAdvanceTo(next)) {
             throw OrderMutationConflictException(
@@ -63,7 +76,8 @@ class KitchenService(
         }
         order.advancePreparation(next)
         orderRepository.save(order)
-        val items = orderItemRepository.findAllByOrderIdFk(order.id)
+        items.forEach { it.preparationStatus = next }
+        orderItemRepository.saveAll(items)
         val kitchenOrder = order.toKitchenOrder(items)
         kitchenOrderBus.publishAfterCommit(branchId, KitchenEventType.CHANGED, kitchenOrder)
         storefrontOrderBus.publishAfterCommit(order, items)
@@ -78,6 +92,66 @@ class KitchenService(
             }
         }
         return kitchenOrder
+    }
+
+    /** Configured stations plus historical active routing, so removing a catalog station cannot hide its work. */
+    @Transactional(readOnly = true)
+    fun stations(branchId: UUID): List<PreparationStation> {
+        val configured = merchantGateway.findPreparationStations(branchId)
+        val snapshots = listOpenOrders(branchId).flatMap { it.items }.map { PreparationStation(it.stationId, it.stationName) }
+        return (configured + snapshots + PreparationStation(UUID(0, 0), "Unassigned / General kitchen"))
+            .distinctBy { it.id }
+    }
+
+    @Transactional(readOnly = true)
+    fun requireStation(branchId: UUID, stationId: UUID) {
+        if (stations(branchId).none { it.id == stationId }) throw NoSuchElementException("Station not found in this branch")
+    }
+
+    @Transactional(readOnly = true)
+    fun listStationOrders(branchId: UUID, stationId: UUID): List<KitchenOrder> {
+        requireStation(branchId, stationId)
+        return listOpenOrders(branchId).map { it.forStation(stationId) }
+            .filter { it.items.isNotEmpty() && (it.cancelled || it.preparationStatus != PreparationStatus.READY) }
+    }
+
+    fun updateStationPreparationStatus(branchId: UUID, orderId: UUID, stationId: UUID, next: PreparationStatus): KitchenOrder {
+        // Serialize all station changes and item mutations on the same customer Order.
+        val order = orderRepository.findByIdForPreparationUpdate(orderId)
+            ?.takeIf { it.merchantBranchId == branchId }
+            ?: throw NoSuchElementException("Order not found")
+        if (order.status == OrderStatus.CANCELLED) throw OrderMutationConflictException("Order is cancelled")
+        val items = orderItemRepository.findAllByOrderIdFk(order.id)
+        val ticket = order.toKitchenOrder(items).forStation(stationId)
+        if (ticket.items.isEmpty()) throw NoSuchElementException("Station ticket not found")
+        if (next != PreparationStatus.RECEIVED && ticket.preparationStatus == next) return ticket
+        if (!ticket.preparationStatus.canAdvanceTo(next)) {
+            throw OrderMutationConflictException("Preparation status cannot change from ${ticket.preparationStatus} to $next")
+        }
+        val selected = items.filter { it.preparationStationId == stationId && !it.locked && it.preparationStatus != PreparationStatus.READY }
+        selected.forEach {
+            it.preparationStatus = next
+            if (next == PreparationStatus.READY) it.locked = true
+        }
+        orderItemRepository.saveAll(selected)
+        val previous = order.preparationStatus
+        order.preparationStatus = when {
+            items.all { it.locked || it.preparationStatus == PreparationStatus.READY } -> PreparationStatus.READY
+            items.any { it.locked || it.preparationStatus != PreparationStatus.RECEIVED } -> PreparationStatus.PREPARING
+            else -> PreparationStatus.RECEIVED
+        }
+        order.updatedAt = java.time.Instant.now()
+        orderRepository.save(order)
+        val updated = order.toKitchenOrder(items)
+        kitchenOrderBus.publishAfterCommit(branchId, KitchenEventType.CHANGED, updated)
+        storefrontOrderBus.publishAfterCommit(order, items)
+        order.tableId?.let { tableGateway.tableChanged(branchId, it) }
+        if (previous != PreparationStatus.READY && order.preparationStatus == PreparationStatus.READY) {
+            order.linkedShopperId()?.let { shopperId ->
+                eventPublisher.publishEvent(OrderReadyForPickup(order.orderId, order.id, branchId, order.pickupNumber, shopperId))
+            }
+        }
+        return updated.forStation(stationId)
     }
 
     private fun Order.isOnKitchenScreen() =

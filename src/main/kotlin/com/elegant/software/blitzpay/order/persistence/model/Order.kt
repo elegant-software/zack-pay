@@ -11,6 +11,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Table(name = "order_orders", schema = "blitzpay")
 class Order(
     @Id

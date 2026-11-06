@@ -21,6 +21,7 @@ class MerchantOnboardingService(
     private val merchantProductRepository: MerchantProductRepository,
     private val merchantBranchRepository: MerchantBranchRepository,
     private val merchantOfferingAssignmentRepository: MerchantOfferingAssignmentRepository,
+    private val preparationConfigurations: com.elegant.software.blitzpay.merchant.persistence.repository.MerchantPreparationConfigurationRepository,
 ) : MerchantGateway {
 
     @Transactional(readOnly = true)
@@ -34,9 +35,18 @@ class MerchantOnboardingService(
                 .map { it.id }
                 .toSet()
 
+            val routing = products.mapNotNull { it.merchantBranchId }.distinct().associateWith {
+                preparationConfigurations.findById(it).orElse(null)?.configuration
+            }
             products.map {
+                val config = routing[it.merchantBranchId]
+                val stationId = config?.productOverrides?.get(it.id) ?: config?.categoryDefaults?.get(it.productCategoryId)
+                val station = config?.stations?.find { candidate -> candidate.id == stationId }
+
                 OrderableMerchantProduct(
                     productId = it.id,
+                    preparationStationId = station?.id ?: UUID(0, 0),
+                    preparationStationName = station?.name ?: "Unassigned",
                     merchantId = it.merchantId,
                     branchId = it.merchantBranchId,
                     name = it.name,
@@ -46,6 +56,10 @@ class MerchantOnboardingService(
                 )
             }
         }
+
+    @Transactional(readOnly = true)
+    override fun findPreparationStations(branchId: UUID) =
+        preparationConfigurations.findById(branchId).orElse(null)?.configuration?.stations.orEmpty()
 
     @Transactional(readOnly = true)
     override fun requireActiveBranch(merchantId: UUID, branchId: UUID): ActiveBranchInfo {

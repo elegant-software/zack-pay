@@ -16,6 +16,8 @@ interface MerchantGateway {
 
     /** The Branch's configured time zone, or null when unset, invalid or the Branch is unknown. */
     fun findBranchTimezone(branchId: UUID): ZoneId?
+
+    fun findPreparationStations(branchId: UUID): List<PreparationStation>
 }
 
 data class MerchantSummary(
