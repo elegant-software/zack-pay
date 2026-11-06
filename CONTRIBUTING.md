@@ -119,6 +119,8 @@ For a full list of what each variable/secret does, see [`.github/workflows/READM
 
 ## Agent Guidance
 
+For merchant branding changes, preserve the separation from scheduled appearances and branch photography. Follow the [branding API guide](reference/merchant-branding.md), including realm-admin authorization and branch ownership checks, and run unit and contract tests with `./gradlew check`.
+
 AI agents working in this repository should:
 
 - read this file before preparing commits

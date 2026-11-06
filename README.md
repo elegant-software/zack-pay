@@ -108,6 +108,8 @@ Security and repo hygiene notes
 
 ## Related Repositories
 
+Merchant and branch branding: see the [branding API guide](reference/merchant-branding.md) for Simpleio defaults, admin permissions, inheritance, and logo uploads.
+
 | Repository | Description |
 |---|---|
 | blitz-pay (backend) | Spring Boot / Kotlin backend — payments, merchants, orders |

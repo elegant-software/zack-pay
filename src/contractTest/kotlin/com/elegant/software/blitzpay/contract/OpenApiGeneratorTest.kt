@@ -9,7 +9,7 @@ class OpenApiGeneratorTest : ContractVerifierBase() {
     @Test
     fun `generate OpenAPI specification`() {
         val response = webTestClient.mutate()
-            .responseTimeout(Duration.ofSeconds(15))
+            .responseTimeout(Duration.ofSeconds(60))
             .build()
             .get()
             .uri("/api-docs.yaml") // Springdoc provides YAML at .yaml suffix

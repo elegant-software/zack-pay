@@ -143,3 +143,10 @@ databaseChangeLog:
       file: db/changelog/20261105-001-create-preparation-configuration.sql
   - include:
       file: db/changelog/20261105-002-add-station-tickets.sql
+
+  - include:
+      file: db/changelog/20261106-002-merchant-branding.sql
+  - include:
+      file: db/changelog/20261106-003-merchant-themes.sql
+  - include:
+      file: db/changelog/20261106-004-merchant-theme-app.sql

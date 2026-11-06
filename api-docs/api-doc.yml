@@ -39,6 +39,8 @@ tags:
   description: Support-facing branch calendar and appointment override
 - name: Employees
   description: Employee management for appointment booking
+- name: Merchant Themes
+  description: Saved merchant color palettes; requires the blitzpay-admin realm role
 - name: Dashboard
   description: KPI dashboards for platform admins and merchant app users
 - name: Kitchen Access
@@ -76,6 +78,9 @@ tags:
   description: "Shopper appointment search, booking, history, cancellation, and rescheduling"
 - name: Merchant Branches
   description: Manage branches under a merchant
+- name: Merchant Branding
+  description: Merchant and branch branding with Simpleio defaults; writes require
+    the blitzpay-admin realm role
 - name: Merchant Provider Accounts
   description: Manage which Payment Service Providers are enabled for a merchant
 - name: Merchant Menu Languages
@@ -182,6 +187,47 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AppointmentResponse"
+  /{version}/merchants/{merchantId}/themes/{themeId}:
+    put:
+      tags:
+      - Merchant Themes
+      summary: Replace a saved merchant theme
+      operationId: updateMerchantTheme
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: themeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: app
+        in: query
+        required: false
+        schema:
+          type: string
+          default: SHOPPER
+          enum:
+          - SHOPPER
+          - MERCHANT
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MerchantThemeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MerchantThemeResponse"
   /{version}/merchants/{merchantId}/provider-accounts/{pspCode}:
     put:
       tags:
@@ -685,12 +731,110 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/EmployeeResponse"
+  /{version}/merchants/{merchantId}/branding:
+    get:
+      tags:
+      - Merchant Branding
+      operationId: get_2
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BrandingResponse"
+    put:
+      tags:
+      - Merchant Branding
+      operationId: replace
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandingSettings"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BrandingResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/branding:
+    get:
+      tags:
+      - Merchant Branding
+      operationId: get_3
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BrandingResponse"
+    put:
+      tags:
+      - Merchant Branding
+      operationId: replace_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandingSettings"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BrandingResponse"
   /{version}/merchants/{merchantId}/branches/{branchId}:
     get:
       tags:
       - Merchant Branches
       summary: Get a branch by ID
-      operationId: get_2
+      operationId: get_4
       parameters:
       - name: merchantId
         in: path
@@ -1096,7 +1240,7 @@ paths:
       tags:
       - Merchants
       summary: Get merchant details
-      operationId: get_3
+      operationId: get_5
       parameters:
       - name: id
         in: path
@@ -1700,6 +1844,71 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MerchantSummary"
+  /{version}/merchants/{merchantId}/themes:
+    get:
+      tags:
+      - Merchant Themes
+      summary: List saved merchant themes
+      operationId: listMerchantThemes
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: app
+        in: query
+        required: false
+        schema:
+          type: string
+          default: SHOPPER
+          enum:
+          - SHOPPER
+          - MERCHANT
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerchantThemeResponse"
+    post:
+      tags:
+      - Merchant Themes
+      summary: Create a named merchant theme
+      operationId: createMerchantTheme
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: app
+        in: query
+        required: false
+        schema:
+          type: string
+          default: SHOPPER
+          enum:
+          - SHOPPER
+          - MERCHANT
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MerchantThemeRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MerchantThemeResponse"
   /{version}/merchants/{merchantId}/stripe-connect:
     post:
       tags:
@@ -2254,6 +2463,62 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BranchAssignmentResponse"
+  /{version}/merchants/{merchantId}/branding/logo/upload-url:
+    post:
+      tags:
+      - Merchant Branding
+      operationId: upload
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MerchantLogoUploadRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MerchantLogoUploadResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/branding/logo/upload-url:
+    post:
+      tags:
+      - Merchant Branding
+      operationId: upload_1
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MerchantLogoUploadRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MerchantLogoUploadResponse"
   /{version}/merchants/{merchantId}/branches:
     get:
       tags:
@@ -3387,7 +3652,7 @@ paths:
     get:
       tags:
       - Appointment Policy
-      operationId: get_4
+      operationId: get_6
       parameters:
       - name: merchantId
         in: path
@@ -3586,7 +3851,7 @@ paths:
       - Storefront Orders
       summary: Get a guest order; requires the guest_token cookie issued for this
         order
-      operationId: get_5
+      operationId: get_7
       parameters:
       - name: orderId
         in: path
@@ -3871,7 +4136,7 @@ paths:
       tags:
       - Orders
       summary: Get the latest business status for an order
-      operationId: get_6
+      operationId: get_8
       parameters:
       - name: orderId
         in: path
@@ -4095,7 +4360,7 @@ paths:
       tags:
       - Appearances
       summary: Get an appearance by ID
-      operationId: get_7
+      operationId: get_9
       parameters:
       - name: merchantId
         in: path
@@ -5321,6 +5586,56 @@ components:
       - startTime
       - status
       - updatedAt
+    MerchantThemeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 0
+        primaryColor:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        accentColor:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+      required:
+      - accentColor
+      - name
+      - primaryColor
+    MerchantThemeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        primaryColor:
+          type: string
+        primaryTextColor:
+          type: string
+        accentColor:
+          type: string
+        accentTextColor:
+          type: string
+        app:
+          type: string
+          enum:
+          - SHOPPER
+          - MERCHANT
+      required:
+      - accentColor
+      - accentTextColor
+      - app
+      - id
+      - merchantId
+      - name
+      - primaryColor
+      - primaryTextColor
     ProviderAccountResponse:
       type: object
       properties:
@@ -5622,6 +5937,78 @@ components:
       - name
       - status
       - updatedAt
+    BrandingSettings:
+      type: object
+      properties:
+        enabled:
+          type:
+          - boolean
+          - "null"
+        displayName:
+          type:
+          - string
+          - "null"
+          maxLength: 120
+          minLength: 1
+        logoStorageKey:
+          type:
+          - string
+          - "null"
+          maxLength: 512
+          minLength: 0
+        primaryColor:
+          type:
+          - string
+          - "null"
+          pattern: "^#[0-9a-fA-F]{6}$"
+        accentColor:
+          type:
+          - string
+          - "null"
+          pattern: "^#[0-9a-fA-F]{6}$"
+    BrandingResponse:
+      type: object
+      properties:
+        settings:
+          $ref: "#/components/schemas/BrandingSettings"
+        effective:
+          $ref: "#/components/schemas/EffectiveBranding"
+        logoPreviewUrl:
+          type:
+          - string
+          - "null"
+      required:
+      - effective
+      - settings
+    EffectiveBranding:
+      type: object
+      properties:
+        platformName:
+          type: string
+        enabled:
+          type: boolean
+        displayName:
+          type: string
+        logoUrl:
+          type:
+          - string
+          - "null"
+        primaryColor:
+          type: string
+        primaryTextColor:
+          type: string
+        accentColor:
+          type: string
+        accentTextColor:
+          type: string
+      required:
+      - accentColor
+      - accentTextColor
+      - displayName
+      - enabled
+      - platformName
+      - primaryColor
+      - primaryTextColor
     UpdateBranchRequest:
       type: object
       properties:
@@ -7562,6 +7949,27 @@ components:
       - createdAt
       - employeeId
       - id
+    MerchantLogoUploadRequest:
+      type: object
+      properties:
+        contentType:
+          type: string
+      required:
+      - contentType
+    MerchantLogoUploadResponse:
+      type: object
+      properties:
+        storageKey:
+          type: string
+        uploadUrl:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+      - expiresAt
+      - storageKey
+      - uploadUrl
     CreateBranchRequest:
       type: object
       properties:
@@ -7944,27 +8352,6 @@ components:
       - productCategoryId
       - productId
       - startTime
-    MerchantLogoUploadRequest:
-      type: object
-      properties:
-        contentType:
-          type: string
-      required:
-      - contentType
-    MerchantLogoUploadResponse:
-      type: object
-      properties:
-        storageKey:
-          type: string
-        uploadUrl:
-          type: string
-        expiresAt:
-          type: string
-          format: date-time
-      required:
-      - expiresAt
-      - storageKey
-      - uploadUrl
     MerchantSearchRequest:
       type: object
       properties:

@@ -84,6 +84,9 @@ class Merchant(
 
     @Column
     var lastUpdatedAt: Instant = createdAt,
+
+    @Embedded
+    var branding: MerchantBranding? = null,
 ) {
     fun updateLogo(storageKey: String) {
         logoStorageKey = storageKey

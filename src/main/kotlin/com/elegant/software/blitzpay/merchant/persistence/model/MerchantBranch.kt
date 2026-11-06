@@ -77,6 +77,9 @@ class MerchantBranch(
 
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = createdAt,
+
+    @Embedded
+    var branding: MerchantBranding? = null,
 ) {
     fun deactivate(at: Instant = Instant.now()) {
         active = false
