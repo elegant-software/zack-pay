@@ -298,6 +298,19 @@ class TableContractTest : ContractVerifierBase() {
     }
 
     @Test
+    fun `a Platform Admin who also works at the Branch seats guests and clears the Table`() {
+        val staffAdmin = bearer(employeeId, listOf("blitzpay-admin"))
+        webTestClient.put().uri("$base/tables/${table.id}/guests").header(HttpHeaders.AUTHORIZATION, staffAdmin)
+            .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"guestCount": 2}""")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody().jsonPath("$.guestCount").isEqualTo(2)
+        webTestClient.post().uri("$base/tables/${table.id}/clear").header(HttpHeaders.AUTHORIZATION, staffAdmin)
+            .exchange()
+            .expectStatus().isNoContent
+    }
+
+    @Test
     fun `branch staff set guests on a free Table, which makes it occupied, and clear it`() {
         webTestClient.put().uri("$base/tables/${table.id}/guests").header(HttpHeaders.AUTHORIZATION, employee)
             .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"guestCount": 3}""")

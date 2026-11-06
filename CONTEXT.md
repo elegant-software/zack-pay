@@ -525,7 +525,7 @@ _Avoid_: branch report, manager report, caller-supplied merchant filter
 - Any merchant user working a **Branch** may view its **Floor Plan**s, take payment for its Tables' orders and clear its **Occupied Table**s
 - Ordering at a **Table** requires the **Merchant** to have **Walk-In Ordering** enabled
 - A web storefront guest ordering at a **Table** pays immediately or chooses **Cash Payment**; **Deferred Payment** at a Table is only for signed-in shoppers
-- A Platform Admin may view every **Branch**'s **Floor Plan**s and full **Table Status** detail in the web admin, but never clears Tables or takes or confirms payments
+- A Platform Admin may view every **Branch**'s **Floor Plan**s and full **Table Status** detail in the web admin, but never clears Tables or takes or confirms payments; an account that is a Platform Admin and also works at the **Branch** acts on its Tables as Branch staff
 - A **Table Link** is permanent; it never rotates, so a written NFC tag can be locked read-only
 - Checking in at a **Table** does not prove presence; **Walk-In Ordering** at a Table still requires geolocation
 - **Branch Capacity** never blocks ordering; a **Reservation** may not exceed it

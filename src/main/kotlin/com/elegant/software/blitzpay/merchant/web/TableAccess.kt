@@ -15,7 +15,7 @@ class TableAccessDeniedException(message: String) : RuntimeException(message)
  * Who may do what with a Branch's Tables (CONTEXT.md):
  * - setup (Tables, Floor Plans, Table Placements): a Merchant Manager of the Branch's Merchant, or a Platform Admin;
  * - live floor: any merchant user working the Branch, or a Platform Admin (read-only);
- * - clearing a Table: merchant users of the Branch only, never a Platform Admin.
+ * - seating guests and clearing a Table: merchant users of the Branch only; a Platform Admin only when they also work there.
  *
  * A Branch that does not belong to the Merchant in the path is reported as not found.
  */
@@ -39,11 +39,12 @@ class TableAccess(
 
     fun requireFloorAction(merchantId: UUID, branchId: UUID, jwt: Jwt?): MerchantBranch {
         val branch = requireBranch(merchantId, branchId)
+        // Working at the Branch decides, so an account that is also a Platform Admin still works its Tables.
+        if (isBranchStaff(jwt, merchantId, branchId)) return branch
         if (PlatformAdminAccess.isPlatformAdmin(jwt)) {
-            throw TableAccessDeniedException("A Platform Admin may view Tables but never clear them")
+            throw TableAccessDeniedException("A Platform Admin who does not work at this Branch may view its Tables but not seat guests or clear them")
         }
-        if (!isBranchStaff(jwt, merchantId, branchId)) throw TableAccessDeniedException("Caller does not work at this Branch")
-        return branch
+        throw TableAccessDeniedException("Caller does not work at this Branch")
     }
 
     /** For callers identified by Branch rather than Merchant (MCP tools): Merchant Manager or Platform Admin. */
