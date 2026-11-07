@@ -26,7 +26,7 @@ Both human contributors and AI agents. When in doubt about a convention, this fi
 - All HTTP endpoints use URL-path versioning (`/v1/...`).
 - Request and response shapes are stable once published. Breaking changes require a new version path and coordinated migration.
 - Every new or changed endpoint must have a corresponding contract test in `src/contractTest/`.
-- **Errors are RFC 9457 `ProblemDetail` with a stable `code`** — `{ status, title, detail, code }`, content type `application/problem+json`, rendered only by `config/GlobalExceptionHandler`. Clients branch on `code`, never on `detail` text.
+- **Errors are RFC 9457 `ProblemDetail` with a stable `code`** — `{ status, title, detail, code }`, content type `application/problem+json`, produced by Spring's built-in RFC 9457 support (`ErrorResponseException` / `ResponseEntityExceptionHandler`) through `config/GlobalExceptionHandler` only. Clients branch on `code`, never on `detail` text.
   - Signal errors by throwing: `ApiException(status, message, code)` (or a subclass), `NoSuchElementException` (404), `IllegalArgumentException` (400). Never build an error body in a controller, and never add a controller-local `@ExceptionHandler` or an `{"error": ...}` response type.
   - `code` defaults to the status name (`NOT_FOUND`, `CONFLICT`, …). Add a specific `UPPER_SNAKE_CASE` code whenever a client needs to tell an error apart; once published, a code never changes meaning or is removed.
   - Every specific code has a test asserting it. See [`reference/api-error-responses.md`](reference/api-error-responses.md).

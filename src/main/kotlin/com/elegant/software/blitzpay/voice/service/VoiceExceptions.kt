@@ -7,7 +7,8 @@ open class VoiceException(
     val reason: String,
     message: String,
     val statusCode: Int,
-) : ApiException(HttpStatus.valueOf(statusCode), message, reason)
+    cause: Throwable? = null,
+) : ApiException(HttpStatus.valueOf(statusCode), message, reason, cause)
 
 class MissingAuthorizationException : VoiceException(
     reason = "MISSING_AUTHORIZATION",
@@ -55,8 +56,5 @@ class UpstreamAiException(message: String, cause: Throwable? = null) : VoiceExce
     reason = "UPSTREAM_AI_ERROR",
     message = message,
     statusCode = 502,
-) {
-    init {
-        if (cause != null) initCause(cause)
-    }
-}
+    cause = cause,
+)
