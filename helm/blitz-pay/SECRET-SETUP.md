@@ -55,6 +55,32 @@ kubectl create secret generic blitz-pay-secrets \
 > kubectl -n <namespace> rollout restart deploy/blitz-pay
 > ```
 
+> **Invoice email (SMTP)**: `SPRING_MAIL_*` and `BLITZPAY_INVOICE_EMAIL_FROM` are optional.
+> `InvoiceBatchJob` only runs when `SPRING_MAIL_HOST` is set; without it **no invoices are
+> generated or emailed** in that environment.
+>
+> | Key | Value (Gmail) |
+> |---|---|
+> | `SPRING_MAIL_HOST` | `smtp.gmail.com` |
+> | `SPRING_MAIL_PORT` | `587` (STARTTLS) |
+> | `SPRING_MAIL_USERNAME` | the sending Gmail address |
+> | `SPRING_MAIL_PASSWORD` | a Google **App Password** (16 chars), not the account password |
+> | `BLITZPAY_INVOICE_EMAIL_FROM` | same address as `SPRING_MAIL_USERNAME` (Gmail rewrites any other sender unless it is a verified alias) |
+>
+> Staging sends from `m.mohammadi.se@gmail.com`. To get the App Password, enable
+> 2-Step Verification on that account, then create one at
+> <https://myaccount.google.com/apppasswords>.
+>
+> ```bash
+> kubectl -n <namespace> patch secret blitz-pay-secrets --type merge -p \
+>   '{"stringData":{"SPRING_MAIL_HOST":"smtp.gmail.com","SPRING_MAIL_PORT":"587","SPRING_MAIL_USERNAME":"m.mohammadi.se@gmail.com","SPRING_MAIL_PASSWORD":"<app-password>","BLITZPAY_INVOICE_EMAIL_FROM":"m.mohammadi.se@gmail.com"}}'
+> kubectl -n <namespace> rollout restart deploy/blitz-pay
+> ```
+>
+> Verify with `kubectl -n <namespace> logs deploy/blitz-pay | grep "invoice emailed"`.
+> Gmail caps a personal account at ~500 recipients/day — fine for staging; production should
+> use a domain sender via a transactional provider (SES, Postmark, Brevo).
+
 > **Note**: `TRUELAYER_PRIVATE_KEY_PATH` is **not** in this secret. It is the
 > in-container file path (non-sensitive) and is set automatically by the ConfigMap.
 
