@@ -4,17 +4,13 @@ import com.elegant.software.blitzpay.order.api.KitchenOrder
 import com.elegant.software.blitzpay.order.api.UpdatePreparationStatusRequest
 import com.elegant.software.blitzpay.order.service.KitchenOrderBus
 import com.elegant.software.blitzpay.order.service.KitchenService
-import com.elegant.software.blitzpay.order.service.OrderMutationConflictException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -102,28 +98,6 @@ class KitchenController(
         BranchGroupAccess.require(jwt, branchId)
         return kitchenService.updateStationPreparationStatus(branchId, orderId, stationId, request.status)
     }
-
-    @ExceptionHandler(BranchAccessDeniedException::class)
-    fun forbidden(ex: BranchAccessDeniedException): ResponseEntity<OrderErrorResponse> =
-        // Explicit content type: the stream endpoint only produces text/event-stream, which can't carry the error body.
-        ResponseEntity.status(HttpStatus.FORBIDDEN).contentType(MediaType.APPLICATION_JSON)
-            .body(OrderErrorResponse(ex.message ?: "Access denied"))
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun notFound(ex: NoSuchElementException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(OrderErrorResponse(ex.message ?: "Order not found"))
-
-    @ExceptionHandler(OrderMutationConflictException::class)
-    fun conflict(ex: OrderMutationConflictException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.status(HttpStatus.CONFLICT).body(OrderErrorResponse(ex.message ?: "Preparation status change not allowed"))
-
-    @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun unreadable(ex: HttpMessageNotReadableException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.badRequest().body(OrderErrorResponse("Request body must be {\"status\": \"PREPARING\" | \"READY\"}"))
-
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun badRequest(ex: IllegalArgumentException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.badRequest().body(OrderErrorResponse(ex.message ?: "Invalid request"))
 
     private companion object {
         /** Screens reconnect (and re-sync via the list endpoint) after this; heartbeats keep the connection alive meanwhile. */

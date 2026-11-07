@@ -6,8 +6,6 @@ import com.elegant.software.blitzpay.order.api.CreateOrderRequest
 import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.OrderSummaryResponse
 import com.elegant.software.blitzpay.order.api.UpdateOrderItemRequest
-import com.elegant.software.blitzpay.order.service.OrderCreationConflictException
-import com.elegant.software.blitzpay.order.service.OrderMutationConflictException
 import com.elegant.software.blitzpay.order.service.OrderService
 import com.elegant.software.blitzpay.order.service.UnauthenticatedException
 import io.swagger.v3.oas.annotations.Operation
@@ -95,26 +93,6 @@ class ShopperOrderController(private val orderService: OrderService) {
         val shopperId = requireSubject(authorization)
         return ResponseEntity.ok(orderService.cancelOrder(orderId, shopperId))
     }
-
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun badRequest(ex: IllegalArgumentException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.badRequest().body(OrderErrorResponse(ex.message ?: "Invalid order request"))
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun notFound(ex: NoSuchElementException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(OrderErrorResponse(ex.message ?: "Order not found"))
-
-    @ExceptionHandler(OrderCreationConflictException::class)
-    fun unprocessable(ex: OrderCreationConflictException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(OrderErrorResponse(ex.message ?: "Order cannot be created"))
-
-    @ExceptionHandler(OrderMutationConflictException::class)
-    fun mutationConflict(ex: OrderMutationConflictException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.status(HttpStatus.CONFLICT).body(OrderErrorResponse(ex.message ?: "Order mutation not allowed"))
-
-    @ExceptionHandler(UnauthenticatedException::class)
-    fun unauthenticated(ex: UnauthenticatedException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(OrderErrorResponse(ex.message ?: "Valid authentication is required"))
 
     private fun requireSubject(authorization: String?): String =
         extractSubject(authorization) ?: throw UnauthenticatedException()

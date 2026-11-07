@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.stripe.web
 
+import com.elegant.software.blitzpay.config.ApiException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -45,7 +46,6 @@ data class CreatePayByBankCheckoutSessionResponse(
     val connectedAccountId: String,
 )
 
-data class ErrorResponse(val error: String)
 
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/payments/stripe", version = "1")
@@ -55,7 +55,7 @@ class StripePaymentController(private val stripeCheckoutService: StripeCheckoutS
     @ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = CreateIntentResponse::class))])
     @PostMapping("/create-intent")
     fun createIntent(@RequestBody request: CreateIntentRequest): ResponseEntity<Any> {
-        val merchantId = request.merchantId ?: return ResponseEntity.badRequest().body(ErrorResponse("merchantId is required"))
+        val merchantId = request.merchantId ?: throw ApiException(HttpStatus.BAD_REQUEST, "merchantId is required")
         val target = StripeCheckoutTarget(request.orderId, merchantId, request.branchId, request.productId, request.amount)
         return ResponseEntity.ok(stripeCheckoutService.createIntent(target, request.paymentMethodType ?: "card"))
     }
@@ -64,14 +64,10 @@ class StripePaymentController(private val stripeCheckoutService: StripeCheckoutS
     @ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = CreatePayByBankCheckoutSessionResponse::class))])
     @PostMapping("/pay-by-bank/create-checkout-session")
     fun createPayByBankCheckoutSession(@RequestBody request: CreatePayByBankCheckoutSessionRequest): ResponseEntity<Any> {
-        val merchantId = request.merchantId ?: return ResponseEntity.badRequest().body(ErrorResponse("merchantId is required"))
+        val merchantId = request.merchantId ?: throw ApiException(HttpStatus.BAD_REQUEST, "merchantId is required")
         val target = StripeCheckoutTarget(request.orderId, merchantId, request.branchId, request.productId, request.amount)
         return ResponseEntity.ok(
             stripeCheckoutService.createPayByBankCheckoutSession(target, { request.successUrl }, { request.cancelUrl })
         )
     }
-
-    @ExceptionHandler(StripeCheckoutException::class)
-    fun checkoutFailed(ex: StripeCheckoutException): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(ex.status).body(ErrorResponse(ex.message))
 }

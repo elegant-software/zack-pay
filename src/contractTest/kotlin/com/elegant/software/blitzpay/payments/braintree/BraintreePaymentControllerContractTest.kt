@@ -61,7 +61,8 @@ class BraintreePaymentControllerContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.error").exists()
+            .jsonPath("$.detail").exists()
+            .jsonPath("$.code").isEqualTo("BAD_REQUEST")
     }
 
     @Test
@@ -74,7 +75,7 @@ class BraintreePaymentControllerContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isEqualTo(503)
             .expectBody()
-            .jsonPath("$.error").exists()
+            .jsonPath("$.detail").exists()
     }
 
     @Test
@@ -127,7 +128,7 @@ class BraintreePaymentControllerContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.error").exists()
+            .jsonPath("$.detail").exists()
     }
 
     @Test
@@ -138,7 +139,7 @@ class BraintreePaymentControllerContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.error").exists()
+            .jsonPath("$.detail").exists()
     }
 
     @Test
@@ -151,6 +152,6 @@ class BraintreePaymentControllerContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isEqualTo(503)
             .expectBody()
-            .jsonPath("$.error").exists()
+            .jsonPath("$.detail").exists()
     }
 }

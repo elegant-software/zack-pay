@@ -143,7 +143,7 @@ class TableContractTest : ContractVerifierBase() {
             .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"names": ["1"]}""")
             .exchange()
             .expectStatus().isForbidden
-            .expectBody().jsonPath("$.error").exists()
+            .expectBody().jsonPath("$.detail").exists()
         webTestClient.get().uri("/v1/merchants/${UUID.randomUUID()}/branches/${branch.id}/tables").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange()
             .expectStatus().isNotFound
@@ -200,7 +200,7 @@ class TableContractTest : ContractVerifierBase() {
         webTestClient.delete().uri("$base/tables/${table.id}").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange()
             .expectStatus().isEqualTo(409)
-            .expectBody().jsonPath("$.error").exists()
+            .expectBody().jsonPath("$.detail").exists()
         verify(merchantTableRepository, never()).delete(any())
 
         whenever(orderRepository.existsByTableId(table.id)).thenReturn(false)
@@ -363,7 +363,7 @@ class TableContractTest : ContractVerifierBase() {
         webTestClient.get().uri("$base/floor/events").accept(MediaType.TEXT_EVENT_STREAM)
             .exchange()
             .expectStatus().isForbidden
-            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
     }
 
     // --- public ---

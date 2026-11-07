@@ -13,7 +13,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.util.UUID
 
-data class ProductCategoryErrorResponse(val error: String)
 
 @Suppress("unused")
 @Tag(name = "Merchant Product Categories", description = "Manage merchant product categories")
@@ -61,16 +60,4 @@ class MerchantProductCategoryController(
         merchantProductCategoryService.delete(merchantId, categoryId)
         return ResponseEntity.noContent().build()
     }
-
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun badRequest(ex: IllegalArgumentException): ResponseEntity<ProductCategoryErrorResponse> =
-        ResponseEntity.badRequest().body(ProductCategoryErrorResponse(ex.message ?: "Invalid category request"))
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun notFound(ex: NoSuchElementException): ResponseEntity<ProductCategoryErrorResponse> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ProductCategoryErrorResponse(ex.message ?: "Category not found"))
-
-    @ExceptionHandler(IllegalStateException::class)
-    fun conflict(ex: IllegalStateException): ResponseEntity<ProductCategoryErrorResponse> =
-        ResponseEntity.status(HttpStatus.CONFLICT).body(ProductCategoryErrorResponse(ex.message ?: "Category conflict"))
 }

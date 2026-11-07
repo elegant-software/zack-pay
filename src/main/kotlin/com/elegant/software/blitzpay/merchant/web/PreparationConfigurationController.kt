@@ -2,13 +2,10 @@ package com.elegant.software.blitzpay.merchant.web
 
 import com.elegant.software.blitzpay.merchant.api.PreparationConfiguration
 import com.elegant.software.blitzpay.merchant.service.PreparationConfigurationService
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
@@ -41,16 +38,4 @@ class PreparationConfigurationController(
         access.requireSetup(merchantId, branchId, jwt)
         return service.save(merchantId, branchId, request)
     }
-
-    @ExceptionHandler(TableAccessDeniedException::class)
-    fun forbidden(ex: TableAccessDeniedException) =
-        ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("error" to ex.message))
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun missing(ex: NoSuchElementException) =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to ex.message))
-
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun invalid(ex: IllegalArgumentException) =
-        ResponseEntity.badRequest().body(mapOf("error" to ex.message))
 }

@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
-data class BranchErrorResponse(val error: String)
 data class SetBranchImageRequest(val storageKey: String)
 
 @Tag(name = "Merchant Branches", description = "Manage branches under a merchant")

@@ -1,5 +1,7 @@
 package com.elegant.software.blitzpay.merchant.service
 
+import org.springframework.http.HttpStatus
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.api.FloorPlanImageUploadResponse
 import com.elegant.software.blitzpay.merchant.api.FloorPlanResponse
 import com.elegant.software.blitzpay.merchant.api.PlaceTableRequest
@@ -20,7 +22,7 @@ import java.time.Instant
 import java.util.UUID
 
 /** A Table cannot be deleted because orders were placed at it; deactivate it instead. */
-class TableConflictException(message: String) : RuntimeException(message)
+class TableConflictException(message: String) : ApiException(HttpStatus.CONFLICT, message)
 
 /**
  * Setup of Tables, Floor Plans and Table Placements of a Branch (Merchant Manager or Platform Admin; the caller is

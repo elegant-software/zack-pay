@@ -1,5 +1,7 @@
 package com.elegant.software.blitzpay.merchant
 
+import org.springframework.http.HttpStatus
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.ProductCategoryResponse
@@ -104,7 +106,7 @@ class MerchantProductCategoryContractTest : ContractVerifierBase() {
     }
 
     @Test
-    fun `POST duplicate category returns 400`() {
+    fun `POST duplicate category returns 409`() {
         val merchantId = UUID.randomUUID()
         whenever(merchantProductCategoryService.create(eq(merchantId), any<CreateProductCategoryRequest>()))
             .thenThrow(IllegalArgumentException("A category named 'drinks' already exists for this merchant"))
@@ -114,9 +116,9 @@ class MerchantProductCategoryContractTest : ContractVerifierBase() {
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue("""{"name":"drinks"}""")
             .exchange()
-            .expectStatus().isBadRequest
+            .expectStatus().isEqualTo(409)
             .expectBody()
-            .jsonPath("$.error").isEqualTo("A category named 'drinks' already exists for this merchant")
+            .jsonPath("$.detail").isEqualTo("A category named 'drinks' already exists for this merchant")
     }
 
     @Test
@@ -124,14 +126,14 @@ class MerchantProductCategoryContractTest : ContractVerifierBase() {
         val merchantId = UUID.randomUUID()
         val categoryId = UUID.randomUUID()
         whenever(merchantProductCategoryService.delete(merchantId, categoryId))
-            .thenThrow(IllegalStateException("Cannot delete category 'Drinks': 5 product(s) are still assigned to it"))
+            .thenThrow(ApiException(HttpStatus.CONFLICT, "Cannot delete category 'Drinks': 5 product(s) are still assigned to it"))
 
         webTestClient.delete()
             .uri("/v1/merchants/$merchantId/product-categories/$categoryId")
             .exchange()
             .expectStatus().isEqualTo(409)
             .expectBody()
-            .jsonPath("$.error").isEqualTo("Cannot delete category 'Drinks': 5 product(s) are still assigned to it")
+            .jsonPath("$.detail").isEqualTo("Cannot delete category 'Drinks': 5 product(s) are still assigned to it")
     }
 
     @Test
@@ -146,7 +148,7 @@ class MerchantProductCategoryContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isNotFound
             .expectBody()
-            .jsonPath("$.error").isEqualTo("Category not found: $categoryId")
+            .jsonPath("$.detail").isEqualTo("Category not found: $categoryId")
     }
 
     private fun categoryResponse(

@@ -1,9 +1,11 @@
 package com.elegant.software.blitzpay.order.web
 
+import org.springframework.http.HttpStatus
+import com.elegant.software.blitzpay.config.ApiException
 import org.springframework.security.oauth2.jwt.Jwt
 import java.util.UUID
 
-class BranchAccessDeniedException(message: String) : RuntimeException(message)
+class BranchAccessDeniedException(message: String) : ApiException(HttpStatus.FORBIDDEN, message)
 
 /**
  * Branch-scoped authorization from the Keycloak `groups` token claim. Branch groups are named `branch_<branchId>`

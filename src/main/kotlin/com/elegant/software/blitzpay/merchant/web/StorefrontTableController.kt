@@ -5,9 +5,6 @@ import com.elegant.software.blitzpay.merchant.api.TableAvailabilityResponse
 import com.elegant.software.blitzpay.merchant.service.TableFloorService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,8 +29,4 @@ class StorefrontTableController(
     @Operation(summary = "How many of the Branch's active Tables are free; never includes orders")
     @GetMapping("/branches/{branchId}/table-availability")
     fun availability(@PathVariable branchId: UUID): TableAvailabilityResponse = floorService.availability(branchId)
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun notFound(ex: NoSuchElementException): ResponseEntity<TableErrorResponse> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(TableErrorResponse(ex.message ?: "Not found"))
 }

@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.qrpay.web
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusInitializationGateway
@@ -44,10 +45,10 @@ class PaymentRequestController(
             orderGateway.assertPayable(request.orderId)
         } catch (ex: NoSuchElementException) {
             log.warn("truelayer payment rejected reason=order_not_found orderId={}", request.orderId)
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to (ex.message ?: "Order not found")))
+            throw ApiException(HttpStatus.NOT_FOUND, (ex.message ?: "Order not found"))
         } catch (ex: IllegalStateException) {
             log.warn("truelayer payment rejected reason=order_not_payable orderId={} error={}", request.orderId, ex.message)
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(mapOf("error" to (ex.message ?: "Order is not payable")))
+            throw ApiException(HttpStatus.CONFLICT, (ex.message ?: "Order is not payable"))
         }
         if (request.amountMinorUnits != orderSummary.totalAmountMinor || !request.currency.equals(orderSummary.currency, ignoreCase = true)) {
             log.warn(
@@ -55,11 +56,11 @@ class PaymentRequestController(
                 request.orderId, request.amountMinorUnits, request.currency,
                 orderSummary.totalAmountMinor, orderSummary.currency,
             )
-            return ResponseEntity.badRequest().body(mapOf("error" to "amountMinorUnits and currency must match the order"))
+            throw ApiException(HttpStatus.BAD_REQUEST, "amountMinorUnits and currency must match the order")
         }
         if (request.userEmail.isNullOrBlank()) {
             log.warn("truelayer payment rejected reason=missing_user_email orderId={}", request.orderId)
-            return ResponseEntity.badRequest().body(mapOf("error" to "userEmail is required for TrueLayer payments"))
+            throw ApiException(HttpStatus.BAD_REQUEST, "userEmail is required for TrueLayer payments")
         }
 
         val paymentRequestId = UUID.randomUUID()

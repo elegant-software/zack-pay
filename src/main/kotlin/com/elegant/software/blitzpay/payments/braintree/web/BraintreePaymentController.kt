@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.braintree.web
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.payments.braintree.outbound.BraintreeCheckoutResult
 import com.elegant.software.blitzpay.payments.braintree.outbound.BraintreePaymentService
 import com.elegant.software.blitzpay.config.LogContext
@@ -42,7 +43,6 @@ data class CheckoutSuccessResponse(
     val branchId: UUID?,
 )
 data class CheckoutFailureResponse(val status: String = "failed", val message: String, val code: String? = null)
-data class BraintreeErrorResponse(val error: String)
 
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/payments/braintree", version = "1")
@@ -59,10 +59,10 @@ class BraintreePaymentController(
     @PostMapping("/client-token")
     fun clientToken(@RequestBody request: ClientTokenRequest): ResponseEntity<Any> {
         val merchantId = request.merchantId
-            ?: return ResponseEntity.badRequest().body(BraintreeErrorResponse("merchantId is required"))
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "merchantId is required")
         val resolvedBranchId = credentialResolver.resolveBranch(merchantId, request.branchId, null)
         val credentials = credentialResolver.resolveBraintree(merchantId, resolvedBranchId)
-            ?: return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(BraintreeErrorResponse("Payment provider not configured"))
+            ?: throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Payment provider not configured")
         return LogContext.with(LogContext.PROVIDER to "BRAINTREE") {
             log.info("braintree client-token request merchantId={} branchId={}", merchantId, resolvedBranchId)
             try {
@@ -71,7 +71,7 @@ class BraintreePaymentController(
                 ResponseEntity.ok(ClientTokenResponse(token) as Any)
             } catch (ex: Exception) {
                 log.error("braintree client-token failed message={}", ex.message, ex)
-                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BraintreeErrorResponse(ex.message ?: "Braintree client token generation failed") as Any)
+                throw ApiException(HttpStatus.INTERNAL_SERVER_ERROR, ex.message ?: "Braintree client token generation failed")
             }
         }
     }
@@ -81,27 +81,27 @@ class BraintreePaymentController(
     @PostMapping("/checkout")
     fun checkout(@RequestBody request: CheckoutRequest): ResponseEntity<Any> {
         val merchantId = request.merchantId
-            ?: return ResponseEntity.badRequest().body(BraintreeErrorResponse("merchantId is required"))
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "merchantId is required")
         val orderId = request.orderId.trim().takeIf { it.isNotEmpty() }
-            ?: return ResponseEntity.badRequest().body(BraintreeErrorResponse("orderId must not be blank"))
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "orderId must not be blank")
         val orderSummary = try {
             orderGateway.assertPayable(orderId)
         } catch (ex: NoSuchElementException) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(BraintreeErrorResponse(ex.message ?: "Order not found"))
+            throw ApiException(HttpStatus.NOT_FOUND, ex.message ?: "Order not found")
         } catch (ex: IllegalStateException) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(BraintreeErrorResponse(ex.message ?: "Order is not payable"))
+            throw ApiException(HttpStatus.CONFLICT, ex.message ?: "Order is not payable")
         }
         if (merchantId != orderSummary.merchantId) {
-            return ResponseEntity.badRequest().body(BraintreeErrorResponse("merchantId does not match the order"))
+            throw ApiException(HttpStatus.BAD_REQUEST, "merchantId does not match the order")
         }
         val resolvedBranchId = credentialResolver.resolveBranch(merchantId, request.branchId ?: orderSummary.branchId, request.productId)
-            ?: return ResponseEntity.badRequest().body(BraintreeErrorResponse("branch cannot be resolved: supply branchId or productId"))
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "branch cannot be resolved: supply branchId or productId")
         val resolvedAmount = resolveAmount(request, orderSummary.totalAmountMinor)
-            ?: return ResponseEntity.badRequest().body(BraintreeErrorResponse("amount must be a positive number"))
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "amount must be a positive number")
         val credentials = credentialResolver.resolveBraintree(merchantId, resolvedBranchId)
-            ?: return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(BraintreeErrorResponse("Payment provider not configured"))
+            ?: throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Payment provider not configured")
         val nonce = request.nonce?.takeIf { it.isNotBlank() }
-            ?: return ResponseEntity.badRequest().body(BraintreeErrorResponse("nonce is required"))
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "nonce is required")
         val currency = orderSummary.currency.uppercase()
         val paymentRequestId = UUID.randomUUID()
         return LogContext.with(
@@ -130,10 +130,10 @@ class BraintreePaymentController(
                 }
             } catch (ex: IllegalArgumentException) {
                 log.warn("braintree checkout rejected error={}", ex.message)
-                ResponseEntity.badRequest().body(BraintreeErrorResponse(ex.message ?: "bad request") as Any)
+                throw ApiException(HttpStatus.BAD_REQUEST, ex.message ?: "bad request")
             } catch (ex: Exception) {
                 log.error("braintree checkout failed message={}", ex.message, ex)
-                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BraintreeErrorResponse(ex.message ?: "Braintree sale failed") as Any)
+                throw ApiException(HttpStatus.INTERNAL_SERVER_ERROR, ex.message ?: "Braintree sale failed")
             }
         }
     }

@@ -122,7 +122,7 @@ class KitchenAccessContractTest : ContractVerifierBase() {
             webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, token)
                 .exchange()
                 .expectStatus().isForbidden
-                .expectBody().jsonPath("$.error").exists()
+                .expectBody().jsonPath("$.detail").exists()
             webTestClient.post().uri("$base/disable").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
             webTestClient.get().uri(base).header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
         }
@@ -185,7 +185,7 @@ class KitchenAccessContractTest : ContractVerifierBase() {
         webTestClient.post().uri("/v1/merchant/branches/$unknown/kitchen/enable").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange()
             .expectStatus().isNotFound
-            .expectBody().jsonPath("$.error").isEqualTo("Branch not found: $unknown")
+            .expectBody().jsonPath("$.detail").isEqualTo("Branch not found: $unknown")
         webTestClient.get().uri("/v1/merchant/branches/$unknown/kitchen").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange()
             .expectStatus().isNotFound
@@ -198,6 +198,6 @@ class KitchenAccessContractTest : ContractVerifierBase() {
         webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange()
             .expectStatus().isEqualTo(502)
-            .expectBody().jsonPath("$.error").value<String> { assert(it.contains("manage-clients")) }
+            .expectBody().jsonPath("$.detail").value<String> { assert(it.contains("manage-clients")) }
     }
 }

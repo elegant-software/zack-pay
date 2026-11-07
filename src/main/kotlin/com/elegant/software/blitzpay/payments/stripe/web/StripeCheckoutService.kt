@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.stripe.web
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.merchant.api.MerchantCredentialResolver
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
@@ -23,7 +24,7 @@ data class StripeCheckoutTarget(
     val amount: Double? = null,
 )
 
-class StripeCheckoutException(val status: HttpStatus, override val message: String) : RuntimeException(message)
+class StripeCheckoutException(status: HttpStatus, override val message: String) : ApiException(status, message)
 
 /** Stripe PaymentIntent / Pay by Bank Checkout Session creation shared by the shopper app and the web storefront. */
 @Service

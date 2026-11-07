@@ -17,7 +17,6 @@ import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
 import java.util.UUID
 
-data class ProductErrorResponse(val error: String)
 
 @Tag(name = "Merchant Products", description = "Product catalog management for merchants")
 @RestController
@@ -131,18 +130,6 @@ class MerchantProductController(
         merchantProductService.deactivate(merchantId, productId, branchId)
         return ResponseEntity.noContent().build()
     }
-
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun badRequest(ex: IllegalArgumentException): ResponseEntity<ProductErrorResponse> =
-        ResponseEntity.badRequest().body(ProductErrorResponse(ex.message ?: "Invalid product request"))
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun notFound(ex: NoSuchElementException): ResponseEntity<ProductErrorResponse> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ProductErrorResponse(ex.message ?: "Product not found"))
-
-    @ExceptionHandler(IllegalStateException::class)
-    fun storageUnavailable(ex: IllegalStateException): ResponseEntity<ProductErrorResponse> =
-        ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ProductErrorResponse(ex.message ?: "Product storage unavailable"))
 
     private fun MultipartFile.toProductImageUpload(): ProductImageUpload {
         val ct = contentType ?: throw IllegalArgumentException("Product image content type is required")

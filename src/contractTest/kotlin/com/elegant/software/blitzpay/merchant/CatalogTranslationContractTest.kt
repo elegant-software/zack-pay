@@ -99,7 +99,7 @@ class CatalogTranslationContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.error").isEqualTo("Menu language 'fr' is not offered by merchant $merchantId")
+            .jsonPath("$.detail").isEqualTo("Menu language 'fr' is not offered by merchant $merchantId")
     }
 
     @Test
@@ -184,7 +184,7 @@ class CatalogTranslationContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.error").isEqualTo("Menu language 'fr' is not a supported menu language")
+            .jsonPath("$.detail").isEqualTo("Menu language 'fr' is not a supported menu language")
     }
 
     @Test

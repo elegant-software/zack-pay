@@ -254,13 +254,13 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
     }
 
     @Test
-    fun `POST proximity returns 422 when required fields missing`() {
+    fun `POST proximity returns 400 when required fields missing`() {
         webTestClient.post()
             .uri("/v1/proximity")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue("""{ "event": "enter" }""")
             .exchange()
-            .expectStatus().isEqualTo(422)
+            .expectStatus().isBadRequest
     }
 
     // ── GET /v1/merchants/nearby (enhanced) ─────────────────────────────────

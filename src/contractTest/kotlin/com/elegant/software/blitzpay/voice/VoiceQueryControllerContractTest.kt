@@ -58,7 +58,7 @@ class VoiceQueryControllerContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.reason").isEqualTo("MISSING_AUDIO")
+            .jsonPath("$.code").isEqualTo("MISSING_AUDIO")
     }
 
     @Test
@@ -71,7 +71,7 @@ class VoiceQueryControllerContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.reason").isEqualTo("NO_SPEECH_DETECTED")
+            .jsonPath("$.code").isEqualTo("NO_SPEECH_DETECTED")
     }
 
     @Test
@@ -84,7 +84,7 @@ class VoiceQueryControllerContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isEqualTo(502)
             .expectBody()
-            .jsonPath("$.reason").isEqualTo("UPSTREAM_AI_ERROR")
+            .jsonPath("$.code").isEqualTo("UPSTREAM_AI_ERROR")
     }
 
     private fun multipart(filename: String, contentType: String, bytes: ByteArray): org.springframework.util.MultiValueMap<String, HttpEntity<*>> {

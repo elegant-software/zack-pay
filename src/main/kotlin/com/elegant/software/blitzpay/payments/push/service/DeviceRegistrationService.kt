@@ -1,5 +1,7 @@
 package com.elegant.software.blitzpay.payments.push.service
 
+import org.springframework.http.HttpStatus
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.order.api.PaymentRequestResolver
 import com.elegant.software.blitzpay.payments.push.web.DeviceRegistrationRequest
 import com.elegant.software.blitzpay.payments.push.web.DeviceRegistrationResponse
@@ -69,5 +71,4 @@ class DeviceRegistrationService(
     )
 }
 
-class OrderNotFoundException(val orderId: String) :
-    RuntimeException("order $orderId not found")
+class OrderNotFoundException(val orderId: String) : ApiException(HttpStatus.NOT_FOUND, "Not found")

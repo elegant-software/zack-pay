@@ -147,7 +147,8 @@ class StorefrontCheckoutContractTest : ContractVerifierBase() {
         anonymous.get().uri("/v1/storefront/orders/ORDER-123/events").accept(MediaType.TEXT_EVENT_STREAM)
             .exchange()
             .expectStatus().isNotFound
-            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+            .expectBody().jsonPath("$.code").isEqualTo("NOT_FOUND")
     }
 
     @Test

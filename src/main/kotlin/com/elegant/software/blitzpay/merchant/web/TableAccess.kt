@@ -1,5 +1,7 @@
 package com.elegant.software.blitzpay.merchant.web
 
+import org.springframework.http.HttpStatus
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
 import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupNames
 import com.elegant.software.blitzpay.merchant.iam.web.PlatformAdminAccess
@@ -9,7 +11,7 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Component
 import java.util.UUID
 
-class TableAccessDeniedException(message: String) : RuntimeException(message)
+class TableAccessDeniedException(message: String) : ApiException(HttpStatus.FORBIDDEN, message)
 
 /**
  * Who may do what with a Branch's Tables (CONTEXT.md):

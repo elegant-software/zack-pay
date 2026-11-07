@@ -1,10 +1,13 @@
 package com.elegant.software.blitzpay.voice.service
 
+import com.elegant.software.blitzpay.config.ApiException
+import org.springframework.http.HttpStatus
+
 open class VoiceException(
     val reason: String,
-    override val message: String,
+    message: String,
     val statusCode: Int,
-) : RuntimeException(message)
+) : ApiException(HttpStatus.valueOf(statusCode), message, reason)
 
 class MissingAuthorizationException : VoiceException(
     reason = "MISSING_AUTHORIZATION",

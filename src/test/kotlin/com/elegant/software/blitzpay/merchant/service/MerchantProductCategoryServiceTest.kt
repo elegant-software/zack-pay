@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.merchant.service
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductCategory
@@ -223,7 +224,7 @@ class MerchantProductCategoryServiceTest {
         whenever(categoryRepository.findByMerchantIdAndId(merchantId, existing.id)).thenReturn(existing)
         whenever(productRepository.countByProductCategoryIdAndActiveTrue(existing.id)).thenReturn(2)
 
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<ApiException> {
             service.delete(merchantId, existing.id)
         }
         verify(categoryRepository, never()).deleteById(existing.id)

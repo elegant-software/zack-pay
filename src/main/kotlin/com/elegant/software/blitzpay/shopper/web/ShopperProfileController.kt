@@ -55,10 +55,6 @@ class ShopperProfileController(private val service: ShopperProfileService) {
         return ResponseEntity.noContent().build()
     }
 
-    @org.springframework.web.bind.annotation.ExceptionHandler(IllegalArgumentException::class)
-    fun badRequest(ex: IllegalArgumentException): ResponseEntity<Map<String, String>> =
-        ResponseEntity.badRequest().body(mapOf("error" to (ex.message ?: "Invalid request")))
-
     private fun requireSubject(authorization: String?): String =
         extractSubject(authorization) ?: throw org.springframework.web.server.ResponseStatusException(
             HttpStatus.UNAUTHORIZED, "Valid authentication is required"
