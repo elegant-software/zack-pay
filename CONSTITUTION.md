@@ -26,6 +26,10 @@ Both human contributors and AI agents. When in doubt about a convention, this fi
 - All HTTP endpoints use URL-path versioning (`/v1/...`).
 - Request and response shapes are stable once published. Breaking changes require a new version path and coordinated migration.
 - Every new or changed endpoint must have a corresponding contract test in `src/contractTest/`.
+- **Errors are RFC 9457 `ProblemDetail` with a stable `code`** — `{ status, title, detail, code }`, content type `application/problem+json`, rendered only by `config/GlobalExceptionHandler`. Clients branch on `code`, never on `detail` text.
+  - Signal errors by throwing: `ApiException(status, message, code)` (or a subclass), `NoSuchElementException` (404), `IllegalArgumentException` (400). Never build an error body in a controller, and never add a controller-local `@ExceptionHandler` or an `{"error": ...}` response type.
+  - `code` defaults to the status name (`NOT_FOUND`, `CONFLICT`, …). Add a specific `UPPER_SNAKE_CASE` code whenever a client needs to tell an error apart; once published, a code never changes meaning or is removed.
+  - Every specific code has a test asserting it. See [`reference/api-error-responses.md`](reference/api-error-responses.md).
 
 ## Testing Policy
 
@@ -90,6 +94,7 @@ For technology-specific patterns and detailed best practices, refer to:
 | jOOQ (generated schema types, code generation & Docker setup, field access, aliases, query testing) | [`reference/jooq-best-practices.md`](reference/jooq-best-practices.md) |
 | Liquibase (schema migrations, changeset conventions, FK deletion strategy) | [`reference/liquibase-best-practices.md`](reference/liquibase-best-practices.md) |
 | FK deletion strategy (RESTRICT default, no CASCADE, explicit service deletion) | [`reference/liquibase-best-practices.md#10-foreign-key-deletion-strategy`](reference/liquibase-best-practices.md#10-foreign-key-deletion-strategy) |
+| API error responses (`ProblemDetail` + `code`, `ApiException`, code catalogue) | [`reference/api-error-responses.md`](reference/api-error-responses.md) |
 | HTTP Interface clients (`@HttpExchange` + `@ImportHttpServices`, token filters, contract-test guard) | [`reference/api-calls-best-practice.md`](reference/api-calls-best-practice.md) |
 | Observability (Observation API, naming, tag cardinality, data policy, aspects) | [`reference/observability-conventions.md`](reference/observability-conventions.md) |
 | Docker (multi-stage builds, layer caching, `.dockerignore`) | [`reference/docker-best-practices.md`](reference/docker-best-practices.md) |
