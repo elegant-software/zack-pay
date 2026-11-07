@@ -8,6 +8,9 @@ import com.elegant.software.blitzpay.merchant.api.ThemeApp
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.util.UUID
+import com.elegant.software.blitzpay.merchant.api.ThemePalette
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 
 @Entity
 @Table(name = "merchant_theme", schema = "blitzpay")
@@ -19,4 +22,6 @@ class MerchantTheme(
     @Column(name = "accent_color", nullable = false, length = 7) var accentColor: String,
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false, length = 16) val app: ThemeApp = ThemeApp.SHOPPER,
+    @JdbcTypeCode(SqlTypes.JSON) @Column(columnDefinition = "jsonb") var light: ThemePalette? = null,
+    @JdbcTypeCode(SqlTypes.JSON) @Column(columnDefinition = "jsonb") var dark: ThemePalette? = null,
 )

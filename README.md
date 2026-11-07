@@ -110,6 +110,8 @@ Security and repo hygiene notes
 
 Merchant and branch branding: see the [branding API guide](reference/merchant-branding.md) for Simpleio defaults, admin permissions, inheritance, and logo uploads.
 
+App-scoped white label: see the [white-label guide](reference/merchant-white-label.md) for shopper, merchant, storefront and kitchen configuration, light/dark semantic palettes, branch inheritance, merchant-manager access and admin publishing. Consumer rendering integration is a separate rollout.
+
 | Repository | Description |
 |---|---|
 | blitz-pay (backend) | Spring Boot / Kotlin backend — payments, merchants, orders |

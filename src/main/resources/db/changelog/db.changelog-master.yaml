@@ -150,3 +150,5 @@ databaseChangeLog:
       file: db/changelog/20261106-003-merchant-themes.sql
   - include:
       file: db/changelog/20261106-004-merchant-theme-app.sql
+  - include:
+      file: db/changelog/20261107-001-create-merchant-white-label.sql

@@ -2,6 +2,10 @@
 
 Status: backend implementation authorized by the user; admin dashboard follows backend validation.
 
+## Current scope update (2026-11-07)
+
+The user extended #204 to white-label configuration for shopper mobile, merchant mobile, storefront/PWA and kitchen, including light/dark semantic palettes and merchant-manager editing. Changes are authorized only in the backend and admin dashboard; consumer apps remain unchanged. The earlier agreed scope below records the original discovery and is superseded where it conflicts with this update. See [merchant white label](../../reference/merchant-white-label.md) for current contracts, inheritance, authorization, preview/publishing and rollout boundaries.
+
 Source: https://github.com/elegant-software/zack-pay/issues/204
 
 ## Agreed scope

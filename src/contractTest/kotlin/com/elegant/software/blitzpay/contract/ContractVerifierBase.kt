@@ -83,6 +83,8 @@ import java.util.Base64 as JavaBase64
 @ActiveProfiles("contract-test")
 @Import(ContractTestConfig::class)
 abstract class ContractVerifierBase {
+    @MockitoBean
+    protected lateinit var merchantWhiteLabelRepository: com.elegant.software.blitzpay.merchant.persistence.repository.MerchantWhiteLabelRepository
 
     companion object {
         /** A minimal unsigned JWT whose payload decodes to {"sub":"test-user"}. */

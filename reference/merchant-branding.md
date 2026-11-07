@@ -2,6 +2,8 @@
 
 Issue: https://github.com/elegant-software/zack-pay/issues/204
 
+This documents the legacy shopper `/branding` API, which remains compatible. New app-scoped identity, light/dark palettes and merchant-manager editing use the [white-label API](merchant-white-label.md). Its SHOPPER fallback reads these legacy settings when no app profile overrides them.
+
 Branding is distinct from scheduled merchant appearances, branch photography, business offerings, and legal merchant identity. Simpleio is the fallback platform brand. This backend release does not change mobile app binaries, invoices, or hosted payment pages.
 
 ## API

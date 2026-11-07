@@ -26,7 +26,8 @@ class MerchantThemeService(
         requireMerchant(merchantId)
         validate(request)
         return response(themes.save(MerchantTheme(merchantId = merchantId, name = request.name.trim(),
-            primaryColor = request.primaryColor.uppercase(), accentColor = request.accentColor.uppercase(), app = app)))
+            primaryColor = request.primaryColor.uppercase(), accentColor = request.accentColor.uppercase(), app = app,
+            light = request.light, dark = request.dark)))
     }
 
     @Transactional
@@ -38,6 +39,8 @@ class MerchantThemeService(
         theme.name = request.name.trim()
         theme.primaryColor = request.primaryColor.uppercase()
         theme.accentColor = request.accentColor.uppercase()
+        theme.light = request.light
+        theme.dark = request.dark
         return response(themes.save(theme))
     }
 
@@ -49,6 +52,8 @@ class MerchantThemeService(
         require(request.name.isNotBlank() && request.name.length <= 120) { "Theme name must contain 1 to 120 characters" }
         MerchantBrandingService.textColor(request.primaryColor)
         MerchantBrandingService.textColor(request.accentColor)
+        request.light?.let { ThemePaletteValidator.validate(it, "light") }
+        request.dark?.let { ThemePaletteValidator.validate(it, "dark") }
     }
 
     private fun response(theme: MerchantTheme) = MerchantThemeResponse(
@@ -56,5 +61,9 @@ class MerchantThemeService(
         MerchantBrandingService.textColor(theme.primaryColor), theme.accentColor,
         MerchantBrandingService.textColor(theme.accentColor),
         theme.app,
+        theme.light ?: com.elegant.software.blitzpay.merchant.api.ThemePalette(
+            primary = theme.primaryColor, onPrimary = MerchantBrandingService.textColor(theme.primaryColor),
+            accent = theme.accentColor, onAccent = MerchantBrandingService.textColor(theme.accentColor)),
+        theme.dark ?: com.elegant.software.blitzpay.merchant.api.ThemePalette.dark(),
     )
 }

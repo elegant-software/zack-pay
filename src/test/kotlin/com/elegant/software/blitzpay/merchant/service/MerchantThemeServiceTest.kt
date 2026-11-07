@@ -12,6 +12,19 @@ import java.util.UUID
 import kotlin.test.*
 
 class MerchantThemeServiceTest {
+    @Test
+    fun `named palettes support complete light and dark roles in storefront and kitchen scopes`() {
+        val light = com.elegant.software.blitzpay.merchant.api.ThemePalette()
+        val dark = com.elegant.software.blitzpay.merchant.api.ThemePalette.dark()
+        val response = service.create(merchantId, request.copy(light = light, dark = dark), ThemeApp.STOREFRONT)
+        assertEquals(light, response.light)
+        assertEquals(dark, response.dark)
+        assertEquals(ThemeApp.STOREFRONT, response.app)
+        assertFailsWith<IllegalArgumentException> {
+            service.create(merchantId, request.copy(light = light.copy(onCard = light.card)), ThemeApp.KITCHEN)
+        }
+    }
+
     private val merchants = mock<MerchantRepository>()
     private val themes = mock<MerchantThemeRepository>()
     private val service = MerchantThemeService(merchants, themes)

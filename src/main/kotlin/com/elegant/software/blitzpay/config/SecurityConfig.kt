@@ -58,6 +58,8 @@ class SecurityConfig(
         // UUID-only path segments so literal routes like /merchants/nearby stay protected.
         const val ID = "[0-9a-fA-F-]+"
         val STOREFRONT_CATALOG_READS = arrayOf(
+            "/v1/merchants/{merchantId:$ID}/white-label/effective",
+            "/v1/merchants/{merchantId:$ID}/branches/{branchId:$ID}/white-label/effective",
             "/v1/merchants/{merchantId:$ID}",
             "/v1/merchants/{merchantId:$ID}/branches/{branchId:$ID}",
             "/v1/merchants/{merchantId:$ID}/products",

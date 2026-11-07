@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "displayName": "Studio North",
+  "title": "Book at Studio North",
+  "themeMode": "SYSTEM",
+  "hiddenFeatures": ["PRE_ORDER"],
+  "light": {
+    "primary": "#00C2FF", "onPrimary": "#000000", "accent": "#5856D6", "onAccent": "#FFFFFF",
+    "background": "#FFFFFF", "onBackground": "#1C1C1E", "surface": "#F2F2F7", "onSurface": "#1C1C1E",
+    "card": "#FFFFFF", "onCard": "#1C1C1E", "muted": "#636366", "border": "#767676",
+    "error": "#B3261E", "onError": "#FFFFFF", "success": "#146C2E", "onSuccess": "#FFFFFF", "warning": "#805600", "onWarning": "#FFFFFF"
+  },
+  "dark": {
+    "primary": "#70D7FF", "onPrimary": "#000000", "accent": "#C4BFFF", "onAccent": "#000000",
+    "background": "#111113", "onBackground": "#F2F2F7", "surface": "#1C1C1E", "onSurface": "#F2F2F7",
+    "card": "#242426", "onCard": "#F2F2F7", "muted": "#AEAEB2", "border": "#8E8E93",
+    "error": "#FFB4AB", "onError": "#000000", "success": "#83DB98", "onSuccess": "#000000", "warning": "#FFD180", "onWarning": "#000000"
+  }
+}

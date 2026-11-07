@@ -15,33 +15,38 @@ import org.springframework.web.server.ResponseStatusException
 import java.util.UUID
 
 @RestController
-@Tag(name = "Merchant Themes", description = "Saved merchant color palettes; requires the blitzpay-admin realm role")
+@Tag(name = "Merchant Themes", description = "Saved app-scoped light and dark palettes; platform admins and merchant managers can edit")
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchants/{merchantId}/themes", version = "1")
-class MerchantThemeController(private val service: MerchantThemeService) {
+class MerchantThemeController(private val service: MerchantThemeService, private val callers: MerchantCallerResolver) {
     @GetMapping
     @Operation(summary = "List saved merchant themes", operationId = "listMerchantThemes")
     fun list(@PathVariable merchantId: UUID, @AuthenticationPrincipal jwt: Jwt?,
-        @RequestParam(defaultValue = "SHOPPER") app: ThemeApp) =
-        admin(jwt).let { service.list(merchantId, app) }
+        @RequestParam(defaultValue = "SHOPPER") app: ThemeApp,
+        @RequestHeader("Authorization", required = false) authorization: String?) =
+        editor(merchantId, jwt, authorization).let { service.list(merchantId, app) }
 
     @PostMapping
     @Operation(summary = "Create a named merchant theme", operationId = "createMerchantTheme")
     @ResponseStatus(HttpStatus.CREATED)
     fun create(@PathVariable merchantId: UUID, @AuthenticationPrincipal jwt: Jwt?,
         @Valid @RequestBody request: MerchantThemeRequest,
-        @RequestParam(defaultValue = "SHOPPER") app: ThemeApp) =
-        admin(jwt).let { service.create(merchantId, request, app) }
+        @RequestParam(defaultValue = "SHOPPER") app: ThemeApp,
+        @RequestHeader("Authorization", required = false) authorization: String?) =
+        editor(merchantId, jwt, authorization).let { service.create(merchantId, request, app) }
 
     @PutMapping("/{themeId}")
     @Operation(summary = "Replace a saved merchant theme", operationId = "updateMerchantTheme")
     fun update(@PathVariable merchantId: UUID, @PathVariable themeId: UUID,
         @AuthenticationPrincipal jwt: Jwt?, @Valid @RequestBody request: MerchantThemeRequest,
-        @RequestParam(defaultValue = "SHOPPER") app: ThemeApp) =
-        admin(jwt).let { service.update(merchantId, themeId, request, app) }
+        @RequestParam(defaultValue = "SHOPPER") app: ThemeApp,
+        @RequestHeader("Authorization", required = false) authorization: String?) =
+        editor(merchantId, jwt, authorization).let { service.update(merchantId, themeId, request, app) }
 
-    private fun admin(jwt: Jwt?) {
-        if (!PlatformAdminAccess.isPlatformAdmin(jwt)) {
-            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Platform administrator role required")
+    private fun editor(merchantId: UUID, jwt: Jwt?, authorization: String?) {
+        if (PlatformAdminAccess.isPlatformAdmin(jwt)) return
+        val manager = runCatching { callers.resolve(authorization, merchantId).isManagerFor(merchantId) }.getOrDefault(false)
+        if (!manager) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Merchant manager or platform administrator required")
         }
     }
 }
