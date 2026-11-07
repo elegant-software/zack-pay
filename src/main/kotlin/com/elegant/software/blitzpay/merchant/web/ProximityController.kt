@@ -7,10 +7,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
-import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
-import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.annotation.*
 import java.util.Base64
 
@@ -38,14 +35,6 @@ class ProximityController(private val proximityService: ProximityService) {
             result.body?.recorded, result.body?.action, result.body?.merchant?.merchantId,
         )
         return result
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleInvalidRequest(ex: HttpMessageNotReadableException): ResponseEntity<ProblemDetail> {
-        log.warn("Invalid proximity request: {}", ex.message)
-        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.message ?: "Invalid request body")
-        problem.title = "Unprocessable Entity"
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem)
     }
 
     private fun extractUserSubject(authorization: String?): String? {

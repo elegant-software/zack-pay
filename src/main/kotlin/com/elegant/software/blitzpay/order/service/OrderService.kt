@@ -1,5 +1,7 @@
 package com.elegant.software.blitzpay.order.service
 
+import org.springframework.http.HttpStatus
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
@@ -539,12 +541,14 @@ class OrderService(
         if (orderType != OrderType.WALK_IN_ORDERING) {
             return
         }
-        requireNotNull(customerLocation) { "customerLocation is required for WALK_IN_ORDERING" }
-        require(customerLocation.accuracyMeters in 0.0..MAX_WALK_IN_ACCURACY_METERS) {
-            "customerLocation accuracy is insufficient for WALK_IN_ORDERING"
+        if (customerLocation == null) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "customerLocation is required for WALK_IN_ORDERING", "LOCATION_REQUIRED")
         }
-        require(customerLocation.capturedAt.isAfter(Instant.now().minus(MAX_WALK_IN_LOCATION_AGE))) {
-            "customerLocation is too old for WALK_IN_ORDERING"
+        if (customerLocation.accuracyMeters !in 0.0..MAX_WALK_IN_ACCURACY_METERS) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "customerLocation accuracy is insufficient for WALK_IN_ORDERING", "LOCATION_INACCURATE")
+        }
+        if (!customerLocation.capturedAt.isAfter(Instant.now().minus(MAX_WALK_IN_LOCATION_AGE))) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "customerLocation is too old for WALK_IN_ORDERING", "LOCATION_EXPIRED")
         }
         val location = requireNotNull(branch.location) { "Branch location is required for WALK_IN_ORDERING" }
         val distanceMeters = haversineMeters(
@@ -554,7 +558,7 @@ class OrderService(
             location.longitude,
         )
         if (distanceMeters > location.geofenceRadiusMeters) {
-            throw OrderCreationConflictException("Customer is outside the branch geofence")
+            throw OrderCreationConflictException("Customer is outside the branch geofence", "OUTSIDE_GEOFENCE")
         }
     }
 
@@ -590,6 +594,7 @@ class OrderService(
     }
 }
 
-class OrderCreationConflictException(message: String) : IllegalStateException(message)
-class OrderMutationConflictException(message: String) : IllegalStateException(message)
-class UnauthenticatedException(message: String = "Valid authentication is required") : IllegalStateException(message)
+class OrderCreationConflictException(message: String, code: String = HttpStatus.UNPROCESSABLE_ENTITY.name) :
+    ApiException(HttpStatus.UNPROCESSABLE_ENTITY, message, code)
+class OrderMutationConflictException(message: String) : ApiException(HttpStatus.CONFLICT, message)
+class UnauthenticatedException(message: String = "Valid authentication is required") : ApiException(HttpStatus.UNAUTHORIZED, message)

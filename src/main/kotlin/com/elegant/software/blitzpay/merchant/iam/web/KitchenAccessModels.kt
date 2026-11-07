@@ -26,4 +26,3 @@ data class KitchenAccessStatusResponse(
     val username: String?,
 )
 
-data class KitchenAccessErrorResponse(val error: String)

@@ -1,13 +1,12 @@
 package com.elegant.software.blitzpay.payments.push.web
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.payments.push.api.PaymentStatusResponse
 import com.elegant.software.blitzpay.payments.push.service.PaymentStatusService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
-import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,13 +31,6 @@ class PaymentStatusController(
             .map { ResponseEntity.ok(it) }
             .orElseGet { ResponseEntity.status(HttpStatus.NOT_FOUND).build() }
     }
-
-    @ExceptionHandler(MalformedPaymentRequestIdException::class)
-    fun handleMalformed(ex: MalformedPaymentRequestIdException): ResponseEntity<ProblemDetail> {
-        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Malformed paymentRequestId")
-        problem.title = "Bad Request"
-        return ResponseEntity.badRequest().body(problem)
-    }
 }
 
-class MalformedPaymentRequestIdException(val value: String) : RuntimeException("malformed UUID: $value")
+class MalformedPaymentRequestIdException(val value: String) : ApiException(HttpStatus.BAD_REQUEST, "Malformed paymentRequestId")

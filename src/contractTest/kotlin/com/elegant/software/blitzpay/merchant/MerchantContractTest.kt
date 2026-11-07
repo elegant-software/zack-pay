@@ -384,6 +384,6 @@ class MerchantContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody()
-            .jsonPath("$.error").exists()
+            .jsonPath("$.detail").exists()
     }
 }

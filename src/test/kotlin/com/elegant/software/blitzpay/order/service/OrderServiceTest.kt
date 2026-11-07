@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.order.service
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
 import com.elegant.software.blitzpay.merchant.api.BranchLocationInfo
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
@@ -487,13 +488,14 @@ class OrderServiceTest {
         assertFailsWith<OrderCreationConflictException> { service.createShopperOrder(tableOrder(productId), "s") }
 
         stubTableCatalog(productId)
-        assertFailsWith<IllegalArgumentException> {
-            service.createShopperOrder(tableOrder(productId).copy(customerLocation = null), "s")
-        }
-        val farAway = nearBranch.copy(latitude = 48.1372, longitude = 11.5756)
-        assertFailsWith<OrderCreationConflictException> {
-            service.createShopperOrder(tableOrder(productId).copy(customerLocation = farAway), "s")
-        }
+        // Clients show their own text per code, so each location failure needs a distinct one.
+        fun locationCode(location: OrderCustomerLocationRequest?) = assertFailsWith<ApiException> {
+            service.createShopperOrder(tableOrder(productId).copy(customerLocation = location), "s")
+        }.code
+        assertEquals("LOCATION_REQUIRED", locationCode(null))
+        assertEquals("LOCATION_INACCURATE", locationCode(nearBranch.copy(accuracyMeters = 5_000.0)))
+        assertEquals("LOCATION_EXPIRED", locationCode(nearBranch.copy(capturedAt = Instant.now().minusSeconds(3_600))))
+        assertEquals("OUTSIDE_GEOFENCE", locationCode(nearBranch.copy(latitude = 48.1372, longitude = 11.5756)))
     }
 
     @Test
@@ -536,8 +538,9 @@ class OrderServiceTest {
         stubTableCatalog(productId)
         whenever(tableGateway.findTableByCode("K7M2QX")).thenReturn(TableInfo(tableId, branchId, "7", true))
 
-        assertFailsWith<IllegalArgumentException> {
+        val error = assertFailsWith<ApiException> {
             service.createGuestOrder(StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(productId, 1)), tableCode = "K7M2QX"))
         }
+        assertEquals("LOCATION_REQUIRED", error.code)
     }
 }

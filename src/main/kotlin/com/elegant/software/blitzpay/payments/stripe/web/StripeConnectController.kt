@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.stripe.web
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.stripe.exception.StripeException
 import io.swagger.v3.oas.annotations.Operation
@@ -38,7 +39,7 @@ class StripeConnectController(
             val url = stripeConnectService.createOnboardingUrl(merchantId, returnUrl, refreshUrl)
             ResponseEntity.ok(ConnectOnboardingResponse(url) as Any)
         } catch (ex: StripeException) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse(ex.message ?: "Stripe error") as Any)
+            throw ApiException(HttpStatus.INTERNAL_SERVER_ERROR, ex.message ?: "Stripe error")
         }
     }
 
@@ -76,9 +77,9 @@ class StripeConnectController(
             val url = stripeConnectService.createRefreshUrl(merchantId, resolvedReturn, resolvedRefresh)
             ResponseEntity.ok(ConnectOnboardingResponse(url) as Any)
         } catch (ex: NoSuchElementException) {
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(ex.message ?: "Merchant not Connect-onboarded") as Any)
+            throw ApiException(HttpStatus.NOT_FOUND, ex.message ?: "Merchant not Connect-onboarded")
         } catch (ex: StripeException) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse(ex.message ?: "Stripe error") as Any)
+            throw ApiException(HttpStatus.INTERNAL_SERVER_ERROR, ex.message ?: "Stripe error")
         }
     }
 
@@ -86,13 +87,13 @@ class StripeConnectController(
     @PostMapping("/tap-to-pay/enable")
     fun enableTapToPay(@PathVariable merchantId: UUID): ResponseEntity<Any> {
         if (!stripeConnectService.isChargesEnabled(merchantId)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse("Stripe Connect account is not verified for this merchant") as Any)
+            throw ApiException(HttpStatus.CONFLICT, "Stripe Connect account is not verified for this merchant")
         }
         return try {
             stripeConnectService.enableTapToPay(merchantId)
             ResponseEntity.ok(mapOf("tapToPayEnabled" to true) as Any)
         } catch (ex: NoSuchElementException) {
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(ex.message ?: "Merchant not Connect-onboarded") as Any)
+            throw ApiException(HttpStatus.NOT_FOUND, ex.message ?: "Merchant not Connect-onboarded")
         }
     }
 
@@ -103,7 +104,7 @@ class StripeConnectController(
             stripeConnectService.disableTapToPay(merchantId)
             ResponseEntity.ok(mapOf("tapToPayEnabled" to false) as Any)
         } catch (ex: NoSuchElementException) {
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(ex.message ?: "Merchant not Connect-onboarded") as Any)
+            throw ApiException(HttpStatus.NOT_FOUND, ex.message ?: "Merchant not Connect-onboarded")
         }
     }
 

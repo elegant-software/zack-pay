@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.stripe.web
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.stripe.exception.StripeException
@@ -31,14 +32,12 @@ class StripeTerminalController(
     fun connectionToken(@RequestBody request: ConnectionTokenRequest): ResponseEntity<Any> {
         val connectedAccountId = stripeConnectGateway.findConnectedAccountId(request.merchantId)
             ?.takeIf { stripeConnectGateway.isChargesEnabled(request.merchantId) }
-            ?: return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(ErrorResponse("Stripe Connect account not configured or not yet verified for this merchant"))
+            ?: throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Stripe Connect account not configured or not yet verified for this merchant")
         if (!stripeConnectGateway.isTapToPayEnabled(request.merchantId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse("Tap to Pay is not enabled for this merchant"))
+            throw ApiException(HttpStatus.FORBIDDEN, "Tap to Pay is not enabled for this merchant")
         }
         val locationId = resolveOrCreateLocation(request.merchantId, request.branchId, connectedAccountId)
-            ?: return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(ErrorResponse("Branch not found or missing address — cannot create Stripe Terminal Location"))
+            ?: throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Branch not found or missing address — cannot create Stripe Terminal Location")
         return try {
             val requestOptions = RequestOptions.builder().setApiKey(stripeProperties.secretKey).setStripeAccount(connectedAccountId).build()
             val token = ConnectionToken.create(ConnectionTokenCreateParams.builder().setLocation(locationId).build(), requestOptions)
@@ -46,7 +45,7 @@ class StripeTerminalController(
             ResponseEntity.ok(ConnectionTokenResponse(secret = token.secret, locationId = locationId) as Any)
         } catch (ex: StripeException) {
             log.error("stripe terminal connection_token failed code={} message={}", ex.code, ex.message)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse(ex.message ?: "Stripe error") as Any)
+            throw ApiException(HttpStatus.INTERNAL_SERVER_ERROR, ex.message ?: "Stripe error")
         }
     }
 

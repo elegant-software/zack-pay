@@ -1,7 +1,9 @@
 package com.elegant.software.blitzpay.merchant.iam.web
 
+import org.springframework.http.ProblemDetail
+import com.elegant.software.blitzpay.config.GlobalExceptionHandler
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.iam.service.KitchenAccessService
-import com.elegant.software.blitzpay.merchant.iam.service.KitchenLoginConflictException
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.web.MerchantCallerResolver
@@ -22,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
-class KitchenAccessDeniedException(message: String) : RuntimeException(message)
+class KitchenAccessDeniedException(message: String) : ApiException(HttpStatus.FORBIDDEN, message)
 
 /**
  * Kitchen Login provisioning for a Branch, used by the web admin. A Merchant Manager of the Branch's Merchant
@@ -75,23 +77,13 @@ class KitchenAccessController(
     private fun <T : Any> noStore(body: T): ResponseEntity<T> =
         ResponseEntity.ok().cacheControl(CacheControl.noStore()).header("Pragma", "no-cache").body(body)
 
-    @ExceptionHandler(KitchenAccessDeniedException::class)
-    fun forbidden(ex: KitchenAccessDeniedException): ResponseEntity<KitchenAccessErrorResponse> =
-        ResponseEntity.status(HttpStatus.FORBIDDEN).body(KitchenAccessErrorResponse(ex.message ?: "Access denied"))
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun notFound(ex: NoSuchElementException): ResponseEntity<KitchenAccessErrorResponse> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(KitchenAccessErrorResponse(ex.message ?: "Branch not found"))
-
-    @ExceptionHandler(KitchenLoginConflictException::class)
-    fun conflict(ex: KitchenLoginConflictException): ResponseEntity<KitchenAccessErrorResponse> =
-        ResponseEntity.status(HttpStatus.CONFLICT).body(KitchenAccessErrorResponse(ex.message ?: "Kitchen Login conflict"))
-
     /** Keycloak refused an admin call: the backend's service account lacks a realm-management role. */
     @ExceptionHandler(jakarta.ws.rs.ForbiddenException::class)
-    fun keycloakForbidden(ex: jakarta.ws.rs.ForbiddenException): ResponseEntity<KitchenAccessErrorResponse> {
+    fun keycloakForbidden(ex: jakarta.ws.rs.ForbiddenException): ResponseEntity<ProblemDetail> {
         log.error("Keycloak admin call forbidden; grant the service account realm-management roles manage-clients, manage-users, query-groups", ex)
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-            .body(KitchenAccessErrorResponse("Keycloak refused the request: the backend service account is missing realm-management roles (manage-clients, manage-users, query-groups)"))
+        return GlobalExceptionHandler.problem(
+            HttpStatus.BAD_GATEWAY,
+            "Keycloak refused the request: the backend service account is missing realm-management roles (manage-clients, manage-users, query-groups)",
+        )
     }
 }

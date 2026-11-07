@@ -6,10 +6,8 @@ import com.elegant.software.blitzpay.merchant.api.UpsertCatalogTranslationReques
 import com.elegant.software.blitzpay.merchant.service.CatalogTranslationService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
-data class CatalogTranslationErrorResponse(val error: String)
 
 @Tag(name = "Merchant Catalog Translations", description = "Product and category translations for the International Menu")
 @RestController
@@ -87,12 +84,4 @@ class CatalogTranslationController(private val catalogTranslationService: Catalo
     @GetMapping("/translation-coverage")
     fun coverage(@PathVariable merchantId: UUID): ResponseEntity<List<TranslationCoverageResponse>> =
         ResponseEntity.ok(catalogTranslationService.coverage(merchantId))
-
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun badRequest(ex: IllegalArgumentException): ResponseEntity<CatalogTranslationErrorResponse> =
-        ResponseEntity.badRequest().body(CatalogTranslationErrorResponse(ex.message ?: "Invalid translation request"))
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun notFound(ex: NoSuchElementException): ResponseEntity<CatalogTranslationErrorResponse> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(CatalogTranslationErrorResponse(ex.message ?: "Translation not found"))
 }

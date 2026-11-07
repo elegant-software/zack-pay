@@ -1,5 +1,7 @@
 package com.elegant.software.blitzpay.merchant.iam.service
 
+import org.springframework.http.HttpStatus
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.config.KitchenAccessProperties
 import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupNames
@@ -21,7 +23,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 
 /** Thrown when the Kitchen Login username is already taken by a user bound to another Branch. */
-class KitchenLoginConflictException(message: String) : RuntimeException(message)
+class KitchenLoginConflictException(message: String) : ApiException(HttpStatus.CONFLICT, message)
 
 /**
  * Provisions Kitchen Screen access for a Branch in Keycloak: the shared kitchen realm client, the Branch's

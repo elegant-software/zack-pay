@@ -1,15 +1,12 @@
 package com.elegant.software.blitzpay.payments.push.web
 
 import com.elegant.software.blitzpay.payments.push.service.DeviceRegistrationService
-import com.elegant.software.blitzpay.payments.push.service.OrderNotFoundException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -36,12 +33,5 @@ class DeviceRegistrationController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun unregister(@PathVariable expoPushToken: String) {
         deviceRegistrationService.unregister(expoPushToken)
-    }
-
-    @ExceptionHandler(OrderNotFoundException::class)
-    fun handleNotFound(ex: OrderNotFoundException): ResponseEntity<ProblemDetail> {
-        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Not found")
-        problem.title = "Not Found"
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem)
     }
 }

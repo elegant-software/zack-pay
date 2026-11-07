@@ -13,7 +13,6 @@ import com.elegant.software.blitzpay.merchant.api.TableResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateFloorPlanRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateTableRequest
 import com.elegant.software.blitzpay.merchant.service.MerchantTableService
-import com.elegant.software.blitzpay.merchant.service.TableConflictException
 import com.elegant.software.blitzpay.merchant.service.TableFloorBus
 import com.elegant.software.blitzpay.merchant.service.TableFloorService
 import io.swagger.v3.oas.annotations.Operation
@@ -26,7 +25,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -38,7 +36,6 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 import java.util.UUID
 
-data class TableErrorResponse(val error: String)
 
 /**
  * Tables, Floor Plans and the live floor of a Branch. Setup is for a Merchant Manager or a Platform Admin;
@@ -280,25 +277,6 @@ class MerchantTableController(
     }
 
     // Explicit content type on errors: the events endpoint only produces text/event-stream, which can't carry the body.
-    @ExceptionHandler(TableAccessDeniedException::class)
-    fun forbidden(ex: TableAccessDeniedException): ResponseEntity<TableErrorResponse> =
-        ResponseEntity.status(HttpStatus.FORBIDDEN).contentType(MediaType.APPLICATION_JSON)
-            .body(TableErrorResponse(ex.message ?: "Access denied"))
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun notFound(ex: NoSuchElementException): ResponseEntity<TableErrorResponse> =
-        ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON)
-            .body(TableErrorResponse(ex.message ?: "Not found"))
-
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun badRequest(ex: IllegalArgumentException): ResponseEntity<TableErrorResponse> =
-        ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
-            .body(TableErrorResponse(ex.message ?: "Invalid request"))
-
-    @ExceptionHandler(TableConflictException::class)
-    fun conflict(ex: TableConflictException): ResponseEntity<TableErrorResponse> =
-        ResponseEntity.status(HttpStatus.CONFLICT).body(TableErrorResponse(ex.message ?: "Conflict"))
-
     private companion object {
         /** Clients reconnect after this (and reload /floor); heartbeats keep the connection alive meanwhile. */
         const val STREAM_TIMEOUT_MS = 60 * 60 * 1000L

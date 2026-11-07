@@ -1,5 +1,7 @@
 package com.elegant.software.blitzpay.merchant.service
 
+import org.springframework.http.HttpStatus
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.api.CreateProductCategoryRequest
 import com.elegant.software.blitzpay.merchant.api.ProductCategoryResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateProductCategoryRequest
@@ -93,8 +95,11 @@ class MerchantProductCategoryService(
         val category = categoryRepository.findByMerchantIdAndId(merchantId, categoryId)
             ?: throw NoSuchElementException("Category not found: $categoryId")
         val assignedProducts = productRepository.countByProductCategoryIdAndActiveTrue(categoryId)
-        check(assignedProducts == 0L) {
-            "Cannot delete category '${category.name}': $assignedProducts product(s) are still assigned to it"
+        if (assignedProducts != 0L) {
+            throw ApiException(
+                HttpStatus.CONFLICT,
+                "Cannot delete category '${category.name}': $assignedProducts product(s) are still assigned to it",
+            )
         }
         categoryTranslationRepository.deleteAllByCategoryId(categoryId)
         categoryRepository.deleteById(categoryId)

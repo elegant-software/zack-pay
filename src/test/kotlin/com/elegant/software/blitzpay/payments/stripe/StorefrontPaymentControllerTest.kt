@@ -1,5 +1,8 @@
 package com.elegant.software.blitzpay.payments.stripe
 
+import kotlin.test.assertFailsWith
+import org.springframework.http.HttpStatus
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.api.MerchantCredentialResolver
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
@@ -59,9 +62,9 @@ class StorefrontPaymentControllerTest {
     fun `rejects a missing or wrong guest token without touching Stripe`() {
         whenever(orderGateway.isGuestTokenValid("ORD-1", "wrong")).thenReturn(false)
 
-        val response = controller.pay("ORD-1", StorefrontPaymentRequest(StorefrontPaymentMethod.CARD), "wrong")
+        val error = assertFailsWith<ApiException> { controller.pay("ORD-1", StorefrontPaymentRequest(StorefrontPaymentMethod.CARD), "wrong") }
 
-        assertEquals(404, response.statusCode.value())
+        assertEquals(HttpStatus.NOT_FOUND, error.status)
         verifyNoInteractions(stripePaymentService, statusGateway)
     }
 
@@ -70,9 +73,9 @@ class StorefrontPaymentControllerTest {
         whenever(orderGateway.isGuestTokenValid("ORD-1", "tok")).thenReturn(true)
         whenever(orderGateway.countPaymentAttempts("ORD-1")).thenReturn(5)
 
-        val response = controller.pay("ORD-1", StorefrontPaymentRequest(StorefrontPaymentMethod.CARD), "tok")
+        val error = assertFailsWith<ApiException> { controller.pay("ORD-1", StorefrontPaymentRequest(StorefrontPaymentMethod.CARD), "tok") }
 
-        assertEquals(429, response.statusCode.value())
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, error.status)
         verifyNoInteractions(stripePaymentService)
     }
 

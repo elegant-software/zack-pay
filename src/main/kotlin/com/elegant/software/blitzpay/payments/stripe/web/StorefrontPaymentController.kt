@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.stripe.web
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.STOREFRONT_GUEST_TOKEN_COOKIE
 import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
@@ -48,12 +49,12 @@ class StorefrontPaymentController(
     ): ResponseEntity<Any> {
         // Same 404 as an unknown order, so the endpoint is not an order-ID oracle.
         if (!orderGateway.isGuestTokenValid(orderId, token)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse("Order not found: $orderId"))
+            throw ApiException(HttpStatus.NOT_FOUND, "Order not found: $orderId")
         }
         // ponytail: per-order cap limits card testing through one cookie; per-IP limits + captcha sit in front of order creation.
         if (orderGateway.countPaymentAttempts(orderId) >= MAX_PAYMENT_ATTEMPTS) {
             log.warn("storefront payment attempt limit reached orderId={}", orderId)
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ErrorResponse("Too many payment attempts for this order"))
+            throw ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many payment attempts for this order")
         }
         val target = StripeCheckoutTarget(orderId)
         val response = when (request.method) {
@@ -75,10 +76,6 @@ class StorefrontPaymentController(
             ?: throw StripeCheckoutException(HttpStatus.SERVICE_UNAVAILABLE, "STOREFRONT_URL is not configured")
         return "$base/order/${URLEncoder.encode(orderId, StandardCharsets.UTF_8)}/confirmation"
     }
-
-    @ExceptionHandler(StripeCheckoutException::class)
-    fun checkoutFailed(ex: StripeCheckoutException): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(ex.status).body(ErrorResponse(ex.message))
 
     private companion object {
         const val MAX_PAYMENT_ATTEMPTS = 5L

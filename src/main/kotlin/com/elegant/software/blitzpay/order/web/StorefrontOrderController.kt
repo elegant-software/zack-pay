@@ -4,7 +4,6 @@ import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.STOREFRONT_GUEST_TOKEN_COOKIE
 import com.elegant.software.blitzpay.order.api.StorefrontOrderRequest
-import com.elegant.software.blitzpay.order.service.OrderCreationConflictException
 import com.elegant.software.blitzpay.order.service.OrderService
 import com.elegant.software.blitzpay.order.service.StorefrontOrderBus
 import io.swagger.v3.oas.annotations.Operation
@@ -71,20 +70,6 @@ class StorefrontOrderController(
             it.send(StorefrontOrderBus.changedEvent(current))
         }
     }
-
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun badRequest(ex: IllegalArgumentException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.badRequest().body(OrderErrorResponse(ex.message ?: "Invalid order request"))
-
-    @ExceptionHandler(NoSuchElementException::class)
-    fun notFound(ex: NoSuchElementException): ResponseEntity<OrderErrorResponse> =
-        // Explicit content type: the events endpoint only produces text/event-stream, which can't carry the error body.
-        ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON)
-            .body(OrderErrorResponse(ex.message ?: "Order not found"))
-
-    @ExceptionHandler(OrderCreationConflictException::class)
-    fun unprocessable(ex: OrderCreationConflictException): ResponseEntity<OrderErrorResponse> =
-        ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(OrderErrorResponse(ex.message ?: "Order cannot be created"))
 
     companion object {
         /** Clients reconnect after this (and get a fresh snapshot); heartbeats keep the connection alive meanwhile. */

@@ -7,14 +7,11 @@ import com.elegant.software.blitzpay.voice.service.MissingAuthorizationException
 import com.elegant.software.blitzpay.voice.service.PayloadTooLargeException
 import com.elegant.software.blitzpay.voice.service.UnsupportedAudioFormatException
 import com.elegant.software.blitzpay.voice.service.VoiceAudioSubmission
-import com.elegant.software.blitzpay.voice.service.VoiceException
 import com.elegant.software.blitzpay.voice.service.VoiceTranscriptionResponse
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
@@ -54,15 +51,6 @@ class VoiceQueryController(
             )
         )
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(response)
-    }
-
-    @ExceptionHandler(VoiceException::class)
-    fun handleVoiceException(ex: VoiceException): ResponseEntity<ProblemDetail> {
-        val status = HttpStatus.valueOf(ex.statusCode)
-        val problem = ProblemDetail.forStatusAndDetail(status, ex.message)
-        problem.title = status.reasonPhrase
-        problem.setProperty("reason", ex.reason)
-        return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(problem)
     }
 
     private fun extractCallerSubject(authorization: String?): String {
