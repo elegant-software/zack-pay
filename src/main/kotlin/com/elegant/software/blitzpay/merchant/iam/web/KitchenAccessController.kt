@@ -1,7 +1,6 @@
 package com.elegant.software.blitzpay.merchant.iam.web
 
 import org.springframework.http.ProblemDetail
-import com.elegant.software.blitzpay.config.GlobalExceptionHandler
 import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.iam.service.KitchenAccessService
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
@@ -81,9 +80,10 @@ class KitchenAccessController(
     @ExceptionHandler(jakarta.ws.rs.ForbiddenException::class)
     fun keycloakForbidden(ex: jakarta.ws.rs.ForbiddenException): ResponseEntity<ProblemDetail> {
         log.error("Keycloak admin call forbidden; grant the service account realm-management roles manage-clients, manage-users, query-groups", ex)
-        return GlobalExceptionHandler.problem(
+        val error = ApiException(
             HttpStatus.BAD_GATEWAY,
             "Keycloak refused the request: the backend service account is missing realm-management roles (manage-clients, manage-users, query-groups)",
         )
+        return ResponseEntity.of(error.body).build()
     }
 }

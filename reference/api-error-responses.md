@@ -9,6 +9,7 @@ merchant and shopper apps) can handle errors without parsing message text.
   "title": "Unprocessable Entity",
   "status": 422,
   "detail": "Customer is outside the branch geofence",
+  "instance": "/v1/storefront/orders",
   "code": "OUTSIDE_GEOFENCE"
 }
 ```
@@ -21,9 +22,14 @@ merchant and shopper apps) can handle errors without parsing message text.
 
 Content type is `application/problem+json`, also on SSE endpoints.
 
+The format is Spring's built-in RFC 9457 support: `ProblemDetail`, `ErrorResponseException` and
+`ResponseEntityExceptionHandler`. `code` is our one extension member (RFC 9457 §3.2).
+
 ## Throwing errors
 
-All rendering happens in `config/GlobalExceptionHandler`. Code only throws:
+`ApiException` is a Spring `ErrorResponseException` carrying its `ProblemDetail` and `code`, so Spring
+renders it. `config/GlobalExceptionHandler` (a `ResponseEntityExceptionHandler`) maps the plain JDK
+exceptions below to `ApiException`, adds the default `code`, and logs every error once. Code only throws:
 
 | Throw | Status | `code` |
 |---|---|---|
@@ -41,7 +47,8 @@ A module-specific exception extends `ApiException` and fixes its status, e.g.
 Don't:
 - return `ResponseEntity.badRequest().body(...)` or any other hand-built error body;
 - add `@ExceptionHandler` methods to controllers (the one exception: a handler that must log
-  something specific, which still returns `GlobalExceptionHandler.problem(...)`);
+  something specific, which still returns `ResponseEntity.of(ApiException(...).body).build()`);
+- build a `ProblemDetail` by hand or set the content type yourself — Spring does both;
 - put secrets, SQL, stack traces or internal IDs a client shouldn't see in `detail`.
 
 ## When to add a specific code
