@@ -1,3 +1,10 @@
+spring:
+  cloud:
+    aws:
+      region:
+        # Local startup must not depend on IDE dotenv loading or EC2 metadata.
+        static: ${AWS_REGION:eu-central-1}
+
 management:
   endpoints:
     web:
