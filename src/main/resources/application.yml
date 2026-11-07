@@ -43,6 +43,12 @@ spring:
   mail:
     properties:
       "[mail.smtp.starttls.enable]": true
+      # Refuse to log in over plaintext if the server doesn't offer STARTTLS.
+      "[mail.smtp.starttls.required]": true
+      # JavaMail waits forever by default; the batch job holds a DB transaction while sending.
+      "[mail.smtp.connectiontimeout]": 10000
+      "[mail.smtp.timeout]": 10000
+      "[mail.smtp.writetimeout]": 10000
   threads:
     virtual:
       enabled: true
