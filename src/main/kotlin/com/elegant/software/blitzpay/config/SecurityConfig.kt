@@ -41,6 +41,9 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.GET, "/v1/storefront/orders/{orderId}", "/v1/storefront/orders/{orderId}/events").permitAll()
                     // Table Link resolution and Table availability — public by design, never expose orders
                     .requestMatchers(HttpMethod.GET, "/v1/storefront/tables/{tableCode}", "/v1/storefront/branches/{branchId:$ID}/table-availability").permitAll()
+                    // Self-service signup from the apps — no account exists yet; the signup screen lists verticals first
+                    .requestMatchers(HttpMethod.POST, "/v1/signup/shopper", "/v1/signup/merchant").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/v1/merchants/verticals").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer {
