@@ -104,6 +104,9 @@ class KitchenService(
     }
 
     @Transactional(readOnly = true)
+    fun logoUrl(branchId: UUID): String? = merchantGateway.findBranchLogoUrl(branchId)
+
+    @Transactional(readOnly = true)
     fun requireStation(branchId: UUID, stationId: UUID) {
         if (stations(branchId).none { it.id == stationId }) throw NoSuchElementException("Station not found in this branch")
     }

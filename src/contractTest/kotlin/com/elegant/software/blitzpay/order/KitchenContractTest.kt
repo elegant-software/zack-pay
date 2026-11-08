@@ -72,6 +72,18 @@ class KitchenContractTest : ContractVerifierBase() {
     )
 
     @Test
+    fun `branding returns the merchant logo url for branch members`() {
+        whenever(kitchenService.logoUrl(branchId)).thenReturn("https://cdn.example/logo.png")
+
+        webTestClient.get().uri("$base/branding").header(HttpHeaders.AUTHORIZATION, member)
+            .exchange().expectStatus().isOk
+            .expectBody().jsonPath("$.logoUrl").isEqualTo("https://cdn.example/logo.png")
+
+        webTestClient.get().uri("$base/branding").header(HttpHeaders.AUTHORIZATION, token("/merchants/other"))
+            .exchange().expectStatus().isForbidden
+    }
+
+    @Test
     fun `list returns the KitchenOrder shape for branch members`() {
         whenever(kitchenService.listOpenOrders(branchId)).thenReturn(listOf(kitchenOrder(), kitchenOrder(cancelled = true)))
 

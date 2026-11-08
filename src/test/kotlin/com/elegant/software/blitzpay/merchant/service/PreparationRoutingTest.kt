@@ -21,7 +21,7 @@ class PreparationRoutingTest {
         val products = mock<MerchantProductRepository>()
         val branches = mock<MerchantBranchRepository>()
         val configs = mock<MerchantPreparationConfigurationRepository>()
-        val gateway = MerchantOnboardingService(mock<MerchantRepository>(), products, branches, mock<MerchantOfferingAssignmentRepository>(), configs)
+        val gateway = MerchantOnboardingService(mock<MerchantRepository>(), products, branches, mock<MerchantOfferingAssignmentRepository>(), configs, mock())
         val merchant = UUID.randomUUID()
         val branch = UUID.randomUUID()
         val category = UUID.randomUUID()
