@@ -9,6 +9,7 @@ import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRep
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantOfferingAssignmentRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
+import com.elegant.software.blitzpay.storage.StorageService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.ZoneId
@@ -22,6 +23,7 @@ class MerchantOnboardingService(
     private val merchantBranchRepository: MerchantBranchRepository,
     private val merchantOfferingAssignmentRepository: MerchantOfferingAssignmentRepository,
     private val preparationConfigurations: com.elegant.software.blitzpay.merchant.persistence.repository.MerchantPreparationConfigurationRepository,
+    private val storageService: StorageService,
 ) : MerchantGateway {
 
     @Transactional(readOnly = true)
@@ -96,4 +98,11 @@ class MerchantOnboardingService(
         merchantBranchRepository.findById(branchId).orElse(null)
             ?.timezone
             ?.let { runCatching { ZoneId.of(it) }.getOrNull() }
+
+    @Transactional(readOnly = true)
+    override fun findBranchLogoUrl(branchId: UUID): String? =
+        merchantBranchRepository.findById(branchId).orElse(null)
+            ?.let { merchantRepository.findById(it.merchantId).orElse(null) }
+            ?.logoStorageKey
+            ?.let { runCatching { storageService.presignDownload(it) }.getOrNull() }
 }

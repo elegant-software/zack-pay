@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.util.UUID
 
+data class KitchenBranding(val logoUrl: String?)
+
 @Tag(name = "Kitchen Screen", description = "Live Orders of one Branch and their Preparation Status")
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchant/branches/{branchId}/kitchen", version = "1")
@@ -64,6 +66,13 @@ class KitchenController(
     ): ResponseEntity<KitchenOrder> {
         BranchGroupAccess.require(jwt, branchId)
         return ResponseEntity.ok(kitchenService.updatePreparationStatus(branchId, orderId, request.status))
+    }
+
+    @Operation(summary = "Branding of the Branch's Merchant for the Kitchen Screen header; logoUrl is a short-lived URL or null")
+    @GetMapping("/branding")
+    fun branding(@PathVariable branchId: UUID, @AuthenticationPrincipal jwt: Jwt?): KitchenBranding {
+        BranchGroupAccess.require(jwt, branchId)
+        return KitchenBranding(kitchenService.logoUrl(branchId))
     }
 
     @Operation(summary = "List stations available to this authorized branch, including unassigned work")

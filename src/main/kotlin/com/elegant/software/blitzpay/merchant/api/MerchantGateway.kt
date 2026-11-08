@@ -18,6 +18,9 @@ interface MerchantGateway {
     fun findBranchTimezone(branchId: UUID): ZoneId?
 
     fun findPreparationStations(branchId: UUID): List<PreparationStation>
+
+    /** Short-lived download URL of the logo of the Branch's Merchant, or null when none is set or the Branch is unknown. */
+    fun findBranchLogoUrl(branchId: UUID): String?
 }
 
 data class MerchantSummary(
