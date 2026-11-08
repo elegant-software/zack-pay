@@ -15,7 +15,14 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
-data class ShopperSignupRequest(val name: String, val email: String, val password: String)
+/** [acceptedTermsVersion]: version of the Terms, Privacy Policy and DPA the user ticked to accept. */
+data class ShopperSignupRequest(
+    val name: String,
+    val email: String,
+    val password: String,
+    // ponytail: optional for shoppers until the shopper app sends it; required for merchants
+    val acceptedTermsVersion: String? = null,
+)
 
 data class MerchantSignupRequest(
     val ownerName: String,
@@ -23,6 +30,7 @@ data class MerchantSignupRequest(
     val email: String,
     val password: String,
     val businessType: String,
+    val acceptedTermsVersion: String? = null,
 )
 
 data class ShopperSignupResponse(val userId: UUID)
@@ -40,7 +48,11 @@ class SignupController(private val service: SignupService) {
     @ResponseStatus(HttpStatus.CREATED)
     fun shopper(@RequestBody request: ShopperSignupRequest): ShopperSignupResponse {
         validate(request.name, request.email, request.password)
-        return ShopperSignupResponse(service.signupShopper(request.name.trim(), normalize(request.email), request.password))
+        return ShopperSignupResponse(service.signupShopper(
+                request.name.trim(), normalize(request.email), request.password,
+                request.acceptedTermsVersion?.trim()?.takeIf { it.isNotEmpty() },
+            )
+        )
     }
 
     @Operation(summary = "Create a merchant, its first Branch and the owner's manager account")
@@ -50,10 +62,12 @@ class SignupController(private val service: SignupService) {
         validate(request.ownerName, request.email, request.password)
         require(request.merchantName.isNotBlank()) { "merchantName must not be blank" }
         require(request.businessType.isNotBlank()) { "businessType must not be blank" }
+        val termsVersion = request.acceptedTermsVersion?.trim()
+        require(!termsVersion.isNullOrEmpty() && termsVersion.length <= 32) { "acceptedTermsVersion is required" }
         return MerchantSignupResponse(
             service.signupMerchant(
                 request.ownerName.trim(), request.merchantName.trim(), normalize(request.email),
-                request.password, request.businessType,
+                request.password, request.businessType, termsVersion,
             )
         )
     }

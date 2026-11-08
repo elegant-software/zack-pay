@@ -1,6 +1,8 @@
 package com.elegant.software.blitzpay.merchant.iam.service
 
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
+import com.elegant.software.blitzpay.merchant.iam.domain.AccountConsent
+import com.elegant.software.blitzpay.merchant.iam.repository.AccountConsentRepository
 import com.elegant.software.blitzpay.merchant.service.MerchantBranchService
 import com.elegant.software.blitzpay.merchant.service.MerchantRegistrationService
 import jakarta.ws.rs.core.Response
@@ -29,10 +31,11 @@ class SignupServiceTest {
     private val users = mock<UsersResource>()
     private val registration = mock<MerchantRegistrationService>()
     private val branches = mock<MerchantBranchService>()
+    private val consents = mock<AccountConsentRepository>()
     private val service = SignupService(
         keycloak,
         KeycloakProperties("https://auth.example", "blitzpay", "admin", "secret"),
-        registration, branches, mock(), mock(),
+        registration, branches, mock(), mock(), consents,
     )
     private val userId = UUID.randomUUID()
 
@@ -60,7 +63,7 @@ class SignupServiceTest {
         whenever(users.create(any())) doReturn Response.status(Response.Status.CONFLICT).build()
 
         assertThrows<EmailConflictException> {
-            service.signupMerchant("Ada", "Cafe", "ada@example.com", "Secret123", "RESTAURANT")
+            service.signupMerchant("Ada", "Cafe", "ada@example.com", "Secret123", "RESTAURANT", "2026-11-08")
         }
         verify(registration, never()).register(any())
     }
@@ -71,8 +74,19 @@ class SignupServiceTest {
         whenever(registration.register(any())).thenThrow(IllegalArgumentException("unknown vertical"))
 
         assertThrows<IllegalArgumentException> {
-            service.signupMerchant("Ada", "Cafe", "ada@example.com", "Secret123", "NOPE")
+            service.signupMerchant("Ada", "Cafe", "ada@example.com", "Secret123", "NOPE", "2026-11-08")
         }
         verify(users).delete(userId.toString())
+    }
+
+    @Test
+    fun `shopper signup records the accepted terms version`() {
+        whenever(users.create(any())) doReturn Response.created(URI("https://auth.example/users/$userId")).build()
+
+        service.signupShopper("Ada Lovelace", "ada@example.com", "Secret123", "2026-11-08")
+
+        val consent = argumentCaptor<AccountConsent>().apply { verify(consents).save(capture()) }.firstValue
+        assertEquals(userId, consent.keycloakUserId)
+        assertEquals("2026-11-08", consent.termsVersion)
     }
 }
