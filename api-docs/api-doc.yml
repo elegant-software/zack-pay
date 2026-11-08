@@ -92,15 +92,61 @@ tags:
   description: Manage scheduled location appearances for MOBILE merchants
 - name: Orders
   description: Create and inspect orders for shoppers
+- name: Storefront Themes
+  description: Named storefront looks merchants pick from; maintained by platform
+    admins
 - name: Shopper Profile
   description: Shopper invoice address — used automatically as Buyer Contact on orders
 paths:
+  /{version}/storefront/themes/{code}:
+    get:
+      tags:
+      - Storefront Themes
+      summary: "Get one theme, including drafts, for storefront preview"
+      operationId: get
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StorefrontThemeResponse"
+    put:
+      tags:
+      - Storefront Themes
+      summary: Create or replace a draft theme (platform admin)
+      operationId: save
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveStorefrontThemeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StorefrontThemeResponse"
   /{version}/shopper/profile:
     get:
       tags:
       - Shopper Profile
       summary: Get the authenticated shopper's invoice address
-      operationId: get
+      operationId: get_1
       parameters:
       - name: Authorization
         in: header
@@ -234,7 +280,7 @@ paths:
       tags:
       - Merchant Products
       summary: Get a single product
-      operationId: get_1
+      operationId: get_2
       parameters:
       - name: merchantId
         in: path
@@ -690,7 +736,7 @@ paths:
       tags:
       - Merchant Branches
       summary: Get a branch by ID
-      operationId: get_2
+      operationId: get_3
       parameters:
       - name: merchantId
         in: path
@@ -1004,6 +1050,45 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BranchResponse"
+  /{version}/merchants/{merchantId}/branches/{branchId}/floor-plans/{floorPlanId}/areas:
+    put:
+      tags:
+      - Tables
+      summary: Replace the Floor Areas traced over a Floor Plan; an empty list shows
+        the picture again
+      operationId: updateFloorAreas
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: floorPlanId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFloorAreasRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FloorPlanResponse"
   /{version}/merchants/{merchantId}/appointments/{appointmentId}/reschedule:
     put:
       tags:
@@ -1096,7 +1181,7 @@ paths:
       tags:
       - Merchants
       summary: Get merchant details
-      operationId: get_3
+      operationId: get_4
       parameters:
       - name: id
         in: path
@@ -3387,7 +3472,7 @@ paths:
     get:
       tags:
       - Appointment Policy
-      operationId: get_4
+      operationId: get_5
       parameters:
       - name: merchantId
         in: path
@@ -3559,6 +3644,29 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/UserSearchResult"
+  /{version}/storefront/themes:
+    get:
+      tags:
+      - Storefront Themes
+      summary: List the published themes a merchant can pick; includeDrafts=true adds
+        drafts for preview
+      operationId: list_7
+      parameters:
+      - name: includeDrafts
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StorefrontThemeResponse"
   /{version}/storefront/tables/{tableCode}:
     get:
       tags:
@@ -3586,7 +3694,7 @@ paths:
       - Storefront Orders
       summary: Get a guest order; requires the guest_token cookie issued for this
         order
-      operationId: get_5
+      operationId: get_6
       parameters:
       - name: orderId
         in: path
@@ -3680,7 +3788,7 @@ paths:
       tags:
       - Settlement Reporting
       summary: Paginated settlement transaction list for a merchant (admin only)
-      operationId: list_7
+      operationId: list_8
       parameters:
       - name: merchantId
         in: query
@@ -3871,7 +3979,7 @@ paths:
       tags:
       - Orders
       summary: Get the latest business status for an order
-      operationId: get_6
+      operationId: get_7
       parameters:
       - name: orderId
         in: path
@@ -3962,7 +4070,7 @@ paths:
       tags:
       - Merchant Provider Accounts
       summary: List all provider accounts for a merchant
-      operationId: list_8
+      operationId: list_9
       parameters:
       - name: merchantId
         in: path
@@ -4095,7 +4203,7 @@ paths:
       tags:
       - Appearances
       summary: Get an appearance by ID
-      operationId: get_7
+      operationId: get_8
       parameters:
       - name: merchantId
         in: path
@@ -4350,7 +4458,7 @@ paths:
       tags:
       - Merchant Verticals
       summary: List all active merchant verticals
-      operationId: list_9
+      operationId: list_10
       responses:
         "200":
           description: OK
@@ -4398,7 +4506,7 @@ paths:
       tags:
       - Merchant Menu Languages
       summary: List the Menu Language Catalogue
-      operationId: list_10
+      operationId: list_11
       responses:
         "200":
           description: OK
@@ -4643,6 +4751,27 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/KitchenOrder"
+  /{version}/merchant/branches/{branchId}/kitchen/branding:
+    get:
+      tags:
+      - Kitchen Screen
+      summary: Branding of the Branch's Merchant for the Kitchen Screen header; logoUrl
+        is a short-lived URL or null
+      operationId: branding
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KitchenBranding"
   /{version}/geofence/regions:
     get:
       tags:
@@ -5155,6 +5284,66 @@ paths:
           description: No Content
 components:
   schemas:
+    SaveStorefrontThemeRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+        style:
+          type: string
+          enum:
+          - STANDARD
+          - CLASSIC
+        tokens:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+      required:
+      - displayName
+      - status
+      - style
+      - tokens
+    StorefrontThemeResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        displayName:
+          type: string
+        style:
+          type: string
+          enum:
+          - STANDARD
+          - CLASSIC
+        tokens:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+        warnings:
+          type: array
+          items:
+            type: string
+      required:
+      - code
+      - displayName
+      - status
+      - style
+      - tokens
+      - warnings
     UpsertShopperProfileRequest:
       type: object
       properties:
@@ -5982,6 +6171,58 @@ components:
           type: string
       required:
       - storageKey
+    FloorArea:
+      type: object
+      properties:
+        name:
+          type: string
+        x:
+          type: number
+          format: double
+        "y":
+          type: number
+          format: double
+        width:
+          type: number
+          format: double
+        height:
+          type: number
+          format: double
+      required:
+      - height
+      - name
+      - width
+      - x
+      - "y"
+    UpdateFloorAreasRequest:
+      type: object
+      properties:
+        areas:
+          type: array
+          items:
+            $ref: "#/components/schemas/FloorArea"
+      required:
+      - areas
+    FloorPlanResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        imageUrl:
+          type:
+          - string
+          - "null"
+        areas:
+          type: array
+          items:
+            $ref: "#/components/schemas/FloorArea"
+      required:
+      - areas
+      - id
+      - name
     SupportOverrideRequest:
       type: object
       properties:
@@ -6165,6 +6406,10 @@ components:
           enum:
           - BRICK_AND_MORTAR
           - MOBILE
+        storefrontTheme:
+          type:
+          - string
+          - "null"
         defaultVatPercent:
           type:
           - number
@@ -6232,6 +6477,8 @@ components:
           enum:
           - BRICK_AND_MORTAR
           - MOBILE
+        storefrontTheme:
+          type: string
         defaultVatPercent:
           type:
           - number
@@ -6257,6 +6504,7 @@ components:
       - merchantStatus
       - offerings
       - operatingCountry
+      - storefrontTheme
       - supportedMenuLanguages
     SetLogoRequest:
       type: object
@@ -7756,21 +8004,6 @@ components:
         name:
           type: string
       required:
-      - name
-    FloorPlanResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        imageUrl:
-          type:
-          - string
-          - "null"
-      required:
-      - id
       - name
     FloorPlanImageUploadRequest:
       type: object
@@ -9408,6 +9641,13 @@ components:
       required:
       - name
       - shopperAccountId
+    KitchenBranding:
+      type: object
+      properties:
+        logoUrl:
+          type:
+          - string
+          - "null"
     GeofenceRegionResponse:
       type: object
       properties:
