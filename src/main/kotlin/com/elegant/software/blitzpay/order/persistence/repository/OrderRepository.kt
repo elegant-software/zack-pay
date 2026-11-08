@@ -56,9 +56,11 @@ interface OrderRepository : JpaRepository<Order, UUID> {
 
     // ponytail: scans the whole lookback window and returns every id in it; fine up to ~tens of
     // thousands of orders per window. Beyond that, page it or track invoice state on the order.
+    // Guests without a consented invoice email get no invoice, so they aren't listed.
     @Query("""
         SELECT o.orderId FROM Order o
-        WHERE (o.status = 'PAID' AND o.paidAt > :since)
+        WHERE (o.status = 'PAID' AND o.paidAt > :since
+               AND NOT (o.creatorType = 'GUEST' AND o.invoiceEmail IS NULL))
            OR (o.targetShopperId IS NOT NULL AND o.createdAt > :since)
         ORDER BY o.createdAt
     """)

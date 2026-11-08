@@ -34,6 +34,9 @@ interface OrderGateway {
 
     /** Invoice data for a paid order or an invoice order; null if the order is unknown or neither. */
     fun findInvoiceSource(orderId: String): OrderInvoiceSource?
+
+    /** Drops a guest's invoice email once the invoice is sent: its only purpose is fulfilled. No-op for other orders. */
+    fun clearGuestInvoiceEmail(orderId: String)
 }
 
 data class OrderPaymentSummary(

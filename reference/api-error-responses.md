@@ -70,6 +70,7 @@ status-name code is enough.
 | `LOCATION_INACCURATE` | 400 | `OrderService` | Location accuracy above the allowed limit |
 | `LOCATION_EXPIRED` | 400 | `OrderService` | Location captured too long ago |
 | `OUTSIDE_GEOFENCE` | 422 | `OrderService` | Customer is outside the branch geofence |
+| `INVOICE_EMAIL_CONSENT_REQUIRED` | 400 | `OrderService` (storefront guest order) | `buyerEmail` sent without `invoiceEmailConsent: true` |
 | `MISSING_AUTHORIZATION`, `MISSING_AUDIO`, `UNSUPPORTED_AUDIO_FORMAT`, `PAYLOAD_TOO_LARGE`, `AUDIO_TOO_SHORT`, `AUDIO_TOO_LONG`, `NO_SPEECH_DETECTED`, `UPSTREAM_AI_ERROR` | various | `voice` module | Voice query failures |
 
 ## Not covered

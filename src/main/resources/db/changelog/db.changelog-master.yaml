@@ -147,3 +147,5 @@ databaseChangeLog:
       file: db/changelog/20261102-001-order-invoices-skip-historical.sql
   - include:
       file: db/changelog/20261108-001-merchant-floor-plan-areas.sql
+  - include:
+      file: db/changelog/20261108-002-orders-guest-invoice-email.sql

@@ -35,7 +35,9 @@ import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import org.springframework.http.HttpStatus
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
@@ -405,6 +407,62 @@ class OrderServiceTest {
     fun `createGuestOrder rejects oversized quantities`() {
         assertFailsWith<IllegalArgumentException> {
             service.createGuestOrder(StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(UUID.randomUUID(), 100))))
+        }
+    }
+
+    @Test
+    fun `createGuestOrder stores the invoice email with consent time and version`() {
+        val productId = UUID.randomUUID()
+        stubGuestCatalog(productId)
+
+        service.createGuestOrder(
+            StorefrontOrderRequest(
+                branchId, listOf(CreateOrderItemRequest(productId, 1)),
+                buyerEmail = " guest@example.com ", invoiceEmailConsent = true,
+            )
+        )
+
+        val saved = argumentCaptor<Order>().also { verify(orderRepository).save(it.capture()) }.firstValue
+        assertEquals("guest@example.com", saved.invoiceEmail)
+        assertNotNull(saved.invoiceEmailConsentAt)
+        assertEquals(OrderService.INVOICE_EMAIL_CONSENT_VERSION, saved.invoiceEmailConsentVersion)
+    }
+
+    @Test
+    fun `createGuestOrder stores no consent without an email`() {
+        val productId = UUID.randomUUID()
+        stubGuestCatalog(productId)
+
+        service.createGuestOrder(StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(productId, 1)), invoiceEmailConsent = true))
+
+        val saved = argumentCaptor<Order>().also { verify(orderRepository).save(it.capture()) }.firstValue
+        assertNull(saved.invoiceEmail)
+        assertNull(saved.invoiceEmailConsentAt)
+    }
+
+    @Test
+    fun `createGuestOrder rejects an email without consent`() {
+        val ex = assertFailsWith<ApiException> {
+            service.createGuestOrder(
+                StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(UUID.randomUUID(), 1)), buyerEmail = "guest@example.com")
+            )
+        }
+        assertEquals(HttpStatus.BAD_REQUEST, ex.status)
+        assertEquals(OrderService.INVOICE_EMAIL_CONSENT_REQUIRED, ex.code)
+        verify(orderRepository, never()).save(any<Order>())
+    }
+
+    @Test
+    fun `createGuestOrder rejects a malformed email`() {
+        listOf("no-at-sign", "a@b", "a b@example.com").forEach { email ->
+            assertFailsWith<IllegalArgumentException>(email) {
+                service.createGuestOrder(
+                    StorefrontOrderRequest(
+                        branchId, listOf(CreateOrderItemRequest(UUID.randomUUID(), 1)),
+                        buyerEmail = email, invoiceEmailConsent = true,
+                    )
+                )
+            }
         }
     }
 
