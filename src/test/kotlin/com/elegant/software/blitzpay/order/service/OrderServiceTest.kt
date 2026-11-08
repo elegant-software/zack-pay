@@ -322,6 +322,28 @@ class OrderServiceTest {
     }
 
     @Test
+    fun `manualSettle marks a shopper's cash order paid and tells the shopper`() {
+        val order = Order(
+            orderId = "ORD-CASH0001",
+            merchantApplicationId = merchantId,
+            merchantBranchId = branchId,
+            status = OrderStatus.CREATED,
+            creatorType = CreatorType.SHOPPER,
+            createdById = "shopper-1",
+            currency = "EUR",
+            totalAmountMinor = 100,
+            itemCount = 1,
+            checkoutPaymentMethod = "CASH",
+        )
+        whenever(orderRepository.findByOrderId("ORD-CASH0001")).thenReturn(order)
+
+        val response = service.manualSettle("ORD-CASH0001", com.elegant.software.blitzpay.order.api.SettleOrderRequest(), "staff-1")
+
+        assertEquals(OrderStatus.PAID, response.status)
+        verify(eventPublisher).publishEvent(com.elegant.software.blitzpay.order.api.OrderManuallySettled("ORD-CASH0001", "shopper-1"))
+    }
+
+    @Test
     fun `createMerchantOrder rejects targetShopperId without deferred payment`() {
         val productId1 = UUID.fromString("22222222-2222-2222-2222-222222222221")
         val request = CreateMerchantOrderRequest(

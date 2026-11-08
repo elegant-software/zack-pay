@@ -388,6 +388,9 @@ class OrderService(
         val items = orderItemRepository.findAllByOrderIdFk(order.id)
         storefrontOrderBus.publishAfterCommit(order, items)
         notifyTable(order)
+        (order.targetShopperId ?: order.createdById.takeIf { order.creatorType == CreatorType.SHOPPER })?.let {
+            eventPublisher.publishEvent(com.elegant.software.blitzpay.order.api.OrderManuallySettled(order.orderId, it))
+        }
         return order.toResponse(items)
     }
 
