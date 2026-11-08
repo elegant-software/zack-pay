@@ -1,5 +1,0 @@
-databaseChangeLog:
-  - include:
-      file: db/changelog/20261108-003-shared-language-catalogue.sql
-  - include:
-      file: db/changelog/20261108-004-reconcile-language-catalogue.sql

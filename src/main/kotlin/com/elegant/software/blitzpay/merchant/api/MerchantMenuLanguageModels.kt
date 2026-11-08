@@ -9,10 +9,6 @@ data class MenuLanguageResponse(
     val code: String,
     val displayName: String,
     val nativeName: String,
-    val flagCode: String? = null,
-    val direction: String = "ltr",
-    val adminUiEnabled: Boolean = false,
-    val menuEnabled: Boolean = true,
 )
 
 enum class CatalogItemType {

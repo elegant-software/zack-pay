@@ -20,16 +20,4 @@ class MerchantMenuLanguage(
 
     @Column(nullable = false)
     var active: Boolean = true,
-
-    @Column(name = "flag_code", length = 2)
-    var flagCode: String? = null,
-
-    @Column(nullable = false, length = 3)
-    var direction: String = "ltr",
-
-    @Column(name = "admin_ui_enabled", nullable = false)
-    var adminUiEnabled: Boolean = false,
-
-    @Column(name = "menu_enabled", nullable = false)
-    var menuEnabled: Boolean = true,
 )
