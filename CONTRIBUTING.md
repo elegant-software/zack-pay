@@ -119,6 +119,11 @@ For a full list of what each variable/secret does, see [`.github/workflows/READM
 
 ## Agent Guidance
 
+Changes to the shared language catalogue must keep the contract in
+[Shared language catalogue](reference/language-catalogue.md) and its fixture in
+sync. Enable admin UI languages only with shipped frontend bundles. Do not add
+anonymous access or reuse merchant settings for admin preferences.
+
 AI agents working in this repository should:
 
 - read this file before preparing commits

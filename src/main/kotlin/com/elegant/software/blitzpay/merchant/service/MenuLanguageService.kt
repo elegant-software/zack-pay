@@ -29,7 +29,13 @@ class MenuLanguageService(
     fun catalogue(): List<MenuLanguageResponse> =
         menuLanguageRepository.findAllByActiveTrueOrderByCodeAsc()
             .sortedBy { it.displayName }
-            .map { MenuLanguageResponse(code = it.code, displayName = it.displayName, nativeName = it.nativeName) }
+            .map {
+                MenuLanguageResponse(
+                    code = it.code, displayName = it.displayName, nativeName = it.nativeName,
+                    flagCode = it.flagCode, direction = it.direction,
+                    adminUiEnabled = it.adminUiEnabled, menuEnabled = it.menuEnabled,
+                )
+            }
 
     @Transactional(readOnly = true)
     fun supportedLanguages(merchantId: UUID): Set<String> =
@@ -45,7 +51,7 @@ class MenuLanguageService(
         val supported = supportedLanguages?.map { normalize(it) }?.toSet() ?: supportedLanguages(merchant.id)
         val original = originalLanguage?.let { normalize(it) } ?: merchant.originalMenuLanguage
 
-        val known = menuLanguageRepository.findAllByActiveTrueOrderByCodeAsc().map { it.code }.toSet()
+        val known = menuLanguageRepository.findAllByActiveTrueOrderByCodeAsc().filter { it.menuEnabled }.map { it.code }.toSet()
         val unknown = (supported + listOfNotNull(original)) - known
         require(unknown.isEmpty()) { "Unknown menu languages: ${unknown.sorted().joinToString(",")}" }
         require(supported.isEmpty() || original != null) {

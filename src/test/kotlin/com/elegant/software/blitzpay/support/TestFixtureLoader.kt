@@ -13,6 +13,10 @@ import java.math.BigDecimal
 
 object TestFixtureLoader {
 
+    fun languageCatalogue(): List<com.elegant.software.blitzpay.merchant.persistence.model.MerchantMenuLanguage> =
+        requireNotNull(javaClass.getResourceAsStream("/testdata/merchant/language-catalogue.json"))
+            .use { objectMapper.readValue(it) }
+
     private val objectMapper: JsonMapper = JsonMapper.builder()
         .addModule(KotlinModule.Builder().build())
         .addModule(JavaTimeModule())

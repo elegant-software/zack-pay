@@ -9488,9 +9488,22 @@ components:
           type: string
         nativeName:
           type: string
+        flagCode:
+          type:
+          - string
+          - "null"
+        direction:
+          type: string
+        adminUiEnabled:
+          type: boolean
+        menuEnabled:
+          type: boolean
       required:
+      - adminUiEnabled
       - code
+      - direction
       - displayName
+      - menuEnabled
       - nativeName
     ShopperSearchResult:
       type: object

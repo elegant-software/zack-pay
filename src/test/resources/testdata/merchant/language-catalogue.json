@@ -1,0 +1,38 @@
+[
+  {
+    "code": "en",
+    "displayName": "English",
+    "nativeName": "English",
+    "flagCode": "GB",
+    "direction": "ltr",
+    "adminUiEnabled": true,
+    "menuEnabled": true
+  },
+  {
+    "code": "de",
+    "displayName": "German",
+    "nativeName": "Deutsch",
+    "flagCode": "DE",
+    "direction": "ltr",
+    "adminUiEnabled": true,
+    "menuEnabled": true
+  },
+  {
+    "code": "ar",
+    "displayName": "Arabic",
+    "nativeName": "العربية",
+    "flagCode": "SA",
+    "direction": "rtl",
+    "adminUiEnabled": true,
+    "menuEnabled": true
+  },
+  {
+    "code": "fr",
+    "displayName": "French",
+    "nativeName": "Français",
+    "flagCode": null,
+    "direction": "ltr",
+    "adminUiEnabled": false,
+    "menuEnabled": true
+  }
+]

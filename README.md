@@ -112,6 +112,10 @@ Security and repo hygiene notes
 
 ## Related Repositories
 
+Menu and admin interface languages share authenticated GET /v1/merchants/menu-languages.
+See [Shared language catalogue](reference/language-catalogue.md) for capabilities,
+metadata, and independent merchant/user selections.
+
 | Repository | Description |
 |---|---|
 | blitz-pay (backend) | Spring Boot / Kotlin backend — payments, merchants, orders |

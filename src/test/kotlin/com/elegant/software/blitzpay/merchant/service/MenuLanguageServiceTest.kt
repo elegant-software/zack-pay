@@ -50,6 +50,28 @@ class MenuLanguageServiceTest {
     }
 
     @Test
+    fun `catalogue exposes database metadata for menu and dashboard consumers`() {
+        val entries = com.elegant.software.blitzpay.support.TestFixtureLoader.languageCatalogue()
+        whenever(menuLanguageRepository.findAllByActiveTrueOrderByCodeAsc()).thenReturn(entries)
+        val catalogue = service.catalogue().associateBy { it.code }
+        assertEquals("rtl", catalogue.getValue("ar").direction)
+        assertEquals("SA", catalogue.getValue("ar").flagCode)
+        assertEquals(true, catalogue.getValue("ar").adminUiEnabled)
+        assertEquals(false, catalogue.getValue("fr").adminUiEnabled)
+        assertEquals(true, catalogue.getValue("fr").menuEnabled)
+    }
+
+    @Test
+    fun `menu settings reject a language enabled only for the dashboard`() {
+        val entries = com.elegant.software.blitzpay.support.TestFixtureLoader.languageCatalogue()
+        entries.first { it.code == "fr" }.menuEnabled = false
+        whenever(menuLanguageRepository.findAllByActiveTrueOrderByCodeAsc()).thenReturn(entries)
+        assertFailsWith<IllegalArgumentException> {
+            service.applyMenuLanguages(merchant, null, setOf("fr"))
+        }
+    }
+
+    @Test
     fun `accept-language picks the first supported primary subtag`() {
         assertEquals("en", service.resolve(merchant.id, null, "fr-CH, en-GB;q=0.8, de;q=0.5"))
     }
