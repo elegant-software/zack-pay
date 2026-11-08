@@ -1,0 +1,23 @@
+[
+  {
+    "code": "en",
+    "displayName": "English",
+    "nativeName": "English",
+    "flagCode": "GB",
+    "direction": "ltr"
+  },
+  {
+    "code": "de",
+    "displayName": "German",
+    "nativeName": "Deutsch",
+    "flagCode": "DE",
+    "direction": "ltr"
+  },
+  {
+    "code": "ar",
+    "displayName": "Arabic",
+    "nativeName": "العربية",
+    "flagCode": "SA",
+    "direction": "rtl"
+  }
+]

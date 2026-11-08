@@ -1,0 +1,17 @@
+[
+  {
+    "code": "en",
+    "flagCode": "GB",
+    "direction": "ltr"
+  },
+  {
+    "code": "de",
+    "flagCode": "DE",
+    "direction": "ltr"
+  },
+  {
+    "code": "ar",
+    "flagCode": "SA",
+    "direction": "rtl"
+  }
+]
