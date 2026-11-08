@@ -88,6 +88,7 @@ class OrderService(
         require(request.checkoutPaymentMethod in GUEST_STAFF_PAYMENT_METHODS) {
             "checkoutPaymentMethod must be CASH, TERMINAL or omitted for storefront orders"
         }
+        val invoiceEmail = guestInvoiceEmail(request)
         val tableCode = request.tableCode?.takeIf { it.isNotBlank() }
         val token = GuestToken.generate()
         val order = createCustomerOrder(
@@ -105,8 +106,23 @@ class OrderService(
             GUEST_CREATOR_ID,
             guestTokenHash = GuestToken.hash(token),
             guestTokenExpiresAt = Instant.now().plus(GuestToken.TTL),
+            invoiceEmail = invoiceEmail,
         ) { null }
         return GuestOrderCreated(order, token)
+    }
+
+    /** The guest's invoice email, kept only with explicit consent (DSGVO Art. 6(1)(a)); null when none was given. */
+    private fun guestInvoiceEmail(request: StorefrontOrderRequest): String? {
+        val email = request.buyerEmail?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (!request.invoiceEmailConsent) {
+            throw ApiException(
+                HttpStatus.BAD_REQUEST,
+                "buyerEmail requires invoiceEmailConsent=true",
+                INVOICE_EMAIL_CONSENT_REQUIRED,
+            )
+        }
+        require(email.length <= MAX_EMAIL_LENGTH && EMAIL_FORMAT.matches(email)) { "buyerEmail is not a valid email address" }
+        return email
     }
 
     /** Unknown order and wrong/expired token look the same to the caller, so the endpoint can't be used as an order-ID oracle. */
@@ -123,6 +139,7 @@ class OrderService(
         createdById: String,
         guestTokenHash: String? = null,
         guestTokenExpiresAt: Instant? = null,
+        invoiceEmail: String? = null,
         buyerContact: () -> BuyerContactRequest?,
     ): OrderResponse {
         requireNotNull(request.branchId) { "branchId is required" }
@@ -155,6 +172,9 @@ class OrderService(
             checkoutPaymentMethod = resolveCheckoutPaymentMethod(request)?.name,
             guestTokenHash = guestTokenHash,
             guestTokenExpiresAt = guestTokenExpiresAt,
+            invoiceEmail = invoiceEmail,
+            invoiceEmailConsentAt = invoiceEmail?.let { Instant.now() },
+            invoiceEmailConsentVersion = invoiceEmail?.let { INVOICE_EMAIL_CONSENT_VERSION },
             buyerContactName = resolvedBuyerContact?.name,
             buyerContactStreet = resolvedBuyerContact?.street,
             buyerContactZip = resolvedBuyerContact?.zip,
@@ -593,6 +613,12 @@ class OrderService(
         private const val MAX_GUEST_ITEM_QUANTITY = 99
         private const val MAX_GUEST_COUNT = 50
         private val GUEST_STAFF_PAYMENT_METHODS = setOf(null, CheckoutPaymentMethod.CASH, CheckoutPaymentMethod.TERMINAL)
+        const val INVOICE_EMAIL_CONSENT_REQUIRED = "INVOICE_EMAIL_CONSENT_REQUIRED"
+        /** Bump when the storefront's consent wording changes, so each stored consent maps to the text the guest saw. */
+        const val INVOICE_EMAIL_CONSENT_VERSION = "v1"
+        private const val MAX_EMAIL_LENGTH = 254
+        // ponytail: shape check only (one @, no spaces, a dot in the domain); deliverability is proven by sending.
+        private val EMAIL_FORMAT = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
         private val MAX_WALK_IN_LOCATION_AGE = ChronoUnit.MINUTES.duration.multipliedBy(5)
         private const val MAX_WALK_IN_ACCURACY_METERS = 100.0
     }

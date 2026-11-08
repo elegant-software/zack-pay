@@ -315,4 +315,8 @@ data class StorefrontOrderRequest(
     val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
     /** Guest Count (1..50) for the Table; applied only when the Table has none yet, ignored otherwise. */
     val guestCount: Int? = null,
+    /** Optional email to receive the invoice; requires [invoiceEmailConsent] = true. */
+    val buyerEmail: String? = null,
+    /** Explicit consent (DSGVO Art. 6(1)(a)) to use [buyerEmail] only for sending this order's invoice. */
+    val invoiceEmailConsent: Boolean = false,
 )

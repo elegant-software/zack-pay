@@ -128,6 +128,49 @@ class StorefrontCheckoutContractTest : ContractVerifierBase() {
     }
 
     @Test
+    fun `guest order accepts an invoice email with consent`() {
+        whenever(orderService.createGuestOrder(any())).thenReturn(GuestOrderCreated(order, "tok-secret"))
+
+        anonymous.post().uri("/v1/storefront/orders")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """{"branchId": "$branchId", "items": [{"productId": "22222222-2222-2222-2222-222222222221", "quantity": 1}],
+                   "buyerEmail": "guest@example.com", "invoiceEmailConsent": true}"""
+            )
+            .exchange()
+            .expectStatus().isCreated
+            .expectBody().jsonPath("$.buyerEmail").doesNotExist()
+
+        val request = org.mockito.kotlin.argumentCaptor<com.elegant.software.blitzpay.order.api.StorefrontOrderRequest>()
+            .also { org.mockito.kotlin.verify(orderService).createGuestOrder(it.capture()) }.firstValue
+        assert(request.buyerEmail == "guest@example.com") { request }
+        assert(request.invoiceEmailConsent) { request }
+    }
+
+    @Test
+    fun `guest order with an invoice email but no consent is 400 INVOICE_EMAIL_CONSENT_REQUIRED`() {
+        whenever(orderService.createGuestOrder(org.mockito.kotlin.argThat { buyerEmail != null && !invoiceEmailConsent }))
+            .thenThrow(
+                com.elegant.software.blitzpay.config.ApiException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "buyerEmail requires invoiceEmailConsent=true",
+                    OrderService.INVOICE_EMAIL_CONSENT_REQUIRED,
+                )
+            )
+
+        anonymous.post().uri("/v1/storefront/orders")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """{"branchId": "$branchId", "items": [{"productId": "22222222-2222-2222-2222-222222222221", "quantity": 1}],
+                   "buyerEmail": "guest@example.com"}"""
+            )
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+            .expectBody().jsonPath("$.code").isEqualTo("INVOICE_EMAIL_CONSENT_REQUIRED")
+    }
+
+    @Test
     fun `get guest order requires the cookie`() {
         whenever(orderService.getGuestOrder("ORDER-123", "tok-secret")).thenReturn(order)
         whenever(orderService.getGuestOrder("ORDER-123", null))

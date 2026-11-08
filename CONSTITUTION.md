@@ -100,6 +100,7 @@ For technology-specific patterns and detailed best practices, refer to:
 | Docker (multi-stage builds, layer caching, `.dockerignore`) | [`reference/docker-best-practices.md`](reference/docker-best-practices.md) |
 | Domain configuration (single `baseDomain`, `blitzpay-domains` ConfigMap, changing the domain) | [`reference/domain-configuration.md`](reference/domain-configuration.md) |
 | Stripe Connect onboarding (platform setup, webhooks, per-merchant flow) | [`reference/stripe-connect-onboarding.md`](reference/stripe-connect-onboarding.md) |
+| Guest invoice email privacy (consent, purpose, deletion, §33 UStDV) | [`reference/guest-invoice-email-privacy.md`](reference/guest-invoice-email-privacy.md) |
 | Kitchen Screen Keycloak provisioning (kitchen client, Kitchen Login lifecycle, admin roles) | [`reference/kitchen-screen-keycloak-provisioning.md`](reference/kitchen-screen-keycloak-provisioning.md) |
 | Kubernetes ingress troubleshooting (kind, nginx, TLS, NodePort) | [`reference/k8s-ingress-troubleshooting/`](reference/k8s-ingress-troubleshooting/) |
 | socat (install, run modes, debug `T` state, systemd, NodePort bridging) | [`reference/utils/socat-guide.md`](reference/utils/socat-guide.md) |

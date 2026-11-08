@@ -6700,8 +6700,15 @@ components:
           - integer
           - "null"
           format: int32
+        buyerEmail:
+          type:
+          - string
+          - "null"
+        invoiceEmailConsent:
+          type: boolean
       required:
       - branchId
+      - invoiceEmailConsent
       - items
     BuyerContactResponse:
       type: object

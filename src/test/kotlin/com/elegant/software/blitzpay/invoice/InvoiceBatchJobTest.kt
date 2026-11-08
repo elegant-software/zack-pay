@@ -90,6 +90,9 @@ class InvoiceBatchJobTest {
             isInvoiceOrder = true, dueDate = LocalDate.parse("2026-11-14"),
         )
 
+    private fun guestSource(buyerEmail: String?) = paidSource(buyerContactName = null, buyerContactStreet = null, buyerEmail = buyerEmail)
+        .copy(buyerContactZip = null, buyerContactCity = null, buyerContactCountry = null, isGuestOrder = true)
+
     @BeforeEach
     fun setUp() {
         whenever(orderInvoiceRepository.tryAdvisoryXactLock(InvoiceBatchJob.LOCK_KEY)).thenReturn(true)
@@ -177,6 +180,47 @@ class InvoiceBatchJobTest {
                 lineItems.single().unitPrice == BigDecimal("7.00")
         })
         verify(orderInvoiceRepository).save(any<OrderInvoice>())
+    }
+
+    @Test
+    fun `generates guest invoice with placeholder buyer when the guest consented to email`() {
+        givenMissingInvoiceFor(guestSource(buyerEmail = "guest@example.com"))
+
+        job.run()
+
+        verify(invoiceService).generatePdf(argThat { buyer.name == "—" && lineItems.single().description == "Croissant" })
+        verify(orderInvoiceRepository).save(any<OrderInvoice>())
+    }
+
+    @Test
+    fun `skips guest order without an invoice email`() {
+        givenMissingInvoiceFor(guestSource(buyerEmail = null))
+
+        job.run()
+
+        verify(invoiceService, never()).generatePdf(any())
+    }
+
+    @Test
+    fun `clears the guest email after the invoice is sent`() {
+        givenPendingInvoice()
+        whenever(orderGateway.findInvoiceSource(orderId)).thenReturn(guestSource(buyerEmail = "guest@example.com"))
+
+        job.run()
+
+        verify(mailSender).send(any<MimeMessage>())
+        verify(orderGateway).clearGuestInvoiceEmail(orderId)
+    }
+
+    @Test
+    fun `keeps the guest email while sending fails so the retry can use it`() {
+        givenPendingInvoice()
+        whenever(orderGateway.findInvoiceSource(orderId)).thenReturn(guestSource(buyerEmail = "guest@example.com"))
+        doThrow(MailSendException("SMTP down")).whenever(mailSender).send(any<MimeMessage>())
+
+        job.run()
+
+        verify(orderGateway, never()).clearGuestInvoiceEmail(any())
     }
 
     @Test

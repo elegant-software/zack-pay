@@ -148,6 +148,8 @@ databaseChangeLog:
   - include:
       file: db/changelog/20261108-001-merchant-floor-plan-areas.sql
   - include:
+      file: db/changelog/20261108-002-orders-guest-invoice-email.sql
+  - include:
       file: db/changelog/20261108-002-merchant-storefront-theme.sql
   - include:
       file: db/changelog/20261108-003-storefront-themes.sql
