@@ -44,6 +44,8 @@ class SecurityConfig(
                     // Self-service signup from the apps — no account exists yet; the signup screen lists verticals first
                     .requestMatchers(HttpMethod.POST, "/v1/signup/shopper", "/v1/signup/merchant").permitAll()
                     .requestMatchers(HttpMethod.GET, "/v1/merchants/verticals").permitAll()
+                    // Storefront themes are colours only; drafts are readable so the admin preview link works without a sign-in
+                    .requestMatchers(HttpMethod.GET, "/v1/storefront/themes", "/v1/storefront/themes/{code}").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer {
