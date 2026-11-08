@@ -130,6 +130,7 @@ class PaymentAttemptService(
         val buyerEmail = order.targetShopperId
             ?.let { shopperProfileGateway.findByShopperId(it)?.email }
             ?: creatorProfile?.email
+            ?: order.invoiceEmail
         val items = orderItemRepository.findAllByOrderIdFk(order.id)
             .filter { it.quantity > 0 }
             .map { OrderItemSnapshot(it.productName, it.quantity, it.effectiveUnitPriceMinor) }
@@ -149,7 +150,17 @@ class PaymentAttemptService(
             isInvoiceOrder = isInvoiceOrder,
             items = items,
             buyerEmail = buyerEmail,
+            isGuestOrder = order.creatorType == CreatorType.GUEST,
         )
+    }
+
+    @Transactional
+    override fun clearGuestInvoiceEmail(orderId: String) {
+        val order = orderRepository.findByOrderId(orderId) ?: return
+        if (order.creatorType == CreatorType.GUEST && order.invoiceEmail != null) {
+            order.invoiceEmail = null
+            orderRepository.save(order)
+        }
     }
 
     private fun checkoutPaymentMethodForProvider(provider: String): CheckoutPaymentMethod? =

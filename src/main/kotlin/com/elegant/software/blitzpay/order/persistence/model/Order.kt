@@ -107,6 +107,18 @@ class Order(
     @Column(name = "guest_token_expires_at")
     val guestTokenExpiresAt: Instant? = null,
 
+    /** Guest's invoice email, stored only with consent; cleared once the invoice is emailed (see reference/guest-invoice-email-privacy.md). */
+    @Column(name = "invoice_email", length = 254)
+    var invoiceEmail: String? = null,
+
+    /** When the guest consented to receive the invoice by email; kept as proof of consent after [invoiceEmail] is cleared. */
+    @Column(name = "invoice_email_consent_at", updatable = false)
+    val invoiceEmailConsentAt: Instant? = null,
+
+    /** Version of the consent wording the guest agreed to. */
+    @Column(name = "invoice_email_consent_version", updatable = false, length = 16)
+    val invoiceEmailConsentVersion: String? = null,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "preparation_status", nullable = false, length = 16)
     var preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
