@@ -5,6 +5,7 @@ import com.elegant.software.blitzpay.merchant.api.MerchantOfferingResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateMerchantRequest
 import com.elegant.software.blitzpay.merchant.persistence.model.Merchant
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
+import com.elegant.software.blitzpay.merchant.persistence.model.StorefrontTheme
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOffering
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOfferingAssignment
@@ -85,6 +86,20 @@ class MerchantManagementServiceTest {
 
         assertEquals(MerchantMobility.MOBILE, m.merchantMobility)
         assertEquals(MerchantMobility.MOBILE, response.merchantMobility)
+    }
+
+    @Test
+    fun `update merchant changes storefront theme and keeps it when omitted`() {
+        val m = merchant("Cafe GmbH")
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
+        whenever(repository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(m.id)).thenReturn(emptyList())
+
+        val response = service.update(m.id, UpdateMerchantRequest(storefrontTheme = StorefrontTheme.HERITAGE))
+        assertEquals(StorefrontTheme.HERITAGE, response.storefrontTheme)
+
+        service.update(m.id, UpdateMerchantRequest(merchantName = "Cafe GmbH"))
+        assertEquals(StorefrontTheme.HERITAGE, m.storefrontTheme)
     }
 
     @Test

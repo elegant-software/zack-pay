@@ -1,6 +1,7 @@
 package com.elegant.software.blitzpay.merchant.api
 
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantMobility
+import com.elegant.software.blitzpay.merchant.persistence.model.StorefrontTheme
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantOperationalStatus
 import java.math.BigDecimal
 import java.time.Instant
@@ -38,6 +39,7 @@ data class UpdateMerchantRequest(
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
     val merchantMobility: MerchantMobility? = null,
+    val storefrontTheme: StorefrontTheme? = null,
     val defaultVatPercent: BigDecimal? = null,
     val originalMenuLanguage: String? = null,
     val supportedMenuLanguages: Set<String>? = null,
@@ -59,6 +61,7 @@ data class MerchantDetailsResponse(
     val location: MerchantLocationInfo? = null,
     val offerings: Set<String> = emptySet(),
     val merchantMobility: MerchantMobility = MerchantMobility.BRICK_AND_MORTAR,
+    val storefrontTheme: StorefrontTheme = StorefrontTheme.DEFAULT,
     val defaultVatPercent: BigDecimal? = null,
     val originalMenuLanguage: String? = null,
     val supportedMenuLanguages: Set<String> = emptySet(),

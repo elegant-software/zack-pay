@@ -59,6 +59,7 @@ class MerchantManagementService(
         request.businessType?.let { merchant.businessType = it }
         merchant.merchantStatus = request.merchantStatus ?: merchant.merchantStatus
         request.merchantMobility?.let { merchant.merchantMobility = it }
+        request.storefrontTheme?.let { merchant.storefrontTheme = it }
         request.defaultVatPercent?.let { merchant.defaultVatPercent = it }
         merchant.website = resolvedContactInfo.website
         merchant.publicEmail = resolvedContactInfo.email
@@ -151,6 +152,7 @@ class MerchantManagementService(
             .map { it.offeringCode }
             .toSortedSet(),
         merchantMobility = merchantMobility,
+        storefrontTheme = storefrontTheme,
         defaultVatPercent = defaultVatPercent,
         originalMenuLanguage = originalMenuLanguage,
         supportedMenuLanguages = menuLanguageService.supportedLanguages(id),
