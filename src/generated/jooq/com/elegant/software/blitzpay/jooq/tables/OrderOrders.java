@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
@@ -233,6 +234,22 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
      */
     public final TableField<OrderOrdersRecord, String> TABLE_NAME = createField(DSL.name("table_name"), SQLDataType.VARCHAR(100), this, "");
 
+    /**
+     * The column <code>blitzpay.order_orders.invoice_email</code>.
+     */
+    public final TableField<OrderOrdersRecord, String> INVOICE_EMAIL = createField(DSL.name("invoice_email"), SQLDataType.VARCHAR(254), this, "");
+
+    /**
+     * The column <code>blitzpay.order_orders.invoice_email_consent_at</code>.
+     */
+    public final TableField<OrderOrdersRecord, OffsetDateTime> INVOICE_EMAIL_CONSENT_AT = createField(DSL.name("invoice_email_consent_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
+    /**
+     * The column
+     * <code>blitzpay.order_orders.invoice_email_consent_version</code>.
+     */
+    public final TableField<OrderOrdersRecord, String> INVOICE_EMAIL_CONSENT_VERSION = createField(DSL.name("invoice_email_consent_version"), SQLDataType.VARCHAR(16), this, "");
+
     private OrderOrders(Name alias, Table<OrderOrdersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -334,6 +351,13 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
             _orderPaymentAttempts = new OrderPaymentAttemptsPath(this, null, Keys.ORDER_PAYMENT_ATTEMPTS__FK_ORDER_PAYMENT_ATTEMPTS_ORDER.getInverseKey());
 
         return _orderPaymentAttempts;
+    }
+
+    @Override
+    public List<Check<OrderOrdersRecord>> getChecks() {
+        return Arrays.asList(
+            Internal.createCheck(this, DSL.name("chk_order_orders_invoice_email_consent"), "(((invoice_email IS NULL) OR (invoice_email_consent_at IS NOT NULL)))", true)
+        );
     }
 
     @Override
