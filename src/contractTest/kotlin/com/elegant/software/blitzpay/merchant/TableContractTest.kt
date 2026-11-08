@@ -229,6 +229,18 @@ class TableContractTest : ContractVerifierBase() {
             .expectStatus().isOk
             .expectBody().jsonPath("$.name").isEqualTo("Garden")
 
+        webTestClient.put().uri("$base/floor-plans/${plan.id}/areas").header(HttpHeaders.AUTHORIZATION, manager)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"areas": [{"name": "Bar", "x": 0, "y": 0, "width": 0.3, "height": 1}]}""")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody().jsonPath("$.areas[0].name").isEqualTo("Bar").jsonPath("$.areas[0].width").isEqualTo(0.3)
+        webTestClient.put().uri("$base/floor-plans/${plan.id}/areas").header(HttpHeaders.AUTHORIZATION, manager)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"areas": [{"name": "Bar", "x": 0.9, "y": 0, "width": 0.3, "height": 1}]}""")
+            .exchange()
+            .expectStatus().isBadRequest
+
         whenever(storageService.presignUpload(any(), eq("image/png"), any()))
             .thenAnswer { PresignedUpload(it.getArgument(0), "https://s3.example/upload", Instant.parse("2026-11-04T12:15:00Z")) }
         webTestClient.post().uri("$base/floor-plans/${plan.id}/image/upload-url").header(HttpHeaders.AUTHORIZATION, platformAdmin)

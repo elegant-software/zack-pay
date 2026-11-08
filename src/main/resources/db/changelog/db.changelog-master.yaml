@@ -145,3 +145,5 @@ databaseChangeLog:
       file: db/changelog/20261105-002-add-station-tickets.sql
   - include:
       file: db/changelog/20261102-001-order-invoices-skip-historical.sql
+  - include:
+      file: db/changelog/20261108-001-merchant-floor-plan-areas.sql

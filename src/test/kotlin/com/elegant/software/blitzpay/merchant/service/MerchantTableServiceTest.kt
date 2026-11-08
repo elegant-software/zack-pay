@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.merchant.service
 
+import com.elegant.software.blitzpay.merchant.api.FloorArea
 import com.elegant.software.blitzpay.merchant.api.PlaceTableRequest
 import com.elegant.software.blitzpay.merchant.api.TableOrderLookup
 import com.elegant.software.blitzpay.merchant.api.UpdateTableRequest
@@ -127,6 +128,23 @@ class MerchantTableServiceTest {
 
         assertFailsWith<NoSuchElementException> { service.placeTable(branchId, table.id, PlaceTableRequest(otherPlan.id, 0.5, 0.5)) }
         assertFailsWith<IllegalArgumentException> { service.placeTable(branchId, table.id, PlaceTableRequest(ownPlan.id, 1.2, 0.5)) }
+    }
+
+    @Test
+    fun `Floor Areas are trimmed, replaced as a whole and must lie inside the picture`() {
+        val plan = MerchantFloorPlan(branchId = branchId, name = "Inside")
+        whenever(floorPlanRepository.findById(plan.id)).thenReturn(Optional.of(plan))
+        whenever(floorPlanRepository.save(any<MerchantFloorPlan>())).thenAnswer { it.getArgument(0) }
+
+        val saved = service.updateFloorAreas(branchId, plan.id, listOf(FloorArea(" Bar ", 0.0, 0.0, 0.3, 1.0)))
+        assertEquals(listOf(FloorArea("Bar", 0.0, 0.0, 0.3, 1.0)), saved.areas)
+
+        assertFailsWith<IllegalArgumentException> { service.updateFloorAreas(branchId, plan.id, listOf(FloorArea("Bar", 0.8, 0.0, 0.3, 1.0))) }
+        assertFailsWith<IllegalArgumentException> { service.updateFloorAreas(branchId, plan.id, listOf(FloorArea(" ", 0.0, 0.0, 0.3, 0.3))) }
+        assertFailsWith<IllegalArgumentException> { service.updateFloorAreas(branchId, plan.id, listOf(FloorArea("Bar", 0.0, 0.0, 0.0, 0.3))) }
+        assertEquals("Bar", plan.areas.single().name)
+
+        assertEquals(emptyList(), service.updateFloorAreas(branchId, plan.id, emptyList()).areas)
     }
 
     @Test

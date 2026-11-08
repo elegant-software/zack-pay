@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.merchant.service
 
 import org.springframework.http.HttpStatus
 import com.elegant.software.blitzpay.config.ApiException
+import com.elegant.software.blitzpay.merchant.api.FloorArea
 import com.elegant.software.blitzpay.merchant.api.FloorPlanImageUploadResponse
 import com.elegant.software.blitzpay.merchant.api.FloorPlanResponse
 import com.elegant.software.blitzpay.merchant.api.PlaceTableRequest
@@ -112,6 +113,15 @@ class MerchantTableService(
         return floorPlanRepository.save(floorPlan).toResponse()
     }
 
+    /** Replaces the Floor Areas; names are trimmed and rectangles must lie inside the picture. */
+    fun updateFloorAreas(branchId: UUID, floorPlanId: UUID, areas: List<FloorArea>): FloorPlanResponse {
+        val floorPlan = requireFloorPlan(branchId, floorPlanId)
+        require(areas.size <= MAX_AREAS) { "A Floor Plan has at most $MAX_AREAS Floor Areas" }
+        floorPlan.areas = areas.map(::requireValidArea)
+        floorPlan.updatedAt = Instant.now()
+        return floorPlanRepository.save(floorPlan).toResponse()
+    }
+
     /** Tables placed on the Floor Plan become unplaced; the Tables themselves stay. */
     fun deleteFloorPlan(branchId: UUID, floorPlanId: UUID) {
         val floorPlan = requireFloorPlan(branchId, floorPlanId)
@@ -169,6 +179,17 @@ class MerchantTableService(
         floorPlanRepository.findById(floorPlanId).orElse(null)?.takeIf { it.branchId == branchId }
             ?: throw NoSuchElementException("Floor Plan not found: $floorPlanId")
 
+    private fun requireValidArea(area: FloorArea): FloorArea {
+        val name = area.name.trim()
+        require(name.isNotEmpty()) { "Floor Area name must not be blank" }
+        require(name.length <= MAX_NAME_LENGTH) { "Floor Area name must not exceed $MAX_NAME_LENGTH characters" }
+        val fractions = listOf(area.x, area.y, area.width, area.height)
+        require(fractions.all { it.isFinite() && it in 0.0..1.0 }) { "Floor Area x, y, width and height must be fractions 0..1" }
+        require(area.width > 0 && area.height > 0) { "Floor Area width and height must be greater than 0" }
+        require(area.x + area.width <= 1 + EPSILON && area.y + area.height <= 1 + EPSILON) { "Floor Area must lie inside the Floor Plan" }
+        return area.copy(name = name)
+    }
+
     private fun requireValidSeats(seats: Int?): Int? = seats?.also {
         require(it in 1..MAX_SEATS) { "seats must be between 1 and $MAX_SEATS" }
     }
@@ -202,12 +223,15 @@ class MerchantTableService(
         id = id,
         name = name,
         imageUrl = imageStorageKey?.let { runCatching { storageService.presignDownload(it) }.getOrNull() },
+        areas = areas,
     )
 
     companion object {
         const val MAX_TABLES_PER_REQUEST = 200
         const val MAX_SEATS = 50
+        const val MAX_AREAS = 50
         private const val MAX_NAME_LENGTH = 100
+        private const val EPSILON = 1e-6
         private val IMAGE_EXTENSIONS = mapOf("image/jpeg" to "jpg", "image/png" to "png", "image/webp" to "webp")
     }
 }
