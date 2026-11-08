@@ -543,10 +543,21 @@ class OrderServiceTest {
         assertEquals("7", created.order.tableName)
         assertEquals(CheckoutPaymentMethod.CASH, created.order.checkoutPaymentMethod)
         assertEquals(OrderStatus.CREATED, created.order.status)
+
+        val terminal = service.createGuestOrder(
+            StorefrontOrderRequest(
+                branchId = branchId,
+                items = listOf(CreateOrderItemRequest(productId, 1)),
+                tableCode = "K7M2QX",
+                customerLocation = nearBranch,
+                checkoutPaymentMethod = CheckoutPaymentMethod.TERMINAL,
+            )
+        )
+        assertEquals(CheckoutPaymentMethod.TERMINAL, terminal.order.checkoutPaymentMethod)
     }
 
     @Test
-    fun `createGuestOrder accepts only CASH as checkout payment method`() {
+    fun `createGuestOrder accepts only CASH or TERMINAL as checkout payment method`() {
         assertFailsWith<IllegalArgumentException> {
             service.createGuestOrder(
                 StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(UUID.randomUUID(), 1)), checkoutPaymentMethod = CheckoutPaymentMethod.CARD)
