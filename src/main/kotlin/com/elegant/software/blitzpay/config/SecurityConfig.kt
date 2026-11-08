@@ -4,10 +4,12 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
+import org.springframework.security.authorization.AuthorizationDecision
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
@@ -46,6 +48,13 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.GET, "/v1/merchants/verticals").permitAll()
                     // Storefront themes are colours only; drafts are readable so the admin preview link works without a sign-in
                     .requestMatchers(HttpMethod.GET, "/v1/storefront/themes", "/v1/storefront/themes/{code}").permitAll()
+                    // Other actuator endpoints (loggers, scheduledtasks, metrics): platform admins only.
+                    // ponytail: same realm-role check as merchant.iam PlatformAdminAccess, inlined to keep config free of module deps
+                    .requestMatchers("/actuator/**").access { authentication, _ ->
+                        val jwt = authentication.get().principal as? Jwt
+                        val roles = (jwt?.getClaim<Any>("realm_access") as? Map<*, *>)?.get("roles") as? Collection<*>
+                        AuthorizationDecision(roles?.contains("blitzpay-admin") == true)
+                    }
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer {
