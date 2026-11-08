@@ -3,7 +3,9 @@ package com.elegant.software.blitzpay.merchant.iam.service
 import com.elegant.software.blitzpay.merchant.api.CreateBranchRequest
 import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
+import com.elegant.software.blitzpay.merchant.iam.domain.AccountConsent
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
+import com.elegant.software.blitzpay.merchant.iam.repository.AccountConsentRepository
 import com.elegant.software.blitzpay.merchant.iam.web.CreateAssignmentRequest
 import com.elegant.software.blitzpay.merchant.service.MerchantBranchService
 import com.elegant.software.blitzpay.merchant.service.MerchantRegistrationService
@@ -33,16 +35,23 @@ class SignupService(
     private val merchantBranchService: MerchantBranchService,
     private val groupSyncService: MerchantGroupSyncService,
     private val userManagementService: UserManagementService,
+    private val consents: AccountConsentRepository,
 ) {
     private val log = LoggerFactory.getLogger(SignupService::class.java)
 
-    fun signupShopper(name: String, email: String, password: String): UUID =
-        createUser(name, email, password)
+    fun signupShopper(name: String, email: String, password: String, termsVersion: String? = null): UUID {
+        val userId = createUser(name, email, password)
+        termsVersion?.let { consents.save(AccountConsent(keycloakUserId = userId, termsVersion = it)) }
+        return userId
+    }
 
     @Transactional
-    fun signupMerchant(ownerName: String, merchantName: String, email: String, password: String, businessType: String): UUID {
+    fun signupMerchant(
+        ownerName: String, merchantName: String, email: String, password: String, businessType: String, termsVersion: String,
+    ): UUID {
         val userId = createUser(ownerName, email, password)
         try {
+            consents.save(AccountConsent(keycloakUserId = userId, termsVersion = termsVersion))
             // ponytail: operating country fixed to DE until signup asks for it
             val merchant = merchantRegistrationService.register(
                 RegisterMerchantRequest(merchantName = merchantName, businessType = businessType, operatingCountry = "DE")
