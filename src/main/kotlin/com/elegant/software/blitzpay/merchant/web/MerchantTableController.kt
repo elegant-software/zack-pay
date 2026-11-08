@@ -10,6 +10,7 @@ import com.elegant.software.blitzpay.merchant.api.PlaceTableRequest
 import com.elegant.software.blitzpay.merchant.api.SetGuestCountRequest
 import com.elegant.software.blitzpay.merchant.api.TableLiveResponse
 import com.elegant.software.blitzpay.merchant.api.TableResponse
+import com.elegant.software.blitzpay.merchant.api.UpdateFloorAreasRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateFloorPlanRequest
 import com.elegant.software.blitzpay.merchant.api.UpdateTableRequest
 import com.elegant.software.blitzpay.merchant.service.MerchantTableService
@@ -183,6 +184,19 @@ class MerchantTableController(
     ): FloorPlanResponse {
         access.requireSetup(merchantId, branchId, jwt)
         return tableService.renameFloorPlan(branchId, floorPlanId, request.name)
+    }
+
+    @Operation(summary = "Replace the Floor Areas traced over a Floor Plan; an empty list shows the picture again")
+    @PutMapping("/floor-plans/{floorPlanId}/areas")
+    fun updateFloorAreas(
+        @PathVariable merchantId: UUID,
+        @PathVariable branchId: UUID,
+        @PathVariable floorPlanId: UUID,
+        @RequestBody request: UpdateFloorAreasRequest,
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): FloorPlanResponse {
+        access.requireSetup(merchantId, branchId, jwt)
+        return tableService.updateFloorAreas(branchId, floorPlanId, request.areas)
     }
 
     @Operation(summary = "Delete a Floor Plan; Tables placed on it become unplaced")

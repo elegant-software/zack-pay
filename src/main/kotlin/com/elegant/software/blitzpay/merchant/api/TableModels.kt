@@ -26,10 +26,24 @@ data class TableResponse(
     val nfcTagWrittenAt: Instant? = null,
 )
 
+/**
+ * Floor Area: a named rectangle ("Bar", "Terrace") traced over the Floor Plan picture. x, y, width and height are
+ * fractions (0..1) of the picture, the same frame as Table Placements, so the drawn floor lines up with the Tables.
+ */
+data class FloorArea(
+    val name: String,
+    val x: Double,
+    val y: Double,
+    val width: Double,
+    val height: Double,
+)
+
 data class FloorPlanResponse(
     val id: UUID,
     val name: String,
     val imageUrl: String?,
+    /** Floor Areas; when non-empty, live floors draw them instead of the picture. */
+    val areas: List<FloorArea> = emptyList(),
 )
 
 enum class TableStatus { FREE, OCCUPIED, RESERVED }
@@ -154,6 +168,12 @@ data class CreateFloorPlanRequest(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class UpdateFloorPlanRequest(
     val name: String,
+)
+
+/** Replaces all Floor Areas of a Floor Plan; an empty list removes them so the picture shows again. */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class UpdateFloorAreasRequest(
+    val areas: List<FloorArea>,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

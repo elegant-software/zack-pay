@@ -1,9 +1,12 @@
 package com.elegant.software.blitzpay.merchant.persistence.model
 
+import com.elegant.software.blitzpay.merchant.api.FloorArea
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.Instant
 import java.util.UUID
 
@@ -22,6 +25,11 @@ class MerchantFloorPlan(
 
     @Column(name = "image_storage_key", length = 512)
     var imageStorageKey: String? = null,
+
+    /** Floor Areas traced over the picture; the live floor draws these instead of the picture when there are any. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "areas", nullable = false, columnDefinition = "jsonb")
+    var areas: List<FloorArea> = emptyList(),
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
