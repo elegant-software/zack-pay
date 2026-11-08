@@ -243,6 +243,11 @@ public class Merchants extends TableImpl<MerchantsRecord> {
      */
     public final TableField<MerchantsRecord, String> ORIGINAL_MENU_LANGUAGE = createField(DSL.name("original_menu_language"), SQLDataType.VARCHAR(8), this, "");
 
+    /**
+     * The column <code>blitzpay.merchants.storefront_theme</code>.
+     */
+    public final TableField<MerchantsRecord, String> STOREFRONT_THEME = createField(DSL.name("storefront_theme"), SQLDataType.VARCHAR(32).nullable(false).defaultValue(DSL.field(DSL.raw("'DEFAULT'::character varying"), SQLDataType.VARCHAR)), this, "");
+
     private Merchants(Name alias, Table<MerchantsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
