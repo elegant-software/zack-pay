@@ -12,11 +12,13 @@ import com.elegant.software.blitzpay.shopper.api.ShopperProfileGateway
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -73,6 +75,46 @@ class PaymentAttemptServiceTest {
         assertEquals("bob@example.com", source.buyerEmail)
         assertNull(source.buyerContactName)
     }
+
+    @Test
+    fun `findInvoiceSource for paid guest order returns the consented invoice email`() {
+        val order = guestOrder("guest@example.com")
+        whenever(orderRepository.findByOrderId(order.orderId)).thenReturn(order)
+        whenever(orderItemRepository.findAllByOrderIdFk(order.id)).thenReturn(emptyList())
+
+        val source = service.findInvoiceSource(order.orderId)!!
+
+        assertEquals("guest@example.com", source.buyerEmail)
+        assertTrue(source.isGuestOrder)
+        assertNull(source.buyerContactName)
+    }
+
+    @Test
+    fun `clearGuestInvoiceEmail drops the email but keeps the consent record`() {
+        val order = guestOrder("guest@example.com")
+        whenever(orderRepository.findByOrderId(order.orderId)).thenReturn(order)
+
+        service.clearGuestInvoiceEmail(order.orderId)
+
+        assertNull(order.invoiceEmail)
+        assertNotNull(order.invoiceEmailConsentAt)
+        verify(orderRepository).save(order)
+    }
+
+    private fun guestOrder(invoiceEmail: String) = Order(
+        orderId = "ORDER-GUEST",
+        merchantApplicationId = UUID.randomUUID(),
+        creatorType = CreatorType.GUEST,
+        createdById = "guest",
+        currency = "EUR",
+        totalAmountMinor = 1099,
+        itemCount = 1,
+        status = OrderStatus.PAID,
+        paidAt = Instant.parse("2026-11-08T10:00:00Z"),
+        invoiceEmail = invoiceEmail,
+        invoiceEmailConsentAt = Instant.parse("2026-11-08T09:55:00Z"),
+        invoiceEmailConsentVersion = "v1",
+    )
 
     @Test
     fun `findInvoiceSource returns null for unpaid regular order`() {

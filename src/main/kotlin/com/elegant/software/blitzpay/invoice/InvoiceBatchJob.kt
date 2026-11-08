@@ -80,10 +80,13 @@ class InvoiceBatchJob(
 
     private fun generate(orderId: String): Boolean {
         val source = orderGateway.findInvoiceSource(orderId) ?: return false
-        if (!source.isInvoiceOrder) {
+        // Invoice orders and consenting guests get the "—" buyer placeholder: a guest invoice is a
+        // Kleinbetragsrechnung-style B2C receipt (§33 UStDV), see reference/guest-invoice-email-privacy.md.
+        val placeholderBuyerAllowed = source.isInvoiceOrder || (source.isGuestOrder && !source.buyerEmail.isNullOrBlank())
+        if (!placeholderBuyerAllowed) {
             val missingFields = missingBuyerContactFields(source)
             if (missingFields.isNotEmpty()) {
-                log.debug("invoice skipped — missing buyer contact fields orderId={} missing={}", orderId, missingFields)
+                log.info("invoice skipped — missing buyer contact fields orderId={} missing={}", orderId, missingFields)
                 return false
             }
         }
@@ -117,6 +120,8 @@ class InvoiceBatchJob(
             runCatching {
                 send(recipient, invoice)
                 invoice.deliveryStatus = DeliveryStatus.SENT
+                // The guest email's only purpose (sending this invoice) is fulfilled: data minimisation.
+                orderGateway.clearGuestInvoiceEmail(invoice.orderId)
                 log.info("invoice emailed orderId={}", invoice.orderId)
             }.onFailure {
                 // Stays PENDING and is retried on the next run.
