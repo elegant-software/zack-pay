@@ -51,6 +51,16 @@ Both human contributors and AI agents. When in doubt about a convention, this fi
 - Index names follow the same prefix and mirror the table: `ix_{table}_{column}` for non-unique, `ux_{table}_{column}` for unique.
 - Column names are `snake_case`; timestamp columns use `TIMESTAMPTZ` (never `TIMESTAMP`).
 
+## System Text and Translations
+
+- **System text never goes in the database.** System text is any wording the product itself ships: UI labels, messages, error text, emails, and the names of languages, offerings, verticals, statuses and other platform catalogues. It and all of its translations live in resource files that ship with the code:
+  - Backend: Spring `MessageSource` bundles, `src/main/resources/i18n/messages_<lang>.properties`.
+  - Frontends (admin dashboard, storefront, apps): one JSON file per language in the client's own repository.
+- **The database holds only content authored at runtime** by merchants, users or platform admins, and that content's translations. Example: menu item and category translations in `merchant_product_translations` / `merchant_product_category_translations`.
+- Reference-data tables (language, offering, vertical catalogues) store **codes and behaviour flags only**. Clients look up the display text for a code in their resource files. Do not add `display_name`, `native_name` or similar columns, and do not add columns that only describe how a client's interface looks or which interface languages it ships (flags, text direction, "enabled in the dashboard").
+- Language identifiers are BCP 47 tags (RFC 5646), such as `en`, `de`, `ar`. A request chooses its language with `Accept-Language` (RFC 9110) or an explicit `language` parameter. Missing translations fall back to the source language.
+- Existing `display_name` / `native_name` columns (`merchant_menu_languages`, `merchant_offerings`, `merchant_verticals`, `payment_service_providers`) predate this rule. Do not add to them; move their text into resource files when the table is next changed.
+
 ## Security
 
 - Never commit secrets, credentials, private keys, or environment-specific configuration to the repository.
