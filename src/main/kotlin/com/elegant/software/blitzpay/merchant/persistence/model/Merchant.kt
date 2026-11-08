@@ -79,6 +79,10 @@ class Merchant(
     @Column(name = "original_menu_language", length = 8)
     var originalMenuLanguage: String? = null,
 
+    /** Code of a [StorefrontTheme] row. */
+    @Column(name = "storefront_theme", nullable = false, length = 32)
+    var storefrontTheme: String = StorefrontTheme.DEFAULT,
+
     @Column(nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 

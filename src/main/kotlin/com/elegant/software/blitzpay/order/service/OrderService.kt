@@ -84,9 +84,9 @@ class OrderService(
     fun createGuestOrder(request: StorefrontOrderRequest): GuestOrderCreated {
         require(request.items.size <= MAX_GUEST_ORDER_LINES) { "Order must not contain more than $MAX_GUEST_ORDER_LINES items" }
         request.items.forEach { require(it.quantity <= MAX_GUEST_ITEM_QUANTITY) { "quantity must be <= $MAX_GUEST_ITEM_QUANTITY for product ${it.productId}" } }
-        // Guests pay immediately (card / Pay by Bank on the payment endpoint) or in cash; never Deferred Payment.
-        require(request.checkoutPaymentMethod == null || request.checkoutPaymentMethod == CheckoutPaymentMethod.CASH) {
-            "checkoutPaymentMethod must be CASH or omitted for storefront orders"
+        // Guests pay immediately (card / Pay by Bank on the payment endpoint) or to staff (cash / card terminal); never Deferred Payment.
+        require(request.checkoutPaymentMethod in GUEST_STAFF_PAYMENT_METHODS) {
+            "checkoutPaymentMethod must be CASH, TERMINAL or omitted for storefront orders"
         }
         val invoiceEmail = guestInvoiceEmail(request)
         val tableCode = request.tableCode?.takeIf { it.isNotBlank() }
@@ -612,6 +612,7 @@ class OrderService(
         private const val MAX_GUEST_ORDER_LINES = 50
         private const val MAX_GUEST_ITEM_QUANTITY = 99
         private const val MAX_GUEST_COUNT = 50
+        private val GUEST_STAFF_PAYMENT_METHODS = setOf(null, CheckoutPaymentMethod.CASH, CheckoutPaymentMethod.TERMINAL)
         const val INVOICE_EMAIL_CONSENT_REQUIRED = "INVOICE_EMAIL_CONSENT_REQUIRED"
         /** Bump when the storefront's consent wording changes, so each stored consent maps to the text the guest saw. */
         const val INVOICE_EMAIL_CONSENT_VERSION = "v1"

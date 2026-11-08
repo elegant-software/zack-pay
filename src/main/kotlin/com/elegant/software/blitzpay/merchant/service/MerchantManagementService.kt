@@ -31,6 +31,7 @@ class MerchantManagementService(
     private val eventPublisher: ApplicationEventPublisher,
     private val menuLanguageService: MenuLanguageService,
     private val tableService: MerchantTableService,
+    private val storefrontThemeService: StorefrontThemeService,
 ) {
     private val log = LoggerFactory.getLogger(MerchantManagementService::class.java)
 
@@ -59,6 +60,10 @@ class MerchantManagementService(
         request.businessType?.let { merchant.businessType = it }
         merchant.merchantStatus = request.merchantStatus ?: merchant.merchantStatus
         request.merchantMobility?.let { merchant.merchantMobility = it }
+        request.storefrontTheme?.takeIf { it != merchant.storefrontTheme }?.let {
+            storefrontThemeService.requireSelectable(it)
+            merchant.storefrontTheme = it
+        }
         request.defaultVatPercent?.let { merchant.defaultVatPercent = it }
         merchant.website = resolvedContactInfo.website
         merchant.publicEmail = resolvedContactInfo.email
@@ -151,6 +156,7 @@ class MerchantManagementService(
             .map { it.offeringCode }
             .toSortedSet(),
         merchantMobility = merchantMobility,
+        storefrontTheme = storefrontTheme,
         defaultVatPercent = defaultVatPercent,
         originalMenuLanguage = originalMenuLanguage,
         supportedMenuLanguages = menuLanguageService.supportedLanguages(id),

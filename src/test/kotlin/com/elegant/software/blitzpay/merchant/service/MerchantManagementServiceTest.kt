@@ -20,6 +20,7 @@ import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.whenever
 import org.springframework.context.ApplicationEventPublisher
 import java.util.Optional
@@ -35,6 +36,7 @@ class MerchantManagementServiceTest {
     private val storageService = mock<StorageService>()
     private val eventPublisher = mock<ApplicationEventPublisher>()
     private val tableService = mock<MerchantTableService>()
+    private val storefrontThemeService = mock<StorefrontThemeService>()
     private val service = MerchantManagementService(
         repository,
         branchRepository,
@@ -44,6 +46,7 @@ class MerchantManagementServiceTest {
         eventPublisher,
         mock<MenuLanguageService>(),
         tableService,
+        storefrontThemeService,
     )
 
     private fun merchant(name: String = "Old Name GmbH") = Merchant(
@@ -85,6 +88,31 @@ class MerchantManagementServiceTest {
 
         assertEquals(MerchantMobility.MOBILE, m.merchantMobility)
         assertEquals(MerchantMobility.MOBILE, response.merchantMobility)
+    }
+
+    @Test
+    fun `update merchant changes storefront theme and keeps it when omitted`() {
+        val m = merchant("Cafe GmbH")
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
+        whenever(repository.save(any<Merchant>())).thenAnswer { it.arguments[0] }
+        whenever(merchantOfferingAssignmentRepository.findAllByMerchantId(m.id)).thenReturn(emptyList())
+
+        val response = service.update(m.id, UpdateMerchantRequest(storefrontTheme = "HERITAGE"))
+        assertEquals("HERITAGE", response.storefrontTheme)
+        verify(storefrontThemeService).requireSelectable("HERITAGE")
+
+        service.update(m.id, UpdateMerchantRequest(merchantName = "Cafe GmbH"))
+        assertEquals("HERITAGE", m.storefrontTheme)
+    }
+
+    @Test
+    fun `update merchant rejects a theme that is not published`() {
+        val m = merchant("Cafe GmbH")
+        whenever(repository.findById(m.id)).thenReturn(Optional.of(m))
+        whenever(storefrontThemeService.requireSelectable("OCEAN")).thenThrow(IllegalArgumentException("not published"))
+
+        assertThrows<IllegalArgumentException> { service.update(m.id, UpdateMerchantRequest(storefrontTheme = "OCEAN")) }
+        assertEquals("DEFAULT", m.storefrontTheme)
     }
 
     @Test

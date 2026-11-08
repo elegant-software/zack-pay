@@ -38,6 +38,8 @@ data class UpdateMerchantRequest(
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
     val merchantMobility: MerchantMobility? = null,
+    /** Code of a published storefront theme, see `GET /v1/storefront/themes`. */
+    val storefrontTheme: String? = null,
     val defaultVatPercent: BigDecimal? = null,
     val originalMenuLanguage: String? = null,
     val supportedMenuLanguages: Set<String>? = null,
@@ -59,6 +61,7 @@ data class MerchantDetailsResponse(
     val location: MerchantLocationInfo? = null,
     val offerings: Set<String> = emptySet(),
     val merchantMobility: MerchantMobility = MerchantMobility.BRICK_AND_MORTAR,
+    val storefrontTheme: String = "DEFAULT",
     val defaultVatPercent: BigDecimal? = null,
     val originalMenuLanguage: String? = null,
     val supportedMenuLanguages: Set<String> = emptySet(),

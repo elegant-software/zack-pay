@@ -304,7 +304,7 @@ internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: Stri
 /**
  * Web storefront guest order: prices and merchant are resolved on the server. Without a Table it is a PRE_ORDER;
  * with a `tableCode` it is a WALK_IN_ORDERING order at that Table and needs `customerLocation`. Guests pay immediately
- * or choose CASH as `checkoutPaymentMethod`; Deferred Payment is never available to them.
+ * or choose CASH / TERMINAL (paid to staff) as `checkoutPaymentMethod`; Deferred Payment is never available to them.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class StorefrontOrderRequest(
