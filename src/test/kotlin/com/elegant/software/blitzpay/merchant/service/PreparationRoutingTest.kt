@@ -17,7 +17,7 @@ import kotlin.test.assertEquals
 
 class PreparationRoutingTest {
     @Test
-    fun `product overrides precede category defaults and missing routing has an explicit fallback`() {
+    fun `product overrides precede category defaults and unrouted items go to the first station`() {
         val products = mock<MerchantProductRepository>()
         val branches = mock<MerchantBranchRepository>()
         val configs = mock<MerchantPreparationConfigurationRepository>()
@@ -37,6 +37,8 @@ class PreparationRoutingTest {
         config.configuration = config.configuration.copy(productOverrides = emptyMap())
         assertEquals(food.id, gateway.findOrderableProducts(listOf(product.id)).single().preparationStationId)
         assertEquals(drinks.id, submitted.preparationStationId)
+        config.configuration = config.configuration.copy(categoryDefaults = emptyMap())
+        assertEquals(food.id, gateway.findOrderableProducts(listOf(product.id)).single().preparationStationId)
         config.configuration = PreparationConfiguration()
         assertEquals(UUID(0, 0), gateway.findOrderableProducts(listOf(product.id)).single().preparationStationId)
     }

@@ -43,7 +43,8 @@ class MerchantOnboardingService(
             products.map {
                 val config = routing[it.merchantBranchId]
                 val stationId = config?.productOverrides?.get(it.id) ?: config?.categoryDefaults?.get(it.productCategoryId)
-                val station = config?.stations?.find { candidate -> candidate.id == stationId }
+                // Unrouted items go to the default kitchen: the Branch's first station. No stations → whole-branch screen (UUID 0).
+                val station = config?.stations?.find { candidate -> candidate.id == stationId } ?: config?.stations?.firstOrNull()
 
                 OrderableMerchantProduct(
                     productId = it.id,
