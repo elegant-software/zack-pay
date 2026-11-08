@@ -35,7 +35,19 @@ class KitchenServiceTest {
     private val bus = mock<KitchenOrderBus>()
     private val storefrontOrderBus = mock<StorefrontOrderBus>()
     private val eventPublisher = mock<ApplicationEventPublisher>()
-    private val service = KitchenService(orderRepository, orderItemRepository, allocator, bus, storefrontOrderBus, eventPublisher, org.mockito.kotlin.mock<com.elegant.software.blitzpay.merchant.api.TableGateway>(), org.mockito.kotlin.mock<com.elegant.software.blitzpay.merchant.api.MerchantGateway>())
+    private val merchantGateway = mock<com.elegant.software.blitzpay.merchant.api.MerchantGateway>()
+    private val service = KitchenService(orderRepository, orderItemRepository, allocator, bus, storefrontOrderBus, eventPublisher, org.mockito.kotlin.mock<com.elegant.software.blitzpay.merchant.api.TableGateway>(), merchantGateway)
+
+    @Test
+    fun `stations offer no Unassigned entry and a branch without stations gets one whole-branch Kitchen`() {
+        whenever(allocator.branchZone(branchId)).thenReturn(ZoneId.of("UTC"))
+        whenever(allocator.businessDay(branchId)).thenReturn(LocalDate.of(2026, 11, 3))
+        val food = com.elegant.software.blitzpay.merchant.api.PreparationStation(UUID.randomUUID(), "Food Kitchen")
+        whenever(merchantGateway.findPreparationStations(branchId)).thenReturn(listOf(food))
+        assertEquals(listOf(food), service.stations(branchId))
+        whenever(merchantGateway.findPreparationStations(branchId)).thenReturn(emptyList())
+        assertEquals(listOf(com.elegant.software.blitzpay.merchant.api.PreparationStation(UUID(0, 0), "Kitchen")), service.stations(branchId))
+    }
 
     @Test
     fun `retrying completion returns the ready ticket without notifying the shopper again`() {

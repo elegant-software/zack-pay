@@ -99,8 +99,9 @@ class KitchenService(
     fun stations(branchId: UUID): List<PreparationStation> {
         val configured = merchantGateway.findPreparationStations(branchId)
         val snapshots = listOpenOrders(branchId).flatMap { it.items }.map { PreparationStation(it.stationId, it.stationName) }
-        return (configured + snapshots + PreparationStation(UUID(0, 0), "Unassigned / General kitchen"))
-            .distinctBy { it.id }
+        // Snapshots keep today's tickets of removed/renamed stations (and pre-default "Unassigned" items) reachable.
+        return (configured + snapshots).distinctBy { it.id }
+            .ifEmpty { listOf(PreparationStation(UUID(0, 0), "Kitchen")) }
     }
 
     @Transactional(readOnly = true)
