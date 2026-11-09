@@ -41,6 +41,7 @@ class SecurityConfig(
                     // Web Storefront guest checkout — authorised in the controller by the order-scoped guest_token cookie
                     .requestMatchers(HttpMethod.POST, "/v1/storefront/orders", "/v1/storefront/orders/{orderId}/payment").permitAll()
                     .requestMatchers(HttpMethod.GET, "/v1/storefront/orders/{orderId}", "/v1/storefront/orders/{orderId}/events").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/v1/storefront/languages").permitAll()
                     // Table Link resolution and Table availability — public by design, never expose orders
                     .requestMatchers(HttpMethod.GET, "/v1/storefront/tables/{tableCode}", "/v1/storefront/branches/{branchId:$ID}/table-availability").permitAll()
                     // Self-service signup from the apps — no account exists yet; the signup screen lists verticals first

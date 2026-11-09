@@ -74,6 +74,8 @@ tags:
   description: Create and list orders for authenticated merchant branches
 - name: Appointments
   description: "Shopper appointment search, booking, history, cancellation, and rescheduling"
+- name: Storefront Languages
+  description: Public interface language metadata
 - name: Merchant Branches
   description: Manage branches under a merchant
 - name: Merchant Provider Accounts
@@ -4866,6 +4868,21 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AppointmentResponse"
+  /v1/storefront/languages:
+    get:
+      tags:
+      - Storefront Languages
+      summary: List storefront interface languages
+      operationId: list_12
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StorefrontLanguageResponse"
   /stripe-connect/return:
     get:
       tags:
@@ -9754,6 +9771,25 @@ components:
             $ref: "#/components/schemas/ActiveAppearanceItem"
       required:
       - appearances
+    StorefrontLanguageResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        displayName:
+          type: string
+        nativeName:
+          type: string
+        flagCode:
+          type: string
+        direction:
+          type: string
+      required:
+      - code
+      - direction
+      - displayName
+      - flagCode
+      - nativeName
     Link:
       type: object
       properties:
