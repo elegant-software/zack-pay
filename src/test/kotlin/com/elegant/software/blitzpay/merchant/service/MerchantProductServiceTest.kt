@@ -52,6 +52,7 @@ class MerchantProductServiceTest {
         storageService,
         catalogTranslationService,
         menuLanguageService,
+        mock<ProductImageProcessor>(),
     )
     private val merchantId = UUID.randomUUID()
     private val branchId = UUID.randomUUID()

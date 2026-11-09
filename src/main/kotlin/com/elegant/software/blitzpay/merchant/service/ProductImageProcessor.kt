@@ -42,6 +42,20 @@ class ProductImageProcessor(qualityProperties: ProductImageQualityProperties) {
     private val decodePermits = Semaphore(MaxConcurrentDecodes)
     private val qualityInspector = ProductImageQualityInspector(qualityProperties)
 
+    fun thumbnail(image: ProductImageUpload): ProductImageUpload? {
+        if (image.contentType.lowercase() == "image/webp") return null
+        require(decodePermits.tryAcquire(AcquireTimeoutSeconds, TimeUnit.SECONDS)) {
+            "Product image processing is busy; retry shortly"
+        }
+        try {
+            val decoded = decode(image.bytes, null, 512).image
+            val contentType = if (decoded.colorModel.hasAlpha()) "image/png" else "image/jpeg"
+            return ProductImageUpload(contentType, encode(scale(decoded, 256), contentType))
+        } finally {
+            decodePermits.release()
+        }
+    }
+
     fun prepare(image: RawProductImage, crop: ProductImageCrop? = null): ProductImageUpload {
         ProductImagePolicy.extensionFor(image.contentType)
         ProductImagePolicy.validateSourceSize(image.bytes.size.toLong())

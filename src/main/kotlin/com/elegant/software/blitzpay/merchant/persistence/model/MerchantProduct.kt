@@ -58,6 +58,9 @@ class MerchantProduct(
 
     @Column(name = "product_code")
     var productCode: Long? = null,
+
+    @Column(name = "thumbnail_storage_key", length = 1024)
+    var thumbnailStorageKey: String? = null,
 ) {
     fun deactivate(at: Instant = Instant.now()) {
         active = false
