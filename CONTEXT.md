@@ -518,7 +518,8 @@ _Avoid_: branch report, manager report, caller-supplied merchant filter
 - A **Floor Plan** shows each placed **Table**'s occupancy and its open orders with **Pickup Number**, payment status and **Preparation Status**
 - **Table Status** is always derived on demand; it is never stale
 - Staff see full **Table Status** detail (orders, payment, preparation); shoppers see only availability, never other customers' orders
-- Card payment for a Table's order may be taken by the shopper in their app or by staff via Tap to Pay; either way the order becomes paid only when the payment provider confirms it
+- Card payment for a Table's order may be taken by the shopper in their app or by staff as a **Terminal Payment**; either way the order becomes paid only when the payment provider confirms it
+- An Order has at most one open **Terminal Payment**; a retry continues it, and a new one may start only after staff explicitly cancel it or it has failed
 - A **Table** without orders may be deleted; a **Table** with orders may only be deactivated, and reactivating it restores the same **Table Code**
 - Opening the **Table Link** of a deactivated **Table** opens its **Branch** storefront without a Table, for collection at the counter
 - Only a **Merchant Manager** (or Platform Admin) sets up **Table**s, **Floor Plan**s and **Table Placement**s, and writes NFC tags
@@ -1186,8 +1187,16 @@ _Avoid_: Adyen link, onboarding link, redirect URL
 The Adyen Balance Platform signal that a Merchant's Account Holder is verified and permitted to accept live payments. Confirmed via the `balanceAccount.updated` webhook when the `receivePayments` capability status becomes `allowed`. The Adyen equivalent of Stripe's `charges_enabled: true`.
 _Avoid_: Adyen verified, charges enabled, KYC complete
 
+**Terminal Payment**:
+An in-person card payment for an Order, collected by staff on a reader the Merchant controls. Collected either via **Tap to Pay** or via a **Card Reader**. The Order becomes paid only when the payment provider confirms the payment. Corresponds to the `TERMINAL` Payment Method. Merchant app label: "Kartenzahlung" / "Card payment".
+_Avoid_: POS payment, EC payment, card-present payment
+
+**Card Reader**:
+A Bluetooth card reader paired to a merchant phone that collects a Terminal Payment by tap, chip, or chip-and-PIN. The only way to accept girocard (EC card). Pairing is remembered on the phone, not registered per Branch. Merchant app label: "Kartenterminal (EC/girocard)" / "Card reader (EC/girocard)".
+_Avoid_: POS terminal, EC terminal, card machine, WisePad (that is one model, not the concept)
+
 **Tap to Pay**:
-The in-person payment mode where the merchant's phone acts as an NFC contactless reader using the Stripe Terminal SDK. Accepts contactless physical cards and digital wallets (Apple Pay, Google Pay). No external hardware required. Enabled per Merchant via `tap_to_pay_enabled` on the Stripe provider account. Either the shopper or merchant app may initiate a Tap to Pay payment; the Order is the coordination point between them.
+The in-person payment mode where the merchant's phone acts as an NFC contactless reader using the Stripe Terminal SDK. Accepts contactless physical cards and digital wallets (Apple Pay, Google Pay). No external hardware required. Does not accept girocard; use a **Card Reader** for that. Enabled per Merchant via `tap_to_pay_enabled` on the Stripe provider account. Either the shopper or merchant app may initiate a Tap to Pay payment; the Order is the coordination point between them.
 _Avoid_: POS terminal, hardware reader, card machine, Stripe POS
 
 **Terminal Location**:
@@ -1337,6 +1346,7 @@ _Avoid_: Terminal secret, SDK token, auth token
 - Duration update could have had its own dedicated endpoint (`PATCH /product-categories/{id}/duration`). Resolved: duration is maintained through the standard category update endpoint (`PUT /product-categories/{id}`) alongside name; a dedicated endpoint was a smell that duplicated the create path's optionality.
 - Stripe Connect and Adyen for Platforms could have been enabled simultaneously per Merchant. Resolved: a Merchant operates on exactly one platform PSP at a time; the active PSP is selected in the admin dashboard. Enabling one while the other is inactive is the only supported state.
 - A single PSP-agnostic term (e.g. "Platform Sub-Account") could have covered both Stripe Connected Accounts and Adyen Account Holders. Resolved: PSP-specific terms are used side by side (**Connected Account** for Stripe, **Account Holder** for Adyen) because the two models differ structurally — Stripe uses one identifier (`acct_XXXX`) while Adyen uses two (**Account Holder ID** + **Balance Account ID**).
+- girocard could have been assumed to work on **Tap to Pay** because it is a debit card. Resolved: girocard is accepted only through a **Card Reader**; **Tap to Pay** handles international-network contactless cards only.
 - **Tap to Pay** could have used a hardware smart reader with server-driven integration (`process_payment_intent`). Resolved: Tap to Pay (NFC soft reader, Terminal SDK in the merchant app) is the only supported no-hardware path; server-driven integration applies to WisePOS E and S700 only.
 - **Terminal Location** could have been stored at the Merchant level (one location per Merchant). Resolved: a Location maps to a Branch, not a Merchant; it is stored per Branch as a nullable column so multi-branch merchants each have a distinct Stripe Location.
 - **Terminal Location** creation could have been eager (at enable time) or explicit (admin endpoint). Resolved: created lazily on first **Connection Token** request for the Branch; eager creation is incomplete and a lazy fallback is unavoidable regardless.

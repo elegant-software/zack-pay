@@ -1,7 +1,7 @@
 # ADR-0007: Stripe Terminal — Tap to Pay (NFC Soft Reader)
 
 **Date:** 2026-05-28
-**Status:** Accepted
+**Status:** Accepted — partly superseded by ADR-0024 (Card Reader for girocard)
 
 ## Context
 
