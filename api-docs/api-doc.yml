@@ -82,6 +82,8 @@ tags:
   description: Manage which Payment Service Providers are enabled for a merchant
 - name: Merchant Menu Languages
   description: Platform-managed languages a merchant catalogue can be offered in
+- name: Merchant Catalog
+  description: Branch-scoped catalog browsing for mobile apps
 - name: Geofence
   description: Geofence region discovery for mobile clients
 - name: Appointment Policy
@@ -2343,6 +2345,48 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BranchAssignmentResponse"
+  /{version}/merchants/{merchantId}/catalog/thumbnails:
+    post:
+      tags:
+      - Merchant Catalog
+      summary: Generate missing thumbnails for a batch of existing branch products
+      description: Authorized branch staff only. Processes at most 24 products per
+        call. Follow nextCursor until hasMore is false. JPEG/PNG sources are resized;
+        originals are never replaced. Existing thumbnails and unsupported formats
+        are skipped.
+      operationId: thumbnails
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogThumbnailBatch"
   /{version}/merchants/{merchantId}/branches:
     get:
       tags:
@@ -4147,6 +4191,118 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CatalogTranslationResponse"
+  /{version}/merchants/{merchantId}/catalog/products:
+    get:
+      tags:
+      - Merchant Catalog
+      summary: Read a page of branch products
+      description: "Stable oldest-first creation order with product ID as tie-breaker.\
+        \ Pass nextCursor unchanged for the next page. Cursors are scoped to merchant,\
+        \ branch, category and visibility. Defaults to active products only. imageUrl\
+        \ is the larger detail image; thumbnailUrl is optional and intended for lists."
+      operationId: products
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: categoryId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: uncategorized
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: includeInactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 24
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: Accept-Language
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogProductPage"
+  /{version}/merchants/{merchantId}/catalog/categories:
+    get:
+      tags:
+      - Merchant Catalog
+      summary: Read nonempty branch categories and product counts
+      operationId: categories
+      parameters:
+      - name: merchantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: includeInactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: Accept-Language
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BranchCatalogCategories"
   /{version}/merchants/{merchantId}/branches/{branchId}/floor:
     get:
       tags:
@@ -5642,6 +5798,10 @@ components:
           type: string
           format: date-time
         language:
+          type:
+          - string
+          - "null"
+        thumbnailUrl:
           type:
           - string
           - "null"
@@ -7881,6 +8041,29 @@ components:
       - createdAt
       - employeeId
       - id
+    CatalogThumbnailBatch:
+      type: object
+      properties:
+        updated:
+          type: integer
+          format: int32
+        skipped:
+          type: integer
+          format: int32
+        failed:
+          type: integer
+          format: int32
+        nextCursor:
+          type:
+          - string
+          - "null"
+        hasMore:
+          type: boolean
+      required:
+      - failed
+      - hasMore
+      - skipped
+      - updated
     CreateBranchRequest:
       type: object
       properties:
@@ -9506,6 +9689,67 @@ components:
       - connected
       - detailsSubmitted
       - enabledPaymentFlows
+    CatalogProductPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductResponse"
+        nextCursor:
+          type:
+          - string
+          - "null"
+        hasMore:
+          type: boolean
+        limit:
+          type: integer
+          format: int32
+      required:
+      - hasMore
+      - items
+      - limit
+    BranchCatalogCategories:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/BranchCatalogCategory"
+        uncategorizedCount:
+          type: integer
+          format: int64
+        totalCount:
+          type: integer
+          format: int64
+      required:
+      - categories
+      - totalCount
+      - uncategorizedCount
+    BranchCatalogCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        productCount:
+          type: integer
+          format: int64
+        estimatedDurationMinutes:
+          type:
+          - integer
+          - "null"
+          format: int32
+        language:
+          type:
+          - string
+          - "null"
+      required:
+      - id
+      - name
+      - productCount
     FloorResponse:
       type: object
       properties:

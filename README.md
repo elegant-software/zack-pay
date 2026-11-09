@@ -20,6 +20,23 @@
 
 - API versioning guide: [reference/api-versioning-guide.md](reference/api-versioning-guide.md)
 
+## Mobile catalog browsing
+
+Authenticated mobile clients can use these additive endpoints, scoped by merchant and mandatory `branchId`:
+
+- `GET /v1/merchants/{merchantId}/catalog/products?branchId=...&limit=24` returns `items`, `nextCursor`, `hasMore`, and `limit`. Limits are 1–100. Pass `nextCursor` unchanged as `cursor` for the next batch; a terminal page has a null cursor. Ordering is stable by original creation time, then product ID, including when names are translated. It does not reorder by translated product name.
+- Optional `categoryId` filters a category; `uncategorized=true` selects products without a category. These filters are mutually exclusive. Changing merchant, branch, category, or visibility requires starting without a cursor.
+- `GET /v1/merchants/{merchantId}/catalog/categories?branchId=...` returns nonempty `categories` with `productCount`, plus `uncategorizedCount` and `totalCount`. Clients provide their own translated “All” and “Uncategorized” labels.
+- Both reads default to active products in an active branch. `includeInactive=true` requires authorized branch staff or a platform admin and also permits an inactive branch for management. Language resolution follows the existing `Accept-Language` / `language` behavior.
+
+Product responses retain `imageUrl` for the larger image shown when an item opens. Optional `thumbnailUrl` is for list rows. JPEG/PNG uploads generate thumbnails with a maximum edge of 256 pixels, retaining aspect ratio and PNG transparency. Signed URLs have the existing storage TTL and should be refreshed when expired. Existing images and WebP (which the current ImageIO stack cannot decode) may have no thumbnail; clients must fall back to `imageUrl`. Browsing never generates thumbnails or downloads full images on the server.
+
+Authorized branch staff/admins can backfill existing JPEG/PNG images with `POST /v1/merchants/{merchantId}/catalog/thumbnails?branchId=...&limit=10`. Limits are 1–24. Follow `nextCursor` until `hasMore=false`; `updated`, `skipped`, and `failed` describe each batch. Existing variants and unsupported formats are skipped. A failed batch/item can be retried; conditional updates avoid attaching a variant after a concurrent product edit. The original/detail image is never overwritten by backfill.
+
+The existing `GET /products` array response is unchanged, including callers that need the complete branch catalog for basket validation. Apply Liquibase migration `20261110-001-mobile-catalog.sql` before running the updated backend. Mobile apps must explicitly adopt the new paginated endpoints and thumbnail field after deployment.
+
+Catalog repository tests require Docker: they run PostgreSQL 16, apply the new migration, and exercise real queries and row-level tenant isolation without changing a shared database.
+
 ## Contract Tests
 
 HTTP JSON uses the Jackson 3 Kotlin module so omitted request properties honor Kotlin constructor defaults

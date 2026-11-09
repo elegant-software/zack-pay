@@ -20,6 +20,15 @@ This file defines collaboration and contribution conventions for agents working 
 - Update docs when behavior or configuration changes.
 - Treat `CONSTITUTION.md` as the governing repository policy for fixture-based testing and review expectations.
 
+## PR Descriptions
+
+- Keep PR descriptions short, simple, and readable for a non-technical manager.
+- Use two short lines by default: `Problem: ...` and `Fix: ...` for bug fixes, or `Feat: ...` and `Add: ...` for features.
+- Explain the user-facing problem or feature and the resulting behavior in plain language.
+- Omit file lists, implementation details, long summaries, and conversational history.
+- Add a short `Testing: ...` line or an essential deployment/migration note only when needed for review.
+- Keep PR titles in the repository's existing conventional format.
+
 ## Code Quality
 - Follow existing style and structure.
 - Add or update tests for behavior changes.
