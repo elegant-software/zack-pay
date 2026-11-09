@@ -59,11 +59,11 @@ class TableAccess(
         branchRepository.findById(branchId).orElse(null)?.takeIf { it.merchantId == merchantId }
             ?: throw NoSuchElementException("Branch not found: $branchId")
 
-    private fun isManager(jwt: Jwt?, merchantId: UUID): Boolean =
+    internal fun isManager(jwt: Jwt?, merchantId: UUID): Boolean =
         assignments(jwt).any { it.merchantId == merchantId && it.role == MerchantOperationsRole.MERCHANT_MANAGER }
 
     /** A Merchant Manager, a merchant user assigned to the Branch (or Merchant-wide), or a member of the Branch group. */
-    private fun isBranchStaff(jwt: Jwt?, merchantId: UUID, branchId: UUID): Boolean {
+    internal fun isBranchStaff(jwt: Jwt?, merchantId: UUID, branchId: UUID): Boolean {
         if (isBranchGroupMember(jwt, branchId)) return true
         return assignments(jwt).any {
             it.merchantId == merchantId &&

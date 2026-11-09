@@ -3976,6 +3976,35 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PaymentStatusResponse"
+  /{version}/payments/stripe/terminal/readers:
+    get:
+      tags:
+      - stripe-terminal-controller
+      summary: List the Stripe Terminal Readers registered to the merchant's Branch
+        Locations (read-only)
+      operationId: readers
+      parameters:
+      - name: merchantId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: branchId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TerminalReaderResponse"
   /{version}/orders/{orderId}:
     get:
       tags:
@@ -9326,6 +9355,45 @@ components:
       - paymentRequestId
       - status
       - terminal
+    TerminalReaderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        branchId:
+          type: string
+          format: uuid
+        branchName:
+          type: string
+        label:
+          type:
+          - string
+          - "null"
+        deviceType:
+          type:
+          - string
+          - "null"
+        serialNumber:
+          type:
+          - string
+          - "null"
+        softwareVersion:
+          type:
+          - string
+          - "null"
+        status:
+          type:
+          - string
+          - "null"
+        lastSeenAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+      required:
+      - branchId
+      - branchName
+      - id
     OrderSummaryResponse:
       type: object
       properties:

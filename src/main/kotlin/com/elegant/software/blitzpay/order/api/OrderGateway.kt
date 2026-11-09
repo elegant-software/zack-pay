@@ -24,6 +24,9 @@ interface OrderGateway {
 
     fun findLastPaymentRequestId(orderId: String): UUID?
 
+    /** The order's most recent payment attempt; null for an unknown order or one never sent to a provider. */
+    fun findLastPaymentAttempt(orderId: String): OrderPaymentAttempt?
+
     /** True when [token] is the unexpired web storefront guest token issued for [orderId]. */
     fun isGuestTokenValid(orderId: String, token: String?): Boolean
 
@@ -45,4 +48,10 @@ data class OrderPaymentSummary(
     val branchId: UUID?,
     val totalAmountMinor: Long,
     val currency: String,
+)
+
+data class OrderPaymentAttempt(
+    val paymentRequestId: UUID,
+    val provider: String,
+    val providerReference: String?,
 )

@@ -68,10 +68,7 @@ internal class StripeSettlementEnrichmentListener(
 
         val paymentMethodType = charge.paymentMethodDetails?.type ?: "unknown"
         val paymentMethod = mapStripePaymentMethod(paymentMethodType)
-        val paymentMethodDetail = when (paymentMethodType) {
-            "card" -> charge.paymentMethodDetails?.card?.brand
-            else -> null
-        }
+        val paymentMethodDetail = stripePaymentMethodDetail(charge)
 
         paymentSettlementGateway.record(
             PaymentSettlementData(
@@ -208,7 +205,7 @@ internal class StripeSettlementRefreshService(
                     platformFeeMinor = candidate.platformFeeMinor,
                     netAmountMinor = balanceTransaction.net,
                     paymentMethod = mapStripePaymentMethod(paymentMethodType),
-                    paymentMethodDetail = if (paymentMethodType == "card") charge.paymentMethodDetails?.card?.brand else null,
+                    paymentMethodDetail = stripePaymentMethodDetail(charge),
                     fundsAvailableAt = balanceTransaction.availableOn?.let(Instant::ofEpochSecond),
                     providerPaymentReference = charge.paymentIntent ?: candidate.providerPaymentReference,
                     providerChargeReference = charge.id,
@@ -256,6 +253,13 @@ internal fun mapStripePaymentMethod(stripeType: String): String = when (stripeTy
     "card_present", "interac_present" -> "TERMINAL"
     "paypal" -> "PAYPAL"
     else -> "CARD"
+}
+
+/** Card brand for online card charges; card network (`girocard`, `visa`, ...) for Terminal Payments. */
+internal fun stripePaymentMethodDetail(charge: Charge): String? = when (charge.paymentMethodDetails?.type) {
+    "card" -> charge.paymentMethodDetails?.card?.brand
+    "card_present" -> charge.paymentMethodDetails?.cardPresent?.network
+    else -> null
 }
 
 internal fun stripeDashboardPaymentUrl(
