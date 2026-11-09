@@ -99,6 +99,8 @@ tags:
     admins
 - name: Shopper Profile
   description: Shopper invoice address — used automatically as Buyer Contact on orders
+- name: Legal
+  description: "Current Terms and Privacy Policy, per language"
 paths:
   /{version}/storefront/themes/{code}:
     get:
@@ -4774,6 +4776,51 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/KitchenBranding"
+  /{version}/legal:
+    get:
+      tags:
+      - Legal
+      summary: Current terms version and document links; unknown languages fall back
+        to English
+      operationId: info
+      parameters:
+      - name: lang
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LegalInfo"
+  /{version}/legal/{lang}/{doc}:
+    get:
+      tags:
+      - Legal
+      summary: A legal document as HTML
+      operationId: document
+      parameters:
+      - name: lang
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: doc
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
   /{version}/geofence/regions:
     get:
       tags:
@@ -9672,6 +9719,22 @@ components:
           type:
           - string
           - "null"
+    LegalInfo:
+      type: object
+      properties:
+        termsVersion:
+          type: string
+        language:
+          type: string
+        termsUrl:
+          type: string
+        privacyUrl:
+          type: string
+      required:
+      - language
+      - privacyUrl
+      - termsUrl
+      - termsVersion
     GeofenceRegionResponse:
       type: object
       properties:

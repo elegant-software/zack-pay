@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.merchant.iam.web
 
+import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.iam.service.EmailConflictException
 import com.elegant.software.blitzpay.merchant.iam.service.SignupService
 import io.swagger.v3.oas.annotations.Operation
@@ -20,7 +21,7 @@ data class ShopperSignupRequest(
     val name: String,
     val email: String,
     val password: String,
-    // ponytail: optional for shoppers until the shopper app sends it; required for merchants
+    // ponytail: optional for shoppers until every shopper app build sends it; required for merchants
     val acceptedTermsVersion: String? = null,
 )
 
@@ -33,6 +34,10 @@ data class MerchantSignupRequest(
     val acceptedTermsVersion: String? = null,
 )
 
+/** The app showed an older text than the one in force; it reloads GET /v1/legal and asks again. */
+class TermsOutdatedException :
+    ApiException(HttpStatus.CONFLICT, "The terms were updated. Please review and accept them again.", code = "TERMS_OUTDATED")
+
 data class ShopperSignupResponse(val userId: UUID)
 data class MerchantSignupResponse(val merchantId: UUID)
 
@@ -41,7 +46,7 @@ data class MerchantSignupResponse(val merchantId: UUID)
 @RestController
 @Profile("!contract-test")
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/signup", version = "1")
-class SignupController(private val service: SignupService) {
+class SignupController(private val service: SignupService, private val legal: LegalProperties) {
 
     @Operation(summary = "Create a shopper account")
     @PostMapping("/shopper")
@@ -50,7 +55,7 @@ class SignupController(private val service: SignupService) {
         validate(request.name, request.email, request.password)
         return ShopperSignupResponse(service.signupShopper(
                 request.name.trim(), normalize(request.email), request.password,
-                request.acceptedTermsVersion?.trim()?.takeIf { it.isNotEmpty() },
+                request.acceptedTermsVersion?.trim()?.takeIf { it.isNotEmpty() }?.also(::requireCurrentTerms),
             )
         )
     }
@@ -63,7 +68,8 @@ class SignupController(private val service: SignupService) {
         require(request.merchantName.isNotBlank()) { "merchantName must not be blank" }
         require(request.businessType.isNotBlank()) { "businessType must not be blank" }
         val termsVersion = request.acceptedTermsVersion?.trim()
-        require(!termsVersion.isNullOrEmpty() && termsVersion.length <= 32) { "acceptedTermsVersion is required" }
+        require(!termsVersion.isNullOrEmpty()) { "acceptedTermsVersion is required" }
+        requireCurrentTerms(termsVersion)
         return MerchantSignupResponse(
             service.signupMerchant(
                 request.ownerName.trim(), request.merchantName.trim(), normalize(request.email),
@@ -76,6 +82,10 @@ class SignupController(private val service: SignupService) {
     @ExceptionHandler(EmailConflictException::class)
     fun conflict(): ResponseEntity<Map<String, String>> =
         ResponseEntity.status(HttpStatus.CONFLICT).body(mapOf("error" to "email_conflict"))
+
+    private fun requireCurrentTerms(version: String) {
+        if (version != legal.termsVersion) throw TermsOutdatedException()
+    }
 
     private fun normalize(email: String) = email.trim().lowercase()
 
