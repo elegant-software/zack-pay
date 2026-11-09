@@ -12,6 +12,10 @@ import com.elegant.software.blitzpay.invoice.api.InvoiceLineItem
 import java.math.BigDecimal
 
 object TestFixtureLoader {
+    fun tableLinks(): TableLinkFixture =
+        requireNotNull(javaClass.getResourceAsStream("/testdata/merchant/table-links.json"))
+            .use { objectMapper.readValue(it) }
+
 
     fun storefrontLanguages(): List<com.elegant.software.blitzpay.merchant.api.StorefrontLanguageResponse> =
         requireNotNull(javaClass.getResourceAsStream("/testdata/merchant/storefront-languages.json"))
@@ -94,3 +98,5 @@ data class InvoiceExpectations(
     val singleLineItemUnitPrice: String,
     val singleLineItemVatPercent: String,
 )
+
+data class TableLinkFixture(val localStorefrontUrl: String, val publicStorefrontUrl: String, val tableCode: String)
