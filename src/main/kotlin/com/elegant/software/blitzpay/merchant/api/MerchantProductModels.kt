@@ -39,6 +39,7 @@ data class ProductResponse(
     val createdAt: Instant,
     val updatedAt: Instant,
     val language: String? = null,
+    val thumbnailUrl: String? = null,
 )
 
 data class OrderableMerchantProduct(

@@ -21,6 +21,10 @@ object TestFixtureLoader {
         requireNotNull(javaClass.getResourceAsStream("/testdata/merchant/storefront-languages.json"))
             .use { objectMapper.readValue(it) }
 
+    fun <T> load(path: String, type: Class<T>): T =
+        requireNotNull(this::class.java.classLoader.getResourceAsStream(path)) { "Missing fixture file: $path" }
+            .use { objectMapper.readValue(it, type) }
+
     private val objectMapper: JsonMapper = JsonMapper.builder()
         .addModule(KotlinModule.Builder().build())
         .addModule(JavaTimeModule())

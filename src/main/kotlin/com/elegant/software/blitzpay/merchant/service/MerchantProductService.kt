@@ -3,6 +3,10 @@ package com.elegant.software.blitzpay.merchant.service
 import com.elegant.software.blitzpay.merchant.api.CreateProductRequest
 import com.elegant.software.blitzpay.merchant.api.ProductResponse
 import com.elegant.software.blitzpay.merchant.api.UpdateProductRequest
+import com.elegant.software.blitzpay.merchant.api.CatalogProductPage
+import com.elegant.software.blitzpay.merchant.api.BranchCatalogCategories
+import com.elegant.software.blitzpay.merchant.api.BranchCatalogCategory
+import com.elegant.software.blitzpay.merchant.api.CatalogThumbnailBatch
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantEntityStatus
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProductTranslation
@@ -16,6 +20,9 @@ import org.hibernate.Session
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
+import org.springframework.data.domain.PageRequest
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -30,6 +37,7 @@ class MerchantProductService(
     private val storageService: StorageService,
     private val catalogTranslationService: CatalogTranslationService,
     private val menuLanguageService: MenuLanguageService,
+    private val productImageProcessor: ProductImageProcessor,
 ) {
     private val log = LoggerFactory.getLogger(MerchantProductService::class.java)
 
@@ -65,7 +73,8 @@ class MerchantProductService(
         }
 
         val productId = UUID.randomUUID()
-        val imageStorageKey = image?.let { uploadImage(merchantId, productId, it, request.branchId) }
+        val images = image?.let { uploadImage(merchantId, productId, it, request.branchId) }
+        val imageStorageKey = images?.imageKey
         val product = MerchantProduct(
             id = productId,
             merchantId = merchantId,
@@ -76,12 +85,14 @@ class MerchantProductService(
             active = active,
             merchantBranchId = request.branchId,
             productCategoryId = categoryId,
-            productCode = resolvedProductCode
+            productCode = resolvedProductCode,
+            thumbnailStorageKey = images?.thumbnailKey,
         )
         val saved = try {
             productRepository.save(product)
         } catch (ex: RuntimeException) {
             imageStorageKey?.let { cleanupUploadedImage(it) }
+            images?.thumbnailKey?.let { cleanupUploadedImage(it) }
             throw ex
         }
         log.info("Product created: id={} merchant={}", saved.id, merchantId)
@@ -105,6 +116,116 @@ class MerchantProductService(
             productRepository.findAllByMerchantBranchIdAndProductCategoryId(merchantBranchId, categoryId)
         }
         return products.toResponses(merchantId, language)
+    }
+
+    @Transactional(readOnly = true)
+    fun catalogPage(
+        merchantId: UUID, branchId: UUID, categoryId: UUID?, uncategorized: Boolean,
+        includeInactive: Boolean, limit: Int, cursor: String?, language: String?,
+    ): CatalogProductPage {
+        require(limit in 1..100) { "limit must be between 1 and 100" }
+        require(!uncategorized || categoryId == null) { "categoryId and uncategorized cannot be combined" }
+        requireCatalogBranch(merchantId, branchId, includeInactive)
+        enableTenantFilter(merchantId)
+        validateCategory(merchantId, categoryId)
+        val scope = CatalogScope(merchantId, branchId, categoryId, uncategorized, includeInactive)
+        val position = scope.position(cursor)
+        val products = productRepository.findCatalogPage(
+            merchantId, branchId, categoryId, uncategorized, includeInactive,
+            position?.createdAt, position?.productId, PageRequest.of(0, limit + 1),
+        )
+        val hasMore = products.size > limit
+        val page = products.take(limit)
+        log.info("Catalog page read: merchant={} branch={} count={} hasMore={}", merchantId, branchId, page.size, hasMore)
+        return CatalogProductPage(
+            items = page.toResponses(merchantId, language),
+            nextCursor = if (hasMore) page.last().let { scope.cursor(it.createdAt, it.id) } else null,
+            hasMore = hasMore, limit = limit,
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun catalogCategories(merchantId: UUID, branchId: UUID, includeInactive: Boolean, language: String?): BranchCatalogCategories {
+        requireCatalogBranch(merchantId, branchId, includeInactive)
+        enableTenantFilter(merchantId)
+        val counts = productRepository.catalogCategoryCounts(merchantId, branchId, includeInactive)
+        val countByCategory = counts.filter { it.categoryId != null }.associate { it.categoryId!! to it.productCount }
+        val categories = categoryRepository.findAllById(countByCategory.keys).filter { it.merchantId == merchantId }
+        val translations = catalogTranslationService.categoryNames(categories.map { it.id }, language)
+        val original = menuLanguageService.originalLanguage(merchantId)
+        val response = categories.map { category ->
+            BranchCatalogCategory(
+                id = category.id, name = translations[category.id] ?: category.name,
+                productCount = countByCategory.getValue(category.id),
+                estimatedDurationMinutes = category.estimatedDurationMinutes,
+                language = if (translations.containsKey(category.id)) language else original,
+            )
+        }.sortedBy { it.name.lowercase(java.util.Locale.ROOT) }
+        return BranchCatalogCategories(
+            categories = response,
+            uncategorizedCount = counts.firstOrNull { it.categoryId == null }?.productCount ?: 0,
+            totalCount = counts.sumOf { it.productCount },
+        )
+    }
+
+    private fun requireCatalogBranch(merchantId: UUID, branchId: UUID, includeInactive: Boolean) {
+        requireMerchantExists(merchantId)
+        val exists = if (includeInactive) merchantBranchRepository.existsByMerchantIdAndId(merchantId, branchId)
+            else merchantBranchRepository.existsByMerchantIdAndIdAndActiveTrue(merchantId, branchId)
+        if (!exists) throw NoSuchElementException("Branch not found: $branchId")
+    }
+
+    fun backfillCatalogThumbnails(merchantId: UUID, branchId: UUID, limit: Int, cursor: String?): CatalogThumbnailBatch {
+        require(limit in 1..24) { "limit must be between 1 and 24" }
+        requireCatalogBranch(merchantId, branchId, true)
+        enableTenantFilter(merchantId)
+        val scope = CatalogScope(merchantId, branchId, null, false, true)
+        val position = scope.position(cursor)
+        val products = productRepository.findCatalogPage(
+            merchantId, branchId, null, false, true, position?.createdAt, position?.productId, PageRequest.of(0, limit + 1),
+        )
+        var updated = 0
+        var skipped = 0
+        var failed = 0
+        for (product in products.take(limit)) {
+            val sourceKey = product.imageStorageKey
+            val type = when (sourceKey?.substringAfterLast('.')?.lowercase(java.util.Locale.ROOT)) {
+                "jpg", "jpeg" -> "image/jpeg"
+                "png" -> "image/png"
+                else -> null
+            }
+            if (sourceKey == null || type == null || product.thumbnailStorageKey != null) {
+                skipped++
+                continue
+            }
+            val thumbnail = try {
+                productImageProcessor.thumbnail(ProductImageUpload(type, storageService.download(sourceKey)))
+            } catch (ex: RuntimeException) {
+                log.warn("Catalog thumbnail backfill failed: product={}", product.id, ex)
+                failed++
+                continue
+            }
+            if (thumbnail == null) {
+                skipped++
+                continue
+            }
+            val key = storeThumbnail(merchantId, branchId, product.id, thumbnail)
+            if (key == null) {
+                failed++
+                continue
+            }
+            if (productRepository.attachCatalogThumbnail(product.id, merchantId, sourceKey, product.updatedAt, key) == 1) updated++
+            else {
+                cleanupUploadedImage(key)
+                skipped++
+            }
+        }
+        val hasMore = products.size > limit
+        return CatalogThumbnailBatch(
+            updated, skipped, failed,
+            if (hasMore) products[limit - 1].let { scope.cursor(it.createdAt, it.id) } else null,
+            hasMore,
+        )
     }
 
     @Transactional(readOnly = true)
@@ -284,7 +405,9 @@ class MerchantProductService(
         image: ProductImageUpload?
     ): ProductResponse {
         val previousImageStorageKey = product.imageStorageKey
-        val newImageStorageKey = image?.let { uploadImage(merchantId, product.id, it, request.branchId) } ?: previousImageStorageKey
+        val previousThumbnailKey = product.thumbnailStorageKey
+        val images = image?.let { uploadImage(merchantId, product.id, it, request.branchId) }
+        val newImageStorageKey = images?.imageKey ?: previousImageStorageKey
         val resolvedProductCode = request.productCode
             ?.let { resolveProductCode(request.branchId, it) }
             ?: product.productCode
@@ -301,22 +424,54 @@ class MerchantProductService(
         if (request.branchId != product.merchantBranchId) {
             product.merchantBranchId = request.branchId
         }
+        if (image != null) product.thumbnailStorageKey = images?.thumbnailKey
         val saved = try {
             productRepository.save(product)
         } catch (ex: RuntimeException) {
             if (newImageStorageKey != null && newImageStorageKey != previousImageStorageKey) {
                 cleanupUploadedImage(newImageStorageKey)
             }
+            images?.thumbnailKey?.takeIf { it != previousThumbnailKey }?.let { cleanupUploadedImage(it) }
             throw ex
         }
         log.info("Product updated: id={} merchant={}", saved.id, merchantId)
+        if (image != null && previousThumbnailKey != product.thumbnailStorageKey) cleanupThumbnailAfterCommit(previousThumbnailKey)
         return saved.toResponse()
     }
 
-    private fun uploadImage(merchantId: UUID, productId: UUID, image: ProductImageUpload, merchantBranchId: UUID): String {
+    private data class UploadedImages(val imageKey: String, val thumbnailKey: String?)
+
+    private fun uploadImage(merchantId: UUID, productId: UUID, image: ProductImageUpload, merchantBranchId: UUID): UploadedImages {
         val storageKey = "merchants/$merchantId/branches/$merchantBranchId/products/$productId/image.${image.extension}"
+        val thumbnail = runCatching { productImageProcessor.thumbnail(image) }
+            .onFailure { log.warn("Product thumbnail generation failed: product={}", productId, it) }.getOrNull()
         storageService.upload(storageKey, image.contentType, image.bytes)
-        return storageKey
+        return UploadedImages(storageKey, thumbnail?.let { storeThumbnail(merchantId, merchantBranchId, productId, it) })
+    }
+
+    private fun storeThumbnail(merchantId: UUID, branchId: UUID, productId: UUID, thumbnail: ProductImageUpload): String? {
+        val key = "merchants/$merchantId/branches/$branchId/products/$productId/thumbnail-${UUID.randomUUID()}.${thumbnail.extension}"
+        val thumbnailKey = runCatching {
+            storageService.upload(key, thumbnail.contentType, thumbnail.bytes)
+            key
+        }.onFailure { log.warn("Product thumbnail upload failed: product={}", productId, it) }.getOrNull()
+        if (thumbnailKey != null && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+                override fun afterCompletion(status: Int) {
+                    if (status == TransactionSynchronization.STATUS_ROLLED_BACK) cleanupUploadedImage(thumbnailKey)
+                }
+            })
+        }
+        return thumbnailKey
+    }
+
+    private fun cleanupThumbnailAfterCommit(key: String?) {
+        if (key == null) return
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+                override fun afterCommit() = cleanupUploadedImage(key)
+            })
+        } else cleanupUploadedImage(key)
     }
 
     private fun cleanupUploadedImage(storageKey: String) {
@@ -360,6 +515,7 @@ class MerchantProductService(
         description = if (translation != null) translation.description else description,
         unitPrice = unitPrice,
         imageUrl = signedImageUrl(imageStorageKey),
+        thumbnailUrl = signedImageUrl(thumbnailStorageKey),
         active = active,
         status = status,
         createdAt = createdAt,

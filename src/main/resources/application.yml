@@ -229,6 +229,10 @@ blitzpay:
     auto-clear: ${TABLES_AUTO_CLEAR:4h}
     # Table Links are ${storefront-url}/t/{tableCode}; same host as the guest checkout redirects.
     storefront-url: ${STOREFRONT_URL:http://localhost:4201}
+  legal:
+    # Bump in the same commit that changes anything under resources/legal/; signup accepts only this version.
+    terms-version: "2026-11-08"
+    api-base-url: ${API_BASE_URL:${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}}
   geofence:
     proximity-cooldown-seconds: ${GEOFENCE_PROXIMITY_COOLDOWN_SECONDS:30}
     default-radius-meters: ${GEOFENCE_DEFAULT_RADIUS_METERS:500}
