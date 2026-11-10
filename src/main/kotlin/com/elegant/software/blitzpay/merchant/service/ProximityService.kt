@@ -108,6 +108,7 @@ class ProximityService(
                     contactFullName = branch.contactFullName,
                     contactEmail = branch.contactEmail,
                     contactPhoneNumber = branch.contactPhoneNumber,
+                    originalMenuLanguage = merchant.originalMenuLanguage,
                 )
             }
             .sortedWith(compareBy(nullsLast()) { it.distanceMeters })

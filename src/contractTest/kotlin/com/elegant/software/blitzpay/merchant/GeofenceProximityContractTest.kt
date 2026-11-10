@@ -29,6 +29,7 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
         operatingCountry = "DE",
         merchantStatus = MerchantOperationalStatus.ACTIVE,
     ).also {
+        it.originalMenuLanguage = "de"
         it.updateLocation(MerchantLocation(48.8566, 2.3522, 150))
     }
 
@@ -63,6 +64,13 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
     }
 
     // ── GET /v1/geofence/regions ─────────────────────────────────────────────
+
+    @Test
+    fun `GET nearby branches expose merchant original language`() {
+        webTestClient.get().uri("/v1/merchants/nearby?lat=48.8600&lng=2.3400&radiusMeters=500")
+            .exchange().expectStatus().isOk.expectBody()
+            .jsonPath("$.merchants[0].activeBranches[0].originalMenuLanguage").isEqualTo("de")
+    }
 
     @Test
     fun `GET geofence regions returns 200 with region list`() {
@@ -131,6 +139,7 @@ class GeofenceProximityContractTest : ContractVerifierBase() {
             .jsonPath("$.merchant.name").exists()
             .jsonPath("$.merchant.activePspCodes").isArray
             .jsonPath("$.merchant.branches").isArray
+            .jsonPath("$.merchant.branches[0].originalMenuLanguage").isEqualTo("de")
     }
 
     @Test

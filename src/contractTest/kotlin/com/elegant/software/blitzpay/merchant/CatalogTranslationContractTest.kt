@@ -48,6 +48,18 @@ class CatalogTranslationContractTest : ContractVerifierBase() {
     }
 
     @Test
+    fun `GET branch exposes inherited original menu language`() {
+        val merchant = Merchant(id = merchantId, merchantName = "Cafe", businessType = "RESTAURANT", operatingCountry = "DE")
+            .apply { originalMenuLanguage = "de" }
+        whenever(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant))
+        whenever(merchantBranchRepository.findById(branchId)).thenReturn(Optional.of(
+            com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch(id = branchId, merchantId = merchantId, name = "Main")
+        ))
+        webTestClient.get().uri("/v1/merchants/$merchantId/branches/$branchId").exchange()
+            .expectStatus().isOk.expectBody().jsonPath("$.originalMenuLanguage").isEqualTo("de")
+    }
+
+    @Test
     fun `GET products serves the Accept-Language translation and names the returned language`() {
         val translated = product(productId, "Brezel")
         val untranslated = product(UUID.randomUUID(), "Leberkäse")

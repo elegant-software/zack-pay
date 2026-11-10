@@ -441,6 +441,42 @@ class MerchantProductServiceTest {
     }
 
     @Test
+    fun `catalog language reads and app preference changes preserve historical order snapshots and prices`() {
+        val fixture = com.elegant.software.blitzpay.support.TestFixtureLoader.load(
+            "testdata/usersettings/languages.json", com.elegant.software.blitzpay.usersettings.LanguageFixture::class.java,
+        )
+        val product = MerchantProduct(merchantId = merchantId, merchantBranchId = branchId,
+            name = fixture.originalName, description = fixture.originalDescription, unitPrice = BigDecimal(fixture.unitPrice))
+        val historical = com.elegant.software.blitzpay.order.persistence.model.OrderItem.fromProduct(
+            UUID.randomUUID(), com.elegant.software.blitzpay.merchant.api.OrderableMerchantProduct(
+                product.id, merchantId, branchId, product.name, product.description, product.unitPrice, true,
+            ), fixture.quantity,
+        )
+        historical.applyPriceOverride(200, "merchant")
+        val settingsRepository = mock<com.elegant.software.blitzpay.usersettings.persistence.repository.UserSettingRepository>()
+        val settings = com.elegant.software.blitzpay.usersettings.service.UserSettingsService(settingsRepository)
+        settings.update(fixture.user, com.elegant.software.blitzpay.usersettings.domain.AppLanguage.DE,
+            com.elegant.software.blitzpay.usersettings.domain.AppLanguage.EN)
+        whenever(productRepository.findAllByMerchantBranchId(branchId)).thenReturn(listOf(product))
+        whenever(menuLanguageService.originalLanguage(merchantId)).thenReturn("de")
+        whenever(catalogTranslationService.productTexts(listOf(product), "en")).thenReturn(mapOf(
+            product.id to MerchantProductTranslation(productId = product.id, language = "en", name = "Pretzel",
+                description = "Freshly baked", origin = TranslationOrigin.MACHINE, sourceHash = "h"),
+        ))
+        assertEquals("Pretzel", service.list(merchantId, branchId, language = "en").single().name)
+        assertEquals(product.unitPrice, service.list(merchantId, branchId, language = "en").single().unitPrice)
+        assertEquals(fixture.originalName, service.list(merchantId, branchId, language = "de").single().name)
+        assertEquals(fixture.originalName, historical.productName)
+        assertEquals(fixture.originalDescription, historical.productDescription)
+        assertEquals(245L, historical.unitPriceMinor)
+        assertEquals(fixture.expectedTotalMinor, historical.unitPriceMinor * historical.quantity)
+        assertEquals(600L, historical.lineTotalMinor)
+        assertEquals(200L, historical.merchantPriceOverrideMinor)
+        assertEquals(fixture.originalName, product.name)
+        verify(productRepository, never()).save(any())
+    }
+
+    @Test
     fun `list returns inactive products for the branch`() {
         val inactiveProduct = MerchantProduct(
             merchantId = merchantId,

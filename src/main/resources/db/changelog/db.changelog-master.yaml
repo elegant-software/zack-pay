@@ -157,3 +157,5 @@ databaseChangeLog:
       file: db/changelog/20261108-003-storefront-themes.sql
   - include:
       file: db/changelog/20261110-001-mobile-catalog.sql
+  - include:
+      file: db/changelog/20261110-001-user-settings.sql

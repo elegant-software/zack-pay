@@ -42,6 +42,19 @@ class MerchantBranchServiceTest {
     )
 
     @Test
+    fun `branches inherit current merchant original language`() {
+        val m = merchant().apply { originalMenuLanguage = "de" }
+        whenever(merchantRepository.existsById(m.id)).thenReturn(true)
+        whenever(merchantRepository.findById(m.id)).thenReturn(Optional.of(m))
+        val branches = listOf(MerchantBranch(merchantId = m.id, name = "One"), MerchantBranch(merchantId = m.id, name = "Two"))
+        whenever(branchRepository.findAllByMerchantId(m.id)).thenReturn(branches)
+        whenever(branchRepository.findById(branches[0].id)).thenReturn(Optional.of(branches[0]))
+        assertEquals(listOf("de", "de"), service.list(m.id).map { it.originalMenuLanguage })
+        m.originalMenuLanguage = "en"
+        assertEquals("en", service.get(m.id, branches[0].id).originalMenuLanguage)
+    }
+
+    @Test
     fun `create branch stores operational address and geolocation`() {
         val m = merchant()
         whenever(merchantRepository.findById(m.id)).thenReturn(Optional.of(m))

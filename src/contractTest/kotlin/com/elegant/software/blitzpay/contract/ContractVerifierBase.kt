@@ -94,6 +94,9 @@ abstract class ContractVerifierBase {
         }
     }
 
+    @MockitoBean
+    protected lateinit var userSettingRepository: com.elegant.software.blitzpay.usersettings.persistence.repository.UserSettingRepository
+
     @LocalServerPort
     private var port: Int = 0
 

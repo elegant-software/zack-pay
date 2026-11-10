@@ -154,3 +154,5 @@ subtask #91. Keep local API/data routing aligned with the selected storefront;
 a public staging storefront does not automatically use a laptop API on 8080.
 HTTP localhost/LAN links can exercise in-app scanning but do not provide verified
 automatic camera-to-app opening. No deployment is implied by these code changes.
+
+The usersettings module owns authenticated app preferences and consumes the merchant API account-deletion event. Mobile app language preferences and catalog fallback: [contract](reference/mobile-app-languages.md).
