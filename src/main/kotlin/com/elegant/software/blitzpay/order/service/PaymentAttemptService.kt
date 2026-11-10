@@ -5,6 +5,7 @@ import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderInvoiceSource
 import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
+import com.elegant.software.blitzpay.order.api.OrderPaymentAttempt
 import com.elegant.software.blitzpay.order.api.OrderPaymentSummary
 import com.elegant.software.blitzpay.order.api.PaymentRequestResolver
 import com.elegant.software.blitzpay.order.persistence.model.CreatorType
@@ -107,6 +108,13 @@ class PaymentAttemptService(
     @Transactional(readOnly = true)
     override fun findLastPaymentRequestId(orderId: String): UUID? =
         orderRepository.findByOrderId(orderId)?.lastPaymentRequestId
+
+    @Transactional(readOnly = true)
+    override fun findLastPaymentAttempt(orderId: String): OrderPaymentAttempt? {
+        val paymentRequestId = orderRepository.findByOrderId(orderId)?.lastPaymentRequestId ?: return null
+        val attempt = paymentAttemptRepository.findByPaymentRequestId(paymentRequestId) ?: return null
+        return OrderPaymentAttempt(attempt.paymentRequestId, attempt.provider, attempt.providerReference)
+    }
 
     @Transactional(readOnly = true)
     override fun isGuestTokenValid(orderId: String, token: String?): Boolean =

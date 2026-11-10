@@ -99,6 +99,37 @@ class StripeSettlementEnrichmentListenerTest {
     }
 
     @Test
+    fun `card_present charge records TERMINAL with the card network as detail`() {
+        val charge = Charge().apply {
+            id = "ch_terminal"
+            balanceTransaction = "txn_terminal"
+            paymentMethodDetails = Charge.PaymentMethodDetails().apply {
+                type = "card_present"
+                cardPresent = Charge.PaymentMethodDetails.CardPresent().apply {
+                    brand = "visa"
+                    network = "girocard"
+                }
+            }
+        }
+        val balanceTransaction = BalanceTransaction().apply {
+            id = "txn_terminal"
+            fee = 20L
+            net = 980L
+        }
+        whenever(stripeClient.fetchLatestCharge(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
+            .thenReturn(charge)
+        whenever(stripeClient.fetchBalanceTransaction(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
+            .thenReturn(balanceTransaction)
+
+        listener.on(event(grossAmountMinor = 1_000L))
+
+        val settlement = argumentCaptor<PaymentSettlementData>()
+        verify(settlementGateway).record(settlement.capture())
+        assertEquals("TERMINAL", settlement.firstValue.paymentMethod)
+        assertEquals("girocard", settlement.firstValue.paymentMethodDetail)
+    }
+
+    @Test
     fun `refresh updates availability and Stripe dashboard link from existing charge`() {
         val merchantId = UUID.randomUUID()
         val paymentRequestId = UUID.randomUUID()

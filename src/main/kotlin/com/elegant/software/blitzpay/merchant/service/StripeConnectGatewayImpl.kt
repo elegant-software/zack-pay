@@ -1,6 +1,7 @@
 package com.elegant.software.blitzpay.merchant.service
 
 import com.elegant.software.blitzpay.merchant.api.BranchTerminalInfo
+import com.elegant.software.blitzpay.merchant.api.BranchTerminalLocation
 import com.elegant.software.blitzpay.merchant.api.MerchantDetailsResponse
 import com.elegant.software.blitzpay.merchant.api.StripeConnectGateway
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProviderAccount
@@ -109,6 +110,11 @@ class StripeConnectGatewayImpl(
 
     override fun findTerminalLocationId(branchId: UUID): String? =
         branchRepository.findById(branchId).orElse(null)?.stripeTerminalLocationId
+
+    override fun findTerminalLocations(merchantId: UUID): List<BranchTerminalLocation> =
+        branchRepository.findAllByMerchantId(merchantId).mapNotNull { branch ->
+            branch.stripeTerminalLocationId?.let { BranchTerminalLocation(branch.id, branch.name, it) }
+        }
 
     override fun getBranchTerminalInfo(branchId: UUID): BranchTerminalInfo? {
         val branch = branchRepository.findById(branchId).orElse(null) ?: return null

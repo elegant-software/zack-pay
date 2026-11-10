@@ -24,7 +24,7 @@ data class StripeCheckoutTarget(
     val amount: Double? = null,
 )
 
-class StripeCheckoutException(status: HttpStatus, override val message: String) : ApiException(status, message)
+class StripeCheckoutException(status: HttpStatus, override val message: String, code: String = status.name) : ApiException(status, message, code)
 
 /** Stripe PaymentIntent / Pay by Bank Checkout Session creation shared by the shopper app and the web storefront. */
 @Service
@@ -46,9 +46,12 @@ class StripeCheckoutService(
             ?.takeIf { stripeConnectGateway.isChargesEnabled(merchantId) }
             ?: throw StripeCheckoutException(HttpStatus.SERVICE_UNAVAILABLE, "Stripe Connect account not configured or not yet verified for this merchant")
         if (paymentMethodType == "card_present" && !stripeConnectGateway.isTapToPayEnabled(merchantId)) {
-            throw StripeCheckoutException(HttpStatus.FORBIDDEN, "Tap to Pay is not enabled for this merchant")
+            throw StripeCheckoutException(HttpStatus.FORBIDDEN, "Terminal payments are not enabled for this merchant")
         }
         val currency = orderSummary.currency.lowercase()
+        if (paymentMethodType == "card_present") {
+            reusableTerminalIntent(orderId, connectedAccountId, orderSummary)?.let { return it }
+        }
         val paymentRequestId = UUID.randomUUID()
         return LogContext.with(
             LogContext.ORDER_ID to orderId,
@@ -63,10 +66,64 @@ class StripeCheckoutService(
             log.info("stripe payment attempt linked to order")
             stripeCall("create_intent") {
                 val result = stripePaymentService.createIntent(resolvedAmount, currency, connectedAccountId, merchantId, resolvedBranchId, orderId, paymentRequestId, target.productId, paymentMethodType)
+                if (paymentMethodType == "card_present") {
+                    // The PaymentIntent id lets a retry find and reuse this open Terminal Payment.
+                    orderGateway.linkPaymentAttempt(orderId, paymentRequestId, paymentAttemptProvider, result.paymentIntentId)
+                }
                 LogContext.with(LogContext.PAYMENT_INTENT_ID to result.paymentIntentId) {
                     log.info("stripe create_intent succeeded connectedAccountId={}", result.connectedAccountId)
                 }
                 CreateIntentResponse(paymentRequestId, result.clientSecret, result.paymentIntentId, stripeProperties.publishableKey, result.connectedAccountId)
+            }
+        }
+    }
+
+    /**
+     * One open Terminal Payment per Order: when the Order's latest attempt is a Terminal PaymentIntent that can still be
+     * collected, the app gets that same PaymentIntent back. A succeeded one means the Order is paid (webhook pending);
+     * a canceled one, or one for a different amount (the Order changed since), yields null so a new one is created.
+     */
+    private fun reusableTerminalIntent(orderId: String, connectedAccountId: String, orderSummary: OrderPaymentSummary): CreateIntentResponse? {
+        val attempt = orderGateway.findLastPaymentAttempt(orderId)
+            ?.takeIf { it.provider == "STRIPE_TERMINAL" }
+            ?: return null
+        val paymentIntentId = attempt.providerReference ?: return null
+        return LogContext.with(
+            LogContext.ORDER_ID to orderId,
+            LogContext.PAYMENT_REQUEST_ID to attempt.paymentRequestId,
+            LogContext.PAYMENT_INTENT_ID to paymentIntentId,
+            LogContext.PROVIDER to "STRIPE",
+        ) {
+            val intent = stripeCall("retrieve_intent") { stripePaymentService.retrieveIntent(paymentIntentId, connectedAccountId) }
+            when {
+                intent.status == "succeeded" -> {
+                    log.info("stripe terminal intent already succeeded, rejecting new collection")
+                    throw StripeCheckoutException(HttpStatus.CONFLICT, "Order is already paid: $orderId", "ORDER_ALREADY_PAID")
+                }
+                intent.status == "canceled" -> {
+                    log.info("stripe terminal intent canceled, creating a new one")
+                    null
+                }
+                intent.amount != orderSummary.totalAmountMinor || !intent.currency.equals(orderSummary.currency, ignoreCase = true) -> {
+                    // Only an intent with nothing collected may be replaced; otherwise a second charge could follow.
+                    if (intent.status != "requires_payment_method") {
+                        log.warn("stripe terminal intent amount differs but collection in progress status={}", intent.status)
+                        throw StripeCheckoutException(HttpStatus.CONFLICT, "A terminal payment is in progress for order $orderId", "PAYMENT_IN_PROGRESS")
+                    }
+                    log.warn("stripe terminal intent amount differs from order, canceling it intentAmount={} orderAmount={}", intent.amount, orderSummary.totalAmountMinor)
+                    stripeCall("cancel_intent") { stripePaymentService.cancelIntent(paymentIntentId, connectedAccountId) }
+                    null
+                }
+                else -> {
+                    log.info("stripe terminal intent reused status={}", intent.status)
+                    CreateIntentResponse(
+                        attempt.paymentRequestId,
+                        requireNotNull(intent.clientSecret) { "Stripe returned null clientSecret" },
+                        intent.id,
+                        stripeProperties.publishableKey,
+                        connectedAccountId,
+                    )
+                }
             }
         }
     }

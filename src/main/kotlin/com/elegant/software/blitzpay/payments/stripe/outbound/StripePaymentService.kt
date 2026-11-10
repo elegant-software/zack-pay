@@ -5,9 +5,11 @@ import com.elegant.software.blitzpay.payments.stripe.config.StripeProperties
 import com.stripe.exception.StripeException
 import com.stripe.model.PaymentIntent
 import com.stripe.model.checkout.Session
+import com.stripe.model.terminal.Reader
 import com.stripe.net.RequestOptions
 import com.stripe.param.checkout.SessionCreateParams
 import com.stripe.param.PaymentIntentCreateParams
+import com.stripe.param.terminal.ReaderListParams
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
@@ -90,6 +92,28 @@ class StripePaymentService(
             throw ex
         }
     }
+
+    /** Reads a PaymentIntent of the connected account, e.g. to decide whether an open Terminal Payment can be reused. */
+    fun retrieveIntent(paymentIntentId: String, connectedAccountId: String): PaymentIntent =
+        PaymentIntent.retrieve(paymentIntentId, connectedAccountRequestOptions(connectedAccountId))
+
+    fun cancelIntent(paymentIntentId: String, connectedAccountId: String) {
+        PaymentIntent.retrieve(paymentIntentId, connectedAccountRequestOptions(connectedAccountId))
+            .cancel(connectedAccountRequestOptions(connectedAccountId))
+    }
+
+    /** Stripe Terminal Readers registered to [locationId] on the connected account. */
+    fun listReaders(locationId: String, connectedAccountId: String): List<Reader> =
+        Reader.list(
+            ReaderListParams.builder().setLocation(locationId).setLimit(100L).build(),
+            connectedAccountRequestOptions(connectedAccountId),
+        ).data.orEmpty()
+
+    private fun connectedAccountRequestOptions(connectedAccountId: String): RequestOptions =
+        RequestOptions.builder()
+            .setApiKey(stripeProperties.secretKey)
+            .setStripeAccount(connectedAccountId)
+            .build()
 
     fun createPayByBankCheckoutSession(
         amount: Double,

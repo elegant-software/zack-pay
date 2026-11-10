@@ -10,6 +10,13 @@ data class BranchTerminalInfo(
     val country: String?,
 )
 
+/** A Branch that has a Stripe Terminal Location. */
+data class BranchTerminalLocation(
+    val branchId: UUID,
+    val branchName: String,
+    val locationId: String,
+)
+
 interface StripeConnectGateway {
     fun save(merchantId: UUID, connectedAccountId: String)
     fun onAccountUpdated(
@@ -27,6 +34,8 @@ interface StripeConnectGateway {
     fun disableTapToPay(merchantId: UUID)
     fun findTerminalLocationId(branchId: UUID): String?
     fun saveTerminalLocationId(branchId: UUID, locationId: String)
+    /** The merchant's Branches that have a Stripe Terminal Location; Branches without one are left out. */
+    fun findTerminalLocations(merchantId: UUID): List<BranchTerminalLocation>
     fun getBranchTerminalInfo(branchId: UUID): BranchTerminalInfo?
     fun getDetails(merchantId: UUID): MerchantDetailsResponse
 }
