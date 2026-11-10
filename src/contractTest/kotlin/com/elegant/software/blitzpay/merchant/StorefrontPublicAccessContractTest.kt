@@ -29,6 +29,8 @@ class StorefrontPublicAccessContractTest : ContractVerifierBase() {
             "/v1/merchants/$MERCHANT/products?branchId=$BRANCH",
             "/v1/merchants/$MERCHANT/products/$PRODUCT?branchId=$BRANCH",
             "/v1/merchants/$MERCHANT/stripe-connect/status",
+            "/v1/merchants/$MERCHANT/catalog/products?branchId=$BRANCH",
+            "/v1/merchants/$MERCHANT/catalog/categories?branchId=$BRANCH",
         ]
     )
     fun `storefront catalog reads do not require a token`(uri: String) {

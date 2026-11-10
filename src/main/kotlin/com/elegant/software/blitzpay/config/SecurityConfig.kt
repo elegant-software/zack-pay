@@ -80,6 +80,9 @@ class SecurityConfig(
             "/v1/merchants/{merchantId:$ID}/products",
             "/v1/merchants/{merchantId:$ID}/products/{productId:$ID}",
             "/v1/merchants/{merchantId:$ID}/stripe-connect/status",
+            // includeInactive=true is still checked in MerchantCatalogController
+            "/v1/merchants/{merchantId:$ID}/catalog/products",
+            "/v1/merchants/{merchantId:$ID}/catalog/categories",
         )
     }
 }
