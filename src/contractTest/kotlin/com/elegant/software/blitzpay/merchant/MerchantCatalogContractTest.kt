@@ -132,10 +132,11 @@ class MerchantCatalogContractTest : ContractVerifierBase() {
     }
 
     @Test
-    fun `GET catalog requires authentication`() {
-        webTestClient.mutate().defaultHeaders { it.remove("Authorization") }.build()
-            .get().uri("$base/products?branchId=$branchId")
-            .exchange().expectStatus().isUnauthorized
+    fun `GET catalog is anonymous for the storefront but inactive products are not`() {
+        val anonymous = webTestClient.mutate().defaultHeaders { it.remove("Authorization") }.build()
+        anonymous.post().uri("$base/thumbnails?branchId=$branchId").exchange().expectStatus().isUnauthorized
+        anonymous.get().uri("$base/categories?branchId=$branchId&includeInactive=true")
+            .exchange().expectStatus().isForbidden
     }
 
     @Test
