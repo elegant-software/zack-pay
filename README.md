@@ -135,3 +135,22 @@ Security and repo hygiene notes
 | blitzpay-admin-dashboard | Angular admin dashboard |
 | blitz-pay-merchant | React Native merchant app |
 | blitz-pay (shopper app) | React Native shopper app |
+
+
+### Table QR storefront links (mobile #62 / backend #222)
+
+Table QRs keep the same storefront URL contract: `<STOREFRONT_URL>/t/<tableCode>`.
+The local default is storefront port 4201, not admin port 4200. Set
+`STOREFRONT_URL` explicitly when a phone must reach another origin, then restart
+the backend and reload the Table QR in the admin dashboard. Table links and
+guest-payment returns use the same setting; existing table codes are unchanged.
+
+Default-camera app opening is handled by verified HTTPS App/Universal Links,
+not a backend redirect or a browser installation check. The storefront website
+must publish matching Android/iOS association files; the shopper native build
+must claim the same origin and preserve /t/<code> through login. The storefront
+implementation/configuration lives in elegant-software/blitzpay-admin-dashboard,
+subtask #91. Keep local API/data routing aligned with the selected storefront;
+a public staging storefront does not automatically use a laptop API on 8080.
+HTTP localhost/LAN links can exercise in-app scanning but do not provide verified
+automatic camera-to-app opening. No deployment is implied by these code changes.

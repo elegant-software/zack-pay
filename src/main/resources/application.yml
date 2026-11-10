@@ -145,7 +145,7 @@ stripe:
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   connect-webhook-secret: ${STRIPE_CONNECT_WEBHOOK_SECRET:}
   dashboard-platform-account-id: ${STRIPE_DASHBOARD_PLATFORM_ACCOUNT_ID:}
-  storefront-url: ${STOREFRONT_URL:http://localhost:4200}
+  storefront-url: ${STOREFRONT_URL:http://localhost:4201}
   connect:
     return-url: ${STRIPE_CONNECT_RETURN_URL:}
     api-base-url: ${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}
@@ -228,7 +228,7 @@ blitzpay:
     # An Occupied Table is freed automatically when no order was placed at it for this long (ISO-8601 or 4h).
     auto-clear: ${TABLES_AUTO_CLEAR:4h}
     # Table Links are ${storefront-url}/t/{tableCode}; same host as the guest checkout redirects.
-    storefront-url: ${STOREFRONT_URL:http://localhost:4200}
+    storefront-url: ${STOREFRONT_URL:http://localhost:4201}
   legal:
     # Bump in the same commit that changes anything under resources/legal/; signup accepts only this version.
     terms-version: "2026-11-08"

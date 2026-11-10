@@ -11,7 +11,7 @@ data class TableProperties(
     /** An Occupied Table is freed automatically when no order was placed at it for this long. */
     val autoClear: Duration = Duration.ofHours(4),
     /** Public storefront base URL; Table Links are `{storefrontUrl}/t/{tableCode}`. */
-    val storefrontUrl: String = "http://localhost:4200",
+    val storefrontUrl: String = "http://localhost:4201",
 )
 
 @Configuration
