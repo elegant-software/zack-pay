@@ -5,6 +5,7 @@ import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.domain.AccountConsent
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
+import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupNames
 import com.elegant.software.blitzpay.merchant.iam.repository.AccountConsentRepository
 import com.elegant.software.blitzpay.merchant.iam.web.CreateAssignmentRequest
 import com.elegant.software.blitzpay.merchant.service.MerchantBranchService
@@ -39,10 +40,25 @@ class SignupService(
 ) {
     private val log = LoggerFactory.getLogger(SignupService::class.java)
 
+    @Transactional
     fun signupShopper(name: String, email: String, password: String, termsVersion: String? = null): UUID {
         val userId = createUser(name, email, password)
-        termsVersion?.let { consents.save(AccountConsent(keycloakUserId = userId, termsVersion = it)) }
-        return userId
+        try {
+            val groupId = keycloak.realm(keycloakProperties.realm).groups()
+                .groups(KeycloakGroupNames.MOBILE_USERS, true, 0, 10, false)
+                .firstOrNull { it.name == KeycloakGroupNames.MOBILE_USERS && it.path == "/${KeycloakGroupNames.MOBILE_USERS}" }
+                ?.id ?: error("Keycloak group '/${KeycloakGroupNames.MOBILE_USERS}' not found")
+            users().get(userId.toString()).joinGroup(groupId)
+            termsVersion?.let { consents.save(AccountConsent(keycloakUserId = userId, termsVersion = it)) }
+            return userId
+        } catch (e: Exception) {
+            runCatching {
+                users().delete(userId.toString()).use { response ->
+                    check(response.status in 200..299) { "Keycloak user deletion failed with HTTP ${response.status}" }
+                }
+            }.onFailure { log.error("failed to remove keycloak user {} after shopper signup failure", userId, it) }
+            throw e
+        }
     }
 
     @Transactional
