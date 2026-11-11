@@ -3,6 +3,7 @@ package com.elegant.software.blitzpay.merchant.iam.outbound
 import java.util.UUID
 
 object KeycloakGroupNames {
+    const val MOBILE_USERS = "blitzpay-mobile-users"
     const val ROOT = "merchants"
     const val MERCHANT_APP_USERS = "merchant-app-users"
     const val MERCHANT_MANAGER = "merchant_manager"

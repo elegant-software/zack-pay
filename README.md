@@ -22,6 +22,8 @@
 
 ## Mobile catalog browsing
 
+Shopper signup assigns each new Keycloak account to `/blitzpay-mobile-users`, which the shopper app requires at login. This group must already exist in the configured realm. If group lookup, assignment, or consent recording fails, signup fails and attempts to delete the new Keycloak account; failed cleanup is logged for operator follow-up.
+
 Authenticated mobile clients can use these additive endpoints, scoped by merchant and mandatory `branchId`:
 
 - `GET /v1/merchants/{merchantId}/catalog/products?branchId=...&limit=24` returns `items`, `nextCursor`, `hasMore`, and `limit`. Limits are 1–100. Pass `nextCursor` unchanged as `cursor` for the next batch; a terminal page has a null cursor. Ordering is stable by original creation time, then product ID, including when names are translated. It does not reorder by translated product name.
