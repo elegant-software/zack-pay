@@ -71,6 +71,8 @@ data class BranchResponse(
     val createdAt: Instant,
     val updatedAt: Instant,
     val capacity: Int? = null,
+    /** Inherited from the merchant; never configured per branch. */
+    val originalMenuLanguage: String? = null,
 )
 
 data class BulkBranchInput(

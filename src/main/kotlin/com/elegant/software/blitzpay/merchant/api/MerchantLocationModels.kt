@@ -60,4 +60,5 @@ data class NearbyBranchResponse(
     val contactFullName: String? = null,
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
+    val originalMenuLanguage: String? = null,
 )

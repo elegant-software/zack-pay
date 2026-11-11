@@ -3264,6 +3264,39 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/DeviceRegistrationResponse"
+  /{version}/user-settings:
+    get:
+      tags:
+      - User Settings
+      summary: Read the authenticated account's independent app languages (null until
+        explicitly saved)
+      operationId: getUserSettings
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserSettingsResponse"
+    patch:
+      tags:
+      - User Settings
+      summary: Update app languages; omitted or null fields and unrelated settings
+        remain unchanged
+      operationId: updateUserSettings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserSettingsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserSettingsResponse"
   /{version}/orders/{orderId}/items/{itemId}:
     delete:
       tags:
@@ -6244,6 +6277,10 @@ components:
           - integer
           - "null"
           format: int32
+        originalMenuLanguage:
+          type:
+          - string
+          - "null"
       required:
       - active
       - branchCode
@@ -7433,6 +7470,10 @@ components:
           items:
             type: string
           uniqueItems: true
+        originalMenuLanguage:
+          type:
+          - string
+          - "null"
       required:
       - activePspCodes
       - branchId
@@ -9001,6 +9042,33 @@ components:
       - expoPushToken
       - id
       - orderId
+    AppLanguage:
+      type: string
+      enum:
+      - en
+      - de
+    UpdateUserSettingsRequest:
+      type: object
+      properties:
+        shopperAppLanguage:
+          oneOf:
+          - $ref: "#/components/schemas/AppLanguage"
+          - type: "null"
+        merchantAppLanguage:
+          oneOf:
+          - $ref: "#/components/schemas/AppLanguage"
+          - type: "null"
+    UserSettingsResponse:
+      type: object
+      properties:
+        shopperAppLanguage:
+          oneOf:
+          - $ref: "#/components/schemas/AppLanguage"
+          - type: "null"
+        merchantAppLanguage:
+          oneOf:
+          - $ref: "#/components/schemas/AppLanguage"
+          - type: "null"
     UpdateOrderItemRequest:
       type: object
       properties:
@@ -9940,6 +10008,10 @@ components:
           - string
           - "null"
         contactPhoneNumber:
+          type:
+          - string
+          - "null"
+        originalMenuLanguage:
           type:
           - string
           - "null"

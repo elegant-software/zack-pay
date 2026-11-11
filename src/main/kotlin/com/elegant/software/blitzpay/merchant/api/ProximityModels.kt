@@ -28,6 +28,7 @@ data class BranchContext(
     val contactEmail: String? = null,
     val contactPhoneNumber: String? = null,
     val activePspCodes: Set<String> = emptySet(),
+    val originalMenuLanguage: String? = null,
 )
 
 data class MerchantContext(

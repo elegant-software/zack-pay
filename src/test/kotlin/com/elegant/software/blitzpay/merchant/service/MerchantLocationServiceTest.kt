@@ -67,6 +67,7 @@ class MerchantLocationServiceTest {
             businessType = "RETAIL",
             operatingCountry = "DE",
         )
+        merchantWithId.originalMenuLanguage = "de"
         val branchWithMatchingId = MerchantBranch(
             merchantId = merchantWithId.id,
             name = "Nearby Branch",
@@ -86,6 +87,7 @@ class MerchantLocationServiceTest {
         assertEquals(merchantWithId.id, response.merchants.first().merchantId)
         assertNotNull(response.merchants.first().activeBranches.firstOrNull())
         assertEquals(branchWithMatchingId.id, response.merchants.first().activeBranches.first().branchId)
+        assertEquals("de", response.merchants.first().activeBranches.first().originalMenuLanguage)
     }
 
     @Test

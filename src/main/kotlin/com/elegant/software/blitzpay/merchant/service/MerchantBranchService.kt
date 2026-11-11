@@ -309,6 +309,7 @@ class MerchantBranchService(
         createdAt = createdAt,
         updatedAt = updatedAt,
         capacity = capacity,
+        originalMenuLanguage = merchantRepository.findById(merchantId).orElse(null)?.originalMenuLanguage,
     )
 
     private fun requireValidCapacity(capacity: Int?) {

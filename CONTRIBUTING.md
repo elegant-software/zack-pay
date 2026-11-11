@@ -124,3 +124,5 @@ AI agents working in this repository should:
 - read this file before preparing commits
 - prefer one semantic commit per logical change unless the user asks otherwise
 - keep generated commit messages consistent with the conventions above
+
+App preference changes belong in `usersettings`; keep its persistence isolated from merchant content and order snapshots. See [mobile language contracts](reference/mobile-app-languages.md).

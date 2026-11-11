@@ -1,0 +1,9 @@
+{
+  "user": "language-shopper",
+  "otherUser": "another-account",
+  "originalName": "Brezel",
+  "originalDescription": "Frisch gebacken",
+  "unitPrice": "2.45",
+  "quantity": 3,
+  "expectedTotalMinor": 735
+}
