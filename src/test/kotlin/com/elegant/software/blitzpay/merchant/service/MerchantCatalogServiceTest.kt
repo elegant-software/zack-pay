@@ -127,7 +127,7 @@ class MerchantCatalogServiceTest {
         whenever(products.catalogCategoryCounts(fixture.merchantId, fixture.branchId, false))
             .thenReturn(listOf(Count(fixture.categoryId, 2), Count(null, 1)))
         whenever(categories.findAllById(any<Iterable<UUID>>())).thenReturn(listOf(
-            MerchantProductCategory(id = fixture.categoryId, merchantId = fixture.merchantId, name = fixture.categoryName)
+            MerchantProductCategory(id = fixture.categoryId, merchantId = fixture.merchantId, name = fixture.categoryName, imageStorageKey = "categories/drinks.png")
         ))
         whenever(translations.categoryNames(any(), eq("de"))).thenReturn(mapOf(fixture.categoryId to fixture.translatedCategoryName))
 
@@ -137,6 +137,7 @@ class MerchantCatalogServiceTest {
         assertEquals(1L, result.uncategorizedCount)
         assertEquals(2L, result.categories.single().productCount)
         assertEquals(fixture.translatedCategoryName, result.categories.single().name)
+        assertEquals("https://images.invalid/categories/drinks.png", result.categories.single().imageUrl)
         verify(products, never()).findAllByMerchantBranchId(any())
     }
 

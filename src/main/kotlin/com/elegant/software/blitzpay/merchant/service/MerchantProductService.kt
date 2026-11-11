@@ -159,6 +159,7 @@ class MerchantProductService(
                 productCount = countByCategory.getValue(category.id),
                 estimatedDurationMinutes = category.estimatedDurationMinutes,
                 language = if (translations.containsKey(category.id)) language else original,
+                imageUrl = signedImageUrl(category.imageStorageKey),
             )
         }.sortedBy { it.name.lowercase(java.util.Locale.ROOT) }
         return BranchCatalogCategories(

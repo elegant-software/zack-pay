@@ -20,6 +20,7 @@ data class ProductCategoryResponse(
     val createdAt: Instant,
     val updatedAt: Instant,
     val language: String? = null,
+    val imageUrl: String? = null,
 )
 
 data class BulkCategoryInput(

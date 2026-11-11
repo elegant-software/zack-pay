@@ -9,7 +9,8 @@ class OpenApiGeneratorTest : ContractVerifierBase() {
     @Test
     fun `generate OpenAPI specification`() {
         val response = webTestClient.mutate()
-            .responseTimeout(Duration.ofSeconds(15))
+            // The first request builds the complete schema, including multipart category variants.
+            .responseTimeout(Duration.ofSeconds(60))
             .build()
             .get()
             .uri("/api-docs.yaml") // Springdoc provides YAML at .yaml suffix

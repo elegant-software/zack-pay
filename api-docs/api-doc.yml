@@ -470,7 +470,7 @@ paths:
       tags:
       - Merchant Product Categories
       summary: Update a product category
-      operationId: update_1
+      operationId: updateWithImage
       parameters:
       - name: merchantId
         in: path
@@ -484,8 +484,25 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: removeImage
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
       requestBody:
         content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                category:
+                  $ref: "#/components/schemas/UpdateProductCategoryRequest"
+                image:
+                  type: string
+                  format: binary
+              required:
+              - category
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateProductCategoryRequest"
@@ -767,7 +784,7 @@ paths:
       tags:
       - Merchant Branches
       summary: Update a branch under a merchant
-      operationId: update_2
+      operationId: update_1
       parameters:
       - name: merchantId
         in: path
@@ -1206,7 +1223,7 @@ paths:
       tags:
       - Merchants
       summary: Update editable merchant details and optional status
-      operationId: update_3
+      operationId: update_2
       parameters:
       - name: id
         in: path
@@ -1965,7 +1982,7 @@ paths:
       tags:
       - Merchant Product Categories
       summary: Create a product category
-      operationId: create_4
+      operationId: createWithImage
       parameters:
       - name: merchantId
         in: path
@@ -1975,6 +1992,17 @@ paths:
           format: uuid
       requestBody:
         content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                category:
+                  $ref: "#/components/schemas/CreateProductCategoryRequest"
+                image:
+                  type: string
+                  format: binary
+              required:
+              - category
           application/json:
             schema:
               $ref: "#/components/schemas/CreateProductCategoryRequest"
@@ -2027,7 +2055,7 @@ paths:
     post:
       tags:
       - Employees
-      operationId: create_5
+      operationId: create_4
       parameters:
       - name: merchantId
         in: path
@@ -2413,7 +2441,7 @@ paths:
       tags:
       - Merchant Branches
       summary: Create a new branch under a merchant
-      operationId: create_6
+      operationId: create_5
       parameters:
       - name: merchantId
         in: path
@@ -2795,7 +2823,7 @@ paths:
       tags:
       - Appearances
       summary: Create a new appearance for a MOBILE branch
-      operationId: create_7
+      operationId: create_6
       parameters:
       - name: merchantId
         in: path
@@ -2863,7 +2891,7 @@ paths:
     post:
       tags:
       - Appointments
-      operationId: create_8
+      operationId: create_7
       parameters:
       - name: merchantId
         in: path
@@ -2977,7 +3005,7 @@ paths:
       - Merchant Orders
       summary: Create an order from branch products and return a QR code for customer
         payment
-      operationId: create_9
+      operationId: create_8
       parameters:
       - name: Authorization
         in: header
@@ -3576,7 +3604,7 @@ paths:
     patch:
       tags:
       - Appointment Policy
-      operationId: update_4
+      operationId: update_3
       parameters:
       - name: merchantId
         in: path
@@ -5946,6 +5974,10 @@ components:
           type: string
           format: date-time
         language:
+          type:
+          - string
+          - "null"
+        imageUrl:
           type:
           - string
           - "null"
@@ -9879,6 +9911,10 @@ components:
           - "null"
           format: int32
         language:
+          type:
+          - string
+          - "null"
+        imageUrl:
           type:
           - string
           - "null"

@@ -1,5 +1,7 @@
 # BlitzPay
 
+Product categories support optional images; see [category image API and storage behavior](reference/category-images.md).
+
 <!-- Build & Test -->
 [![CI](https://github.com/medimohammadise/blitz-pay/actions/workflows/ci-build.yml/badge.svg?branch=main)](https://github.com/medimohammadise/blitz-pay/actions/workflows/ci-build.yml)
 [![CD](https://github.com/medimohammadise/blitz-pay/actions/workflows/cd-build-image.yml/badge.svg?branch=main)](https://github.com/medimohammadise/blitz-pay/actions/workflows/cd-build-image.yml)

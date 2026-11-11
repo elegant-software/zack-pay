@@ -11,10 +11,89 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.http.MediaType
+import org.springframework.http.client.MultipartBodyBuilder
+import com.elegant.software.blitzpay.merchant.service.ProductImageUpload
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verify
 import java.time.Instant
 import java.util.UUID
 
 class MerchantProductCategoryContractTest : ContractVerifierBase() {
+
+    @Test
+    fun `multipart POST accepts category JSON and image and returns its URL`() {
+        val merchantId = UUID.randomUUID()
+        val image = ProductImageUpload("image/png", ByteArray(2 * 1024 * 1024) { 1 })
+        whenever(merchantProductCategoryService.create(eq(merchantId), any<CreateProductCategoryRequest>(), eq(image)))
+            .thenReturn(categoryResponse(name = "Drinks").copy(imageUrl = "https://images.example.test/category.png"))
+        val body = MultipartBodyBuilder().apply {
+            part("category", """{"name":"Drinks"}""").contentType(MediaType.APPLICATION_JSON)
+            part("image", image.bytes).filename("drinks.png").contentType(MediaType.IMAGE_PNG)
+        }
+        webTestClient.post().uri("/v1/merchants/$merchantId/product-categories")
+            .contentType(MediaType.MULTIPART_FORM_DATA).bodyValue(body.build()).exchange()
+            .expectStatus().isCreated.expectBody()
+            .jsonPath("$.imageUrl").isEqualTo("https://images.example.test/category.png")
+        verify(merchantProductCategoryService).create(merchantId, CreateProductCategoryRequest("Drinks"), image)
+    }
+
+    @Test
+    fun `multipart PUT explicitly removes a category image`() {
+        val merchantId = UUID.randomUUID()
+        val categoryId = UUID.randomUUID()
+        whenever(merchantProductCategoryService.update(eq(merchantId), eq(categoryId), any<UpdateProductCategoryRequest>(), isNull(), eq(true)))
+            .thenReturn(categoryResponse(id = categoryId, name = "Drinks"))
+        val body = MultipartBodyBuilder().apply {
+            part("category", """{"name":"Drinks"}""").contentType(MediaType.APPLICATION_JSON)
+            part("removeImage", "true")
+        }
+        webTestClient.put().uri("/v1/merchants/$merchantId/product-categories/$categoryId")
+            .contentType(MediaType.MULTIPART_FORM_DATA).bodyValue(body.build()).exchange()
+            .expectStatus().isOk.expectBody().jsonPath("$.imageUrl").doesNotExist()
+        verify(merchantProductCategoryService).update(merchantId, categoryId, UpdateProductCategoryRequest("Drinks"), null, true)
+    }
+
+    @Test
+    fun `multipart PUT replaces a category image`() {
+        val merchantId = UUID.randomUUID()
+        val categoryId = UUID.randomUUID()
+        val image = ProductImageUpload("image/png", byteArrayOf(4, 5, 6))
+        whenever(merchantProductCategoryService.update(eq(merchantId), eq(categoryId), any<UpdateProductCategoryRequest>(), eq(image), eq(false)))
+            .thenReturn(categoryResponse(id = categoryId, name = "Drinks").copy(imageUrl = "https://images.example.test/new.png"))
+        val body = MultipartBodyBuilder().apply {
+            part("category", """{"name":"Drinks"}""").contentType(MediaType.APPLICATION_JSON)
+            part("image", image.bytes).filename("drinks.png").contentType(MediaType.IMAGE_PNG)
+        }
+        webTestClient.put().uri("/v1/merchants/$merchantId/product-categories/$categoryId")
+            .contentType(MediaType.MULTIPART_FORM_DATA).bodyValue(body.build()).exchange()
+            .expectStatus().isOk.expectBody().jsonPath("$.imageUrl").isEqualTo("https://images.example.test/new.png")
+    }
+
+    @Test
+    fun `multipart POST rejects unsupported or empty image`() {
+        val merchantId = UUID.randomUUID()
+        for ((type, bytes) in listOf(MediaType.TEXT_PLAIN to byteArrayOf(1), MediaType.IMAGE_PNG to byteArrayOf())) {
+            val body = MultipartBodyBuilder().apply {
+                part("category", """{"name":"Drinks"}""").contentType(MediaType.APPLICATION_JSON)
+                part("image", bytes).filename("image").contentType(type)
+            }
+            webTestClient.post().uri("/v1/merchants/$merchantId/product-categories")
+                .contentType(MediaType.MULTIPART_FORM_DATA).bodyValue(body.build()).exchange()
+                .expectStatus().isBadRequest
+        }
+    }
+
+    @Test
+    fun `anonymous category image upload is unauthorized`() {
+        val body = MultipartBodyBuilder().apply {
+            part("category", """{"name":"Drinks"}""").contentType(MediaType.APPLICATION_JSON)
+            part("image", byteArrayOf(1)).filename("drinks.png").contentType(MediaType.IMAGE_PNG)
+        }
+        webTestClient.mutate().defaultHeaders { it.remove("Authorization") }.build()
+            .post().uri("/v1/merchants/${UUID.randomUUID()}/product-categories")
+            .contentType(MediaType.MULTIPART_FORM_DATA).bodyValue(body.build()).exchange()
+            .expectStatus().isUnauthorized
+    }
 
     @Test
     fun `POST product categories returns 201`() {

@@ -34,6 +34,7 @@ class MerchantProductCategoryServiceTest {
         categoryTranslationRepository,
         mock(),
         mock(),
+        mock(),
     )
     private val merchantId = UUID.randomUUID()
 

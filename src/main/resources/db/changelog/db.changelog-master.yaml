@@ -159,3 +159,5 @@ databaseChangeLog:
       file: db/changelog/20261110-001-mobile-catalog.sql
   - include:
       file: db/changelog/20261110-001-user-settings.sql
+  - include:
+      file: db/changelog/20261111-001-category-images.sql
