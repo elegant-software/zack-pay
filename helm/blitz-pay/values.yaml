@@ -155,6 +155,8 @@ ingress:
   # Override per environment to set the correct cert-manager cluster issuer.
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Match the servlet request limit so category images above nginx's 1 MB default work.
+    nginx.ingress.kubernetes.io/proxy-body-size: "26m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 

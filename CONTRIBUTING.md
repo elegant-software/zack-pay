@@ -1,5 +1,7 @@
 # Contributing
 
+For category image changes, keep JSON category clients compatible and cover multipart uploads, image removal, and storage cleanup as described in [category images](reference/category-images.md).
+
 ## Scope
 
 This repository uses `CONTRIBUTING.md` as the source of truth for contributor workflow conventions, including Git commit structure. Human contributors and AI agents should follow the same rules.

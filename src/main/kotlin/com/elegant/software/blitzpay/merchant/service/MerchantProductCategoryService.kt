@@ -14,6 +14,9 @@ import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantPro
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
+import com.elegant.software.blitzpay.storage.StorageService
 import java.util.UUID
 
 @Service
@@ -26,10 +29,14 @@ class MerchantProductCategoryService(
     private val categoryTranslationRepository: MerchantProductCategoryTranslationRepository,
     private val catalogTranslationService: CatalogTranslationService,
     private val menuLanguageService: MenuLanguageService,
+    private val storageService: StorageService,
 ) {
     private val log = LoggerFactory.getLogger(MerchantProductCategoryService::class.java)
 
-    fun create(merchantId: UUID, request: CreateProductCategoryRequest): ProductCategoryResponse {
+    fun create(merchantId: UUID, request: CreateProductCategoryRequest): ProductCategoryResponse =
+        create(merchantId, request, null)
+
+    fun create(merchantId: UUID, request: CreateProductCategoryRequest, image: ProductImageUpload?): ProductCategoryResponse {
         requireMerchantExists(merchantId)
         val normalizedName = normalizeName(request.name)
         require(
@@ -39,12 +46,12 @@ class MerchantProductCategoryService(
         }
 
         if (request.estimatedDurationMinutes != null) requireAppointmentBookingEnabled(merchantId)
-        val saved = categoryRepository.save(
+        val saved = saveWithImage(
             MerchantProductCategory(
                 merchantId = merchantId,
                 name = normalizedName,
                 estimatedDurationMinutes = request.estimatedDurationMinutes
-            )
+            ), image, false
         )
         log.info("Product category created: id={} merchant={}", saved.id, merchantId)
         return saved.toResponse()
@@ -72,7 +79,13 @@ class MerchantProductCategoryService(
             ?.toResponse()
     }
 
-    fun update(merchantId: UUID, categoryId: UUID, request: UpdateProductCategoryRequest): ProductCategoryResponse {
+    fun update(merchantId: UUID, categoryId: UUID, request: UpdateProductCategoryRequest): ProductCategoryResponse =
+        update(merchantId, categoryId, request, null, false)
+
+    fun update(
+        merchantId: UUID, categoryId: UUID, request: UpdateProductCategoryRequest,
+        image: ProductImageUpload?, removeImage: Boolean = false,
+    ): ProductCategoryResponse {
         requireMerchantExists(merchantId)
         val category = categoryRepository.findByMerchantIdAndId(merchantId, categoryId)
             ?: throw NoSuchElementException("Category not found: $categoryId")
@@ -85,7 +98,7 @@ class MerchantProductCategoryService(
 
         category.rename(normalizedName)
         category.updateDuration(request.estimatedDurationMinutes)
-        val saved = categoryRepository.save(category)
+        val saved = saveWithImage(category, image, removeImage)
         log.info("Product category updated: id={} merchant={}", categoryId, merchantId)
         return saved.toResponse()
     }
@@ -103,7 +116,52 @@ class MerchantProductCategoryService(
         }
         categoryTranslationRepository.deleteAllByCategoryId(categoryId)
         categoryRepository.deleteById(categoryId)
+        cleanupAfterCommit(category.imageStorageKey)
         log.info("Product category deleted: id={} merchant={}", categoryId, merchantId)
+    }
+
+    private fun saveWithImage(
+        category: MerchantProductCategory, image: ProductImageUpload?, removeImage: Boolean,
+    ): MerchantProductCategory {
+        require(image == null || !removeImage) { "Cannot upload and remove a category image in the same request" }
+        val previousKey = category.imageStorageKey
+        val newKey = image?.let {
+            require(it.bytes.isNotEmpty()) { "Category image must not be empty" }
+            val key = "merchants/${category.merchantId}/categories/${category.id}/${UUID.randomUUID()}.${it.extension}"
+            storageService.upload(key, it.contentType, it.bytes)
+            key
+        }
+        val transactional = TransactionSynchronizationManager.isSynchronizationActive()
+        if (newKey != null && transactional) {
+            TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+                override fun afterCompletion(status: Int) {
+                    if (status == TransactionSynchronization.STATUS_ROLLED_BACK) cleanup(newKey)
+                }
+            })
+        }
+        if (newKey != null || removeImage) category.imageStorageKey = newKey
+        val saved = try {
+            categoryRepository.save(category)
+        } catch (ex: Exception) {
+            if (!transactional) newKey?.let(::cleanup)
+            throw ex
+        }
+        if (previousKey != category.imageStorageKey) cleanupAfterCommit(previousKey)
+        return saved
+    }
+
+    private fun cleanupAfterCommit(key: String?) {
+        if (key == null) return
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+                override fun afterCommit() = cleanup(key)
+            })
+        } else cleanup(key)
+    }
+
+    private fun cleanup(key: String) {
+        runCatching { storageService.delete(key) }
+            .onFailure { log.warn("Failed to clean up category image key={}", key, it) }
     }
 
     private fun requireAppointmentBookingEnabled(merchantId: UUID) {
@@ -130,6 +188,11 @@ class MerchantProductCategoryService(
         name = name,
         estimatedDurationMinutes = estimatedDurationMinutes,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        imageUrl = imageStorageKey?.let { key ->
+            runCatching { storageService.presignDownload(key) }
+                .onFailure { log.warn("Failed to sign category image key={}", key, it) }
+                .getOrNull()
+        },
     )
 }

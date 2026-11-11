@@ -27,6 +27,9 @@ class MerchantProductCategory(
 
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = createdAt,
+
+    @Column(name = "image_storage_key", length = 1024)
+    var imageStorageKey: String? = null,
 ) {
     init {
         require(name.isNotBlank()) { "name must not be blank" }

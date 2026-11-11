@@ -10,6 +10,12 @@ spring:
     default: local
   main:
     web-application-type: servlet
+  servlet:
+    multipart:
+      # Category/product images are limited to 5 MB by their upload policy.
+      # Leave room for the existing 25 MB voice upload limit at the servlet boundary.
+      max-file-size: 25MB
+      max-request-size: 26MB
   reactor:
     context-propagation: auto
   datasource:

@@ -15,6 +15,7 @@ data class BranchCatalogCategory(
     val productCount: Long,
     val estimatedDurationMinutes: Int?,
     val language: String?,
+    val imageUrl: String? = null,
 )
 
 data class BranchCatalogCategories(

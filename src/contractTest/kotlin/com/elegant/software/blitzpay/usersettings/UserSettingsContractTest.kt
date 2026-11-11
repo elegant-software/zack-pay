@@ -6,6 +6,7 @@ import com.elegant.software.blitzpay.usersettings.persistence.model.UserSettingI
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import org.springframework.http.MediaType
+import java.time.Duration
 
 class UserSettingsContractTest : ContractVerifierBase() {
     @org.springframework.test.context.bean.override.mockito.MockitoBean(name = "mockJwtDecoder")
@@ -22,7 +23,9 @@ class UserSettingsContractTest : ContractVerifierBase() {
 
     @Test
     fun `OpenAPI app language values match the JSON domain enum`() {
-        webTestClient.get().uri("/api-docs").exchange().expectStatus().isOk.expectBody()
+        // Schema generation is substantially slower than an ordinary API response on a cold context.
+        webTestClient.mutate().responseTimeout(Duration.ofSeconds(60)).build()
+            .get().uri("/api-docs").exchange().expectStatus().isOk.expectBody()
             .jsonPath("$.components.schemas.AppLanguage.enum").isEqualTo(listOf("en", "de"))
     }
 
