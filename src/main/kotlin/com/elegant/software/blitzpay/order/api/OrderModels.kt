@@ -78,6 +78,8 @@ data class CreateOrderRequest(
     val tableCode: String? = null,
     /** Guest Count (1..50) for the Table; applied only when the Table has none yet, ignored otherwise. */
     val guestCount: Int? = null,
+    /** Optional; defaults to DINE_IN at a Table and TAKE_AWAY otherwise. */
+    val fulfilmentType: FulfilmentType? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -90,6 +92,8 @@ data class CreateMerchantOrderRequest(
     val dueDate: LocalDate? = null,
     val customerLocation: OrderCustomerLocationRequest? = null,
     val items: List<CreateOrderItemRequest> = emptyList(),
+    /** Optional; defaults to TAKE_AWAY. Ignored for invoice orders (targetShopperId). */
+    val fulfilmentType: FulfilmentType? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -128,6 +132,7 @@ data class OrderResponse(
     val status: OrderStatus,
     val preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
     val pickupNumber: Int? = null,
+    val fulfilmentType: FulfilmentType? = null,
     val creatorType: CreatorType,
     val createdById: String,
     val currency: String,
@@ -158,6 +163,7 @@ data class MerchantOrderResponse(
     val status: OrderStatus,
     val preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
     val pickupNumber: Int? = null,
+    val fulfilmentType: FulfilmentType? = null,
     val creatorType: CreatorType,
     val currency: String,
     val totalAmountMinor: Long,
@@ -179,6 +185,7 @@ data class OrderSummaryResponse(
     val status: OrderStatus,
     val preparationStatus: PreparationStatus = PreparationStatus.RECEIVED,
     val pickupNumber: Int? = null,
+    val fulfilmentType: FulfilmentType? = null,
     val currency: String,
     val totalAmountMinor: Long,
     val paymentRetryAllowed: Boolean,
@@ -214,6 +221,7 @@ internal fun Order.toResponse(items: List<OrderItem>, paymentReference: PaymentR
     status = status,
     preparationStatus = preparationStatus,
     pickupNumber = pickupNumber,
+    fulfilmentType = fulfilmentType,
     creatorType = creatorType,
     createdById = createdById,
     currency = currency,
@@ -262,6 +270,7 @@ internal fun Order.toSummaryResponse() = OrderSummaryResponse(
     status = status,
     preparationStatus = preparationStatus,
     pickupNumber = pickupNumber,
+    fulfilmentType = fulfilmentType,
     currency = currency,
     totalAmountMinor = totalAmountMinor,
     paymentRetryAllowed = status.paymentRetryAllowed,
@@ -281,6 +290,7 @@ internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: Stri
     status = status,
     preparationStatus = preparationStatus,
     pickupNumber = pickupNumber,
+    fulfilmentType = fulfilmentType,
     creatorType = creatorType,
     currency = currency,
     totalAmountMinor = totalAmountMinor,
@@ -319,4 +329,6 @@ data class StorefrontOrderRequest(
     val buyerEmail: String? = null,
     /** Explicit consent (DSGVO Art. 6(1)(a)) to use [buyerEmail] only for sending this order's invoice. */
     val invoiceEmailConsent: Boolean = false,
+    /** Optional; defaults to DINE_IN at a Table and TAKE_AWAY otherwise. */
+    val fulfilmentType: FulfilmentType? = null,
 )

@@ -16,6 +16,8 @@ data class KitchenOrder(
     val orderId: UUID,
     val orderCode: String,
     val pickupNumber: Int?,
+    /** How the order is consumed; absent for invoice and appointment orders. */
+    val fulfilmentType: FulfilmentType? = null,
     val orderType: OrderType,
     val shopperFirstName: String? = null,
     val receivedAt: Instant,
@@ -53,6 +55,7 @@ internal fun Order.toKitchenOrder(items: List<OrderItem>) = KitchenOrder(
     orderId = id,
     orderCode = orderId,
     pickupNumber = pickupNumber,
+    fulfilmentType = fulfilmentType,
     orderType = orderType,
     shopperFirstName = buyerContactName?.trim()?.split(Regex("\\s+"))?.firstOrNull()?.takeIf { it.isNotBlank() },
     receivedAt = createdAt,

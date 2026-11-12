@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.push
 
+import com.elegant.software.blitzpay.order.api.FulfilmentType
 import com.elegant.software.blitzpay.order.api.OrderReadyForPickup
 import com.elegant.software.blitzpay.payments.push.listener.OrderReadyForPickupListener
 import com.elegant.software.blitzpay.payments.push.persistence.model.ShopperDeviceRegistrationEntity
@@ -33,8 +34,18 @@ class OrderReadyForPickupListenerTest {
 
         val captor = argumentCaptor<List<ExpoMessage>>()
         verify(pushClient).send(captor.capture())
-        assertEquals("Order #042 is ready for pickup", captor.firstValue.single().body)
+        assertEquals("Order #042 is ready, please collect it at the counter", captor.firstValue.single().body)
         assertEquals("ExponentPushToken[a]", captor.firstValue.single().to)
+    }
+
+    @Test
+    fun `tells a dine-in shopper at a Table the order is on its way`() {
+        val e = OrderReadyForPickup("ORD-ABC", UUID.randomUUID(), UUID.randomUUID(), 7, "shopper-1", FulfilmentType.DINE_IN, atTable = true)
+        assertEquals("Order #007 is on its way to your table", OrderReadyForPickupListener.readyMessage(e))
+        assertEquals(
+            "Order #007 is ready, please collect it at the counter",
+            OrderReadyForPickupListener.readyMessage(e.copy(fulfilmentType = FulfilmentType.TAKE_AWAY)),
+        )
     }
 
     @Test

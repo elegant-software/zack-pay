@@ -128,6 +128,10 @@ class Order(
     val pickupNumber: Int? = null,
 
     /** The Table a Walk-In order was placed at (null: collected at the counter). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fulfilment_type", updatable = false, length = 16)
+    val fulfilmentType: com.elegant.software.blitzpay.order.api.FulfilmentType? = null,
+
     @Column(name = "table_id", updatable = false)
     val tableId: UUID? = null,
 

@@ -15,6 +15,7 @@ import com.elegant.software.blitzpay.order.api.BranchCustomerResponse
 import com.elegant.software.blitzpay.order.api.BuyerContactRequest
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
+import com.elegant.software.blitzpay.order.api.FulfilmentType
 import com.elegant.software.blitzpay.order.api.CreateOrderRequest
 import com.elegant.software.blitzpay.order.api.InvoiceOrderCreated
 import com.elegant.software.blitzpay.order.api.KitchenEventType
@@ -101,6 +102,7 @@ class OrderService(
                 checkoutPaymentMethod = request.checkoutPaymentMethod,
                 tableCode = tableCode,
                 guestCount = request.guestCount,
+                fulfilmentType = request.fulfilmentType,
             ),
             CreatorType.GUEST,
             GUEST_CREATOR_ID,
@@ -183,6 +185,7 @@ class OrderService(
             pickupNumber = pickupNumberAllocator.next(request.branchId),
             tableId = table?.tableId,
             tableName = table?.name,
+            fulfilmentType = request.fulfilmentType ?: if (table != null) FulfilmentType.DINE_IN else FulfilmentType.TAKE_AWAY,
         )
         val savedOrder = orderRepository.save(order)
         val savedItems = orderItemRepository.saveAll(
@@ -239,6 +242,8 @@ class OrderService(
             buyerContactCity = resolvedBuyerContact?.city,
             buyerContactCountry = resolvedBuyerContact?.country,
             pickupNumber = pickupNumberAllocator.next(request.branchId),
+            // Invoice Orders (targetShopperId) are not consumed at the Branch, so they have no Fulfilment Type.
+            fulfilmentType = if (request.targetShopperId != null) null else request.fulfilmentType ?: FulfilmentType.TAKE_AWAY,
         )
         val savedOrder = orderRepository.save(order)
         val savedItems = orderItemRepository.saveAll(
@@ -359,7 +364,7 @@ class OrderService(
                 order.preparationStatus = PreparationStatus.READY
                 val shopper = order.targetShopperId ?: order.createdById.takeIf { order.creatorType == CreatorType.SHOPPER }
                 shopper?.let { eventPublisher.publishEvent(com.elegant.software.blitzpay.order.api.OrderReadyForPickup(
-                    order.orderId, order.id, order.merchantBranchId, order.pickupNumber, it
+                    order.orderId, order.id, order.merchantBranchId, order.pickupNumber, it, order.fulfilmentType, order.tableId != null
                 )) }
             }
             orderRepository.save(order)

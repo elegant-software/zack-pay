@@ -7028,6 +7028,13 @@ components:
           - "null"
         invoiceEmailConsent:
           type: boolean
+        fulfilmentType:
+          type:
+          - string
+          - "null"
+          enum:
+          - DINE_IN
+          - TAKE_AWAY
       required:
       - branchId
       - invoiceEmailConsent
@@ -7129,6 +7136,13 @@ components:
           - integer
           - "null"
           format: int32
+        fulfilmentType:
+          type:
+          - string
+          - "null"
+          enum:
+          - DINE_IN
+          - TAKE_AWAY
         creatorType:
           type: string
           enum:
@@ -7853,6 +7867,13 @@ components:
           - integer
           - "null"
           format: int32
+        fulfilmentType:
+          type:
+          - string
+          - "null"
+          enum:
+          - DINE_IN
+          - TAKE_AWAY
       required:
       - items
       - orderType
@@ -8689,6 +8710,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CreateOrderItemRequest"
+        fulfilmentType:
+          type:
+          - string
+          - "null"
+          enum:
+          - DINE_IN
+          - TAKE_AWAY
       required:
       - items
       - merchantId
@@ -8742,6 +8770,13 @@ components:
           - integer
           - "null"
           format: int32
+        fulfilmentType:
+          type:
+          - string
+          - "null"
+          enum:
+          - DINE_IN
+          - TAKE_AWAY
         creatorType:
           type: string
           enum:
@@ -8828,6 +8863,13 @@ components:
           - integer
           - "null"
           format: int32
+        fulfilmentType:
+          type:
+          - string
+          - "null"
+          enum:
+          - DINE_IN
+          - TAKE_AWAY
         orderType:
           type: string
           enum:
@@ -9772,6 +9814,13 @@ components:
           - integer
           - "null"
           format: int32
+        fulfilmentType:
+          type:
+          - string
+          - "null"
+          enum:
+          - DINE_IN
+          - TAKE_AWAY
         currency:
           type: string
         totalAmountMinor:
