@@ -444,6 +444,22 @@ _Avoid_: KDS, kitchen app, order board
 The one shared login per Branch that its Kitchen Screens sign in with. A Merchant Manager enables, resets or disables it; enabling or resetting shows a new password once, and the password is never stored or shown again.
 _Avoid_: kitchen account, kitchen user, device login
 
+**Kiosk**:
+A restaurant-owned device, fixed to one Branch, on which walk-in guests order without their own phone, registering or logging in. Its Orders are ordinary Orders of that Branch, marked as placed on a Kiosk, and are exempt from the Walk-In presence check.
+_Avoid_: storefront, shopper app, POS, kitchen screen
+
+**Kiosk Login**:
+The one shared login per Branch that its Kiosk signs in with once during setup. It binds the Kiosk to that Branch only. A Merchant Manager enables, resets or disables it; enabling or resetting shows a new password once, and the password is never stored or shown again.
+_Avoid_: kiosk account, device key, API key
+
+**Kiosk Settings**:
+What a Merchant Manager configures for one Branch's Kiosk: which payment choices it offers (card, cash, Scan to Pay), how many seconds the confirmation screen shows before the Kiosk resets, which of the Merchant's Supported Menu Languages it offers (none: the Merchant's original language only), and its Advertised Products.
+_Avoid_: kiosk config, device settings
+
+**Advertised Product**:
+An active Product of the Branch that a Merchant Manager chose, in Kiosk Settings, to show on the Kiosk's resting screen. When none are chosen, the Kiosk shows the Branch's active Products that have a picture.
+_Avoid_: featured product, promoted product
+
 **Invoice Due Date**:
 An optional merchant-set date on an Invoice Order indicating when payment is expected. Display-only; no enforcement or late penalties. Shown to the Target Shopper alongside the order.
 _Avoid_: payment deadline, expiry date, mandatory due date

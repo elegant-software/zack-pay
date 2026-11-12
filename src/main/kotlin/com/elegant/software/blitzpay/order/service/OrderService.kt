@@ -19,6 +19,9 @@ import com.elegant.software.blitzpay.order.api.FulfilmentType
 import com.elegant.software.blitzpay.order.api.CreateOrderRequest
 import com.elegant.software.blitzpay.order.api.InvoiceOrderCreated
 import com.elegant.software.blitzpay.order.api.KitchenEventType
+import com.elegant.software.blitzpay.config.KioskPrincipal
+import com.elegant.software.blitzpay.merchant.api.KioskSettingsGateway
+import com.elegant.software.blitzpay.order.persistence.model.OrderOrigin
 import com.elegant.software.blitzpay.order.api.toKitchenOrder
 import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
 import com.elegant.software.blitzpay.order.api.MerchantItemPriceOverrideRequest
@@ -68,6 +71,7 @@ class OrderService(
     private val kitchenOrderBus: KitchenOrderBus,
     private val storefrontOrderBus: StorefrontOrderBus,
     private val tableGateway: TableGateway,
+    private val kioskSettingsGateway: KioskSettingsGateway,
 ) {
     private val log = LoggerFactory.getLogger(OrderService::class.java)
 
@@ -82,7 +86,15 @@ class OrderService(
      * Web storefront guest order. Priced from the catalog like a shopper order; the returned raw token is the
      * only proof of ownership and is never stored (only its hash).
      */
-    fun createGuestOrder(request: StorefrontOrderRequest): GuestOrderCreated {
+    fun createGuestOrder(request: StorefrontOrderRequest, kiosk: KioskPrincipal? = null): GuestOrderCreated {
+        if (kiosk != null && request.branchId != kiosk.branchId) {
+            throw ApiException(HttpStatus.FORBIDDEN, "This Kiosk belongs to another Branch", KIOSK_BRANCH_MISMATCH)
+        }
+        if (kiosk != null && request.checkoutPaymentMethod == CheckoutPaymentMethod.CASH &&
+            KIOSK_CASH !in kioskSettingsGateway.findKioskPaymentChoices(kiosk.branchId)
+        ) {
+            throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Cash payment is not enabled for this Kiosk", KIOSK_PAYMENT_CHOICE_DISABLED)
+        }
         require(request.items.size <= MAX_GUEST_ORDER_LINES) { "Order must not contain more than $MAX_GUEST_ORDER_LINES items" }
         request.items.forEach { require(it.quantity <= MAX_GUEST_ITEM_QUANTITY) { "quantity must be <= $MAX_GUEST_ITEM_QUANTITY for product ${it.productId}" } }
         // Guests pay immediately (card / Pay by Bank on the payment endpoint) or to staff (cash / card terminal); never Deferred Payment.
@@ -95,7 +107,8 @@ class OrderService(
         val order = createCustomerOrder(
             CreateOrderRequest(
                 branchId = request.branchId,
-                orderType = if (tableCode != null) OrderType.WALK_IN_ORDERING else OrderType.PRE_ORDER,
+                // A Kiosk is in the restaurant, so its Orders are Walk-In without a Table or the presence proof.
+                orderType = if (tableCode != null || kiosk != null) OrderType.WALK_IN_ORDERING else OrderType.PRE_ORDER,
                 usesDeferredPayment = false,
                 customerLocation = request.customerLocation,
                 items = request.items,
@@ -109,6 +122,7 @@ class OrderService(
             guestTokenHash = GuestToken.hash(token),
             guestTokenExpiresAt = Instant.now().plus(GuestToken.TTL),
             invoiceEmail = invoiceEmail,
+            origin = if (kiosk != null) OrderOrigin.KIOSK else OrderOrigin.STANDARD,
         ) { null }
         return GuestOrderCreated(order, token)
     }
@@ -142,6 +156,7 @@ class OrderService(
         guestTokenHash: String? = null,
         guestTokenExpiresAt: Instant? = null,
         invoiceEmail: String? = null,
+        origin: OrderOrigin = OrderOrigin.STANDARD,
         buyerContact: () -> BuyerContactRequest?,
     ): OrderResponse {
         requireNotNull(request.branchId) { "branchId is required" }
@@ -156,7 +171,8 @@ class OrderService(
         val branch = requireActiveBranch(merchantId, request.branchId)
         val table = request.tableCode?.takeIf { it.isNotBlank() }?.let { requireOrderableTable(it, request) }
         validateOfferingRules(merchantId, request.orderType, request.usesDeferredPayment)
-        validateWalkInLocationIfNeeded(branch, request.orderType, request.customerLocation)
+        // ADR 0001: a Kiosk is trusted and branch-bound, so it needs no customer location.
+        if (origin != OrderOrigin.KIOSK) validateWalkInLocationIfNeeded(branch, request.orderType, request.customerLocation)
 
         val resolvedBuyerContact = buyerContact()
 
@@ -186,6 +202,7 @@ class OrderService(
             tableId = table?.tableId,
             tableName = table?.name,
             fulfilmentType = request.fulfilmentType ?: if (table != null) FulfilmentType.DINE_IN else FulfilmentType.TAKE_AWAY,
+            origin = origin,
         )
         val savedOrder = orderRepository.save(order)
         val savedItems = orderItemRepository.saveAll(
@@ -619,6 +636,9 @@ class OrderService(
         private const val MAX_GUEST_COUNT = 50
         private val GUEST_STAFF_PAYMENT_METHODS = setOf(null, CheckoutPaymentMethod.CASH, CheckoutPaymentMethod.TERMINAL)
         const val INVOICE_EMAIL_CONSENT_REQUIRED = "INVOICE_EMAIL_CONSENT_REQUIRED"
+        const val KIOSK_BRANCH_MISMATCH = "KIOSK_BRANCH_MISMATCH"
+        const val KIOSK_PAYMENT_CHOICE_DISABLED = "KIOSK_PAYMENT_CHOICE_DISABLED"
+        private const val KIOSK_CASH = "CASH"
         /** Bump when the storefront's consent wording changes, so each stored consent maps to the text the guest saw. */
         const val INVOICE_EMAIL_CONSENT_VERSION = "v1"
         private const val MAX_EMAIL_LENGTH = 254

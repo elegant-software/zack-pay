@@ -66,10 +66,15 @@ tags:
   description: Product catalog management for merchants
 - name: Merchant Catalog Translations
   description: Product and category translations for the International Menu
+- name: Kiosk
+  description: "Kiosk sign-in and Kiosk Settings, called by the Kiosk device"
 - name: Branch Opening Hours
   description: Manage branch recurring opening hours and date-specific exceptions
 - name: User Management
   description: Manage Platform User assignments to Merchants and Branches
+- name: Kiosk Access
+  description: "Enable, reset and disable the Kiosk Login of a Branch and manage its\
+    \ Kiosk Settings"
 - name: Merchant Orders
   description: Create and list orders for authenticated merchant branches
 - name: Appointments
@@ -1272,6 +1277,37 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MerchantSummary"
+  /{version}/merchant/branches/{branchId}/kiosk/settings:
+    put:
+      tags:
+      - Kiosk Access
+      summary: Replace the Branch's Kiosk Settings
+      operationId: updateSettings
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KioskSettings"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KioskSettings"
   /{version}/webhooks/stripe:
     post:
       tags:
@@ -3230,6 +3266,77 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/KitchenAccessStatusResponse"
+  /{version}/merchant/branches/{branchId}/kiosk/enable:
+    post:
+      tags:
+      - Kiosk Access
+      summary: "Enable the Kiosk for the Branch, or reset its login; returns a new\
+        \ password once"
+      operationId: enable_2
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KioskLoginResponse"
+  /{version}/merchant/branches/{branchId}/kiosk/disable:
+    post:
+      tags:
+      - Kiosk Access
+      summary: Disable the Branch's Kiosk Login and revoke its Kiosk sessions
+      operationId: disable_2
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KioskStatusResponse"
+  /{version}/kiosk/login:
+    post:
+      tags:
+      - Kiosk
+      summary: Sign a Kiosk in with the Branch's Kiosk Login; the token is scoped
+        to that Branch
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KioskLoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KioskSessionResponse"
   /{version}/invoices:
     post:
       tags:
@@ -5022,6 +5129,32 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/KitchenBranding"
+  /{version}/merchant/branches/{branchId}/kiosk:
+    get:
+      tags:
+      - Kiosk Access
+      summary: Kiosk Login status and Kiosk Settings of the Branch (never includes
+        the password)
+      operationId: status_1
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KioskStatusResponse"
   /{version}/legal:
     get:
       tags:
@@ -5067,6 +5200,19 @@ paths:
               schema:
                 type: string
                 format: binary
+  /{version}/kiosk/settings:
+    get:
+      tags:
+      - Kiosk
+      summary: Kiosk Settings of the token's Branch
+      operationId: settings
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KioskSettings"
   /{version}/geofence/regions:
     get:
       tags:
@@ -6869,6 +7015,29 @@ components:
       - merchantName
       - merchantStatus
       - offerings
+    KioskSettings:
+      type: object
+      properties:
+        paymentChoices:
+          type: array
+          items:
+            type: string
+        resetSeconds:
+          type: integer
+          format: int32
+        languages:
+          type: array
+          items:
+            type: string
+        advertisedProductIds:
+          type: array
+          items:
+            type: string
+      required:
+      - advertisedProductIds
+      - languages
+      - paymentChoices
+      - resetSeconds
     VoiceTranscriptionResponse:
       type: object
       properties:
@@ -7214,6 +7383,11 @@ components:
           type:
           - string
           - "null"
+        origin:
+          type: string
+          enum:
+          - STANDARD
+          - KIOSK
       required:
       - createdAt
       - createdById
@@ -7223,6 +7397,7 @@ components:
       - merchantId
       - orderId
       - orderType
+      - origin
       - paymentRetryAllowed
       - preparationStatus
       - status
@@ -8812,6 +8987,11 @@ components:
         createdAt:
           type: string
           format: date-time
+        origin:
+          type: string
+          enum:
+          - STANDARD
+          - KIOSK
       required:
       - createdAt
       - creatorType
@@ -8820,6 +9000,7 @@ components:
       - merchantId
       - orderId
       - orderType
+      - origin
       - paymentRetryAllowed
       - preparationStatus
       - status
@@ -8980,6 +9161,55 @@ components:
           - "null"
       required:
       - enabled
+    KioskLoginResponse:
+      type: object
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+      required:
+      - login
+      - password
+    KioskStatusResponse:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        login:
+          type:
+          - string
+          - "null"
+        settings:
+          $ref: "#/components/schemas/KioskSettings"
+      required:
+      - enabled
+      - settings
+    KioskLoginRequest:
+      type: object
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+      required:
+      - login
+      - password
+    KioskSessionResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        merchantId:
+          type: string
+          format: uuid
+        branchId:
+          type: string
+          format: uuid
+      required:
+      - branchId
+      - merchantId
+      - token
     BankAccountData:
       type: object
       properties:
@@ -9849,12 +10079,18 @@ components:
         createdAt:
           type: string
           format: date-time
+        origin:
+          type: string
+          enum:
+          - STANDARD
+          - KIOSK
       required:
       - createdAt
       - currency
       - merchantId
       - orderId
       - orderType
+      - origin
       - paymentRetryAllowed
       - preparationStatus
       - status

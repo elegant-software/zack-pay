@@ -47,6 +47,7 @@ class MerchantManagementServiceTest {
         mock<MenuLanguageService>(),
         tableService,
         storefrontThemeService,
+        mock<com.elegant.software.blitzpay.merchant.iam.service.KioskService>(),
     )
 
     private fun merchant(name: String = "Old Name GmbH") = Merchant(
