@@ -87,7 +87,7 @@ class KitchenService(
         if (next == PreparationStatus.READY) {
             order.linkedShopperId()?.let { shopperId ->
                 eventPublisher.publishEvent(
-                    OrderReadyForPickup(order.orderId, order.id, order.merchantBranchId, order.pickupNumber, shopperId)
+                    OrderReadyForPickup(order.orderId, order.id, order.merchantBranchId, order.pickupNumber, shopperId, order.fulfilmentType, order.tableId != null)
                 )
             }
         }
@@ -152,7 +152,7 @@ class KitchenService(
         order.tableId?.let { tableGateway.tableChanged(branchId, it) }
         if (previous != PreparationStatus.READY && order.preparationStatus == PreparationStatus.READY) {
             order.linkedShopperId()?.let { shopperId ->
-                eventPublisher.publishEvent(OrderReadyForPickup(order.orderId, order.id, branchId, order.pickupNumber, shopperId))
+                eventPublisher.publishEvent(OrderReadyForPickup(order.orderId, order.id, branchId, order.pickupNumber, shopperId, order.fulfilmentType, order.tableId != null))
             }
         }
         return updated.forStation(stationId)

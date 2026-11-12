@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.payments.push.listener
 
+import com.elegant.software.blitzpay.order.api.FulfilmentType
 import com.elegant.software.blitzpay.order.api.OrderReadyForPickup
 import com.elegant.software.blitzpay.payments.push.persistence.model.ShopperDeviceRegistrationRepository
 import com.elegant.software.blitzpay.payments.push.service.ExpoMessage
@@ -22,7 +23,7 @@ class OrderReadyForPickupListener(
             log.info("no devices for ready order orderId={}", event.orderId)
             return
         }
-        val body = "Order ${orderLabel(event)} is ready for pickup"
+        val body = readyMessage(event)
         val messages = devices.map { device ->
             ExpoMessage(
                 to = device.expoPushToken,
@@ -40,6 +41,11 @@ class OrderReadyForPickupListener(
     }
 
     companion object {
+        /** DINE_IN at a Table is brought over; everything else is collected at the counter. */
+        fun readyMessage(event: OrderReadyForPickup): String =
+            if (event.fulfilmentType == FulfilmentType.DINE_IN && event.atTable) "Order ${orderLabel(event)} is on its way to your table"
+            else "Order ${orderLabel(event)} is ready, please collect it at the counter"
+
         /** "#042" (the Pickup Number staff call out); the order code for orders created before Pickup Numbers. */
         fun orderLabel(event: OrderReadyForPickup): String =
             event.pickupNumber?.let { "#%03d".format(it) } ?: event.orderId

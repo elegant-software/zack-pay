@@ -428,6 +428,10 @@ _Avoid_: recipient, payee, invoice recipient
 The kitchen-side lifecycle of an Order (`RECEIVED → PREPARING → READY`), independent from payment status. Preparation starts as soon as the Order is received, whether or not it has been paid. Items may be changed while RECEIVED or PREPARING; once READY, existing items are locked and only new items may be added, which returns the Order to RECEIVED.
 _Avoid_: order status (for payment), fulfilment status, kitchen status
 
+**Fulfilment Type**:
+How a Walk-In or Pre-Order is consumed: `DINE_IN` (eaten at the Branch) or `TAKE_AWAY` (taken out). Chosen by the shopper per order; not applicable to Appointment Orders or Invoice Orders. Shown on the Kitchen Screen so staff know whether to plate or pack the order. Independent of whether the order has a Table: a Table says where the order is brought, Fulfilment Type says how it is consumed.
+_Avoid_: order type (that is Pre-Order vs Walk-In), delivery method, takeout, to-go
+
 **Pickup Number**:
 A short sequential number identifying an Order within its Branch for the current day, used by kitchen staff and customers to call out and collect orders. Resets daily per Branch; not a substitute for the Order code.
 _Avoid_: order number, ticket number, queue number
@@ -537,6 +541,10 @@ _Avoid_: branch report, manager report, caller-supplied merchant filter
 - A **Branch** must have exactly one **Branch Location**
 - An **Order** belongs to exactly one **Branch**
 - An **Order** has exactly one **Order Type**
+- **Fulfilment Type** never changes the **Order VAT Rate**
+- A **Walk-In** or **Pre-Order** has exactly one **Fulfilment Type**, independent of its **Table**; an order with a **Table** defaults to `DINE_IN`; **Appointment Orders** and **Invoice Orders** have none
+- A ready **Walk-In** order with a **Table** and `DINE_IN` is brought to the **Table**; every other ready order is collected at the counter
+- **Fulfilment Type** is fixed when the order is placed
 - An **Order** may have zero or one **Buyer Contact**
 - **Buyer Contact** on an **Order** is resolved at order creation time: the explicit per-order value wins when supplied; otherwise the shopper's **Shopper Profile** is used; when both are absent, no **Buyer Contact** is recorded
 - An **Order** may have zero or one **Order Invoice**

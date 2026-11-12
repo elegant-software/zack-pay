@@ -9,4 +9,7 @@ data class OrderReadyForPickup(
     val branchId: UUID?,
     val pickupNumber: Int?,
     val shopperId: String,
+    val fulfilmentType: FulfilmentType? = null,
+    /** True when the order was placed at a Table; with DINE_IN it is brought there instead of collected. */
+    val atTable: Boolean = false,
 )

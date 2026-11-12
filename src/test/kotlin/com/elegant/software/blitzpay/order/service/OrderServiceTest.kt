@@ -11,6 +11,7 @@ import com.elegant.software.blitzpay.order.OrderFixtureLoader
 import com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod
 import com.elegant.software.blitzpay.order.api.CreateMerchantOrderRequest
 import com.elegant.software.blitzpay.order.api.CreateOrderItemRequest
+import com.elegant.software.blitzpay.order.api.FulfilmentType
 import com.elegant.software.blitzpay.order.api.OrderCustomerLocationRequest
 import com.elegant.software.blitzpay.order.api.PaymentMethod
 import com.elegant.software.blitzpay.order.api.StorefrontOrderRequest
@@ -520,6 +521,58 @@ class OrderServiceTest {
         assertEquals("Terrace 3", response.tableName)
         assertEquals(OrderType.WALK_IN_ORDERING, response.orderType)
         verify(tableGateway, never()).seatGuestsIfUnset(any(), any())
+    }
+
+    @Test
+    fun `createShopperOrder at a Table defaults the Fulfilment Type to DINE_IN`() {
+        val productId = UUID.randomUUID()
+        stubTableCatalog(productId)
+        whenever(tableGateway.findTableByCode("K7M2QX")).thenReturn(TableInfo(tableId, branchId, "Terrace 3", true))
+
+        val response = service.createShopperOrder(tableOrder(productId), "shopper-abc")
+
+        assertEquals(FulfilmentType.DINE_IN, response.fulfilmentType)
+    }
+
+    @Test
+    fun `createShopperOrder keeps an explicit Fulfilment Type even at a Table`() {
+        val productId = UUID.randomUUID()
+        stubTableCatalog(productId)
+        whenever(tableGateway.findTableByCode("K7M2QX")).thenReturn(TableInfo(tableId, branchId, "Terrace 3", true))
+
+        val response = service.createShopperOrder(tableOrder(productId).copy(fulfilmentType = FulfilmentType.TAKE_AWAY), "shopper-abc")
+
+        assertEquals(FulfilmentType.TAKE_AWAY, response.fulfilmentType)
+    }
+
+    @Test
+    fun `createShopperOrder without a Table defaults the Fulfilment Type to TAKE_AWAY`() {
+        val request = OrderFixtureLoader.createOrderRequest()
+        stubActiveMerchantContext("PRE_ORDER")
+        whenever(merchantGateway.findOrderableProducts(any())).thenReturn(
+            request.items.map { OrderableMerchantProduct(it.productId, merchantId, branchId, "Item", null, BigDecimal("1.00"), true) }
+        )
+        whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
+        whenever(orderItemRepository.saveAll(any<List<OrderItem>>())).thenAnswer { it.arguments[0] }
+
+        assertEquals(FulfilmentType.TAKE_AWAY, service.createShopperOrder(request, "shopper-abc").fulfilmentType)
+    }
+
+    @Test
+    fun `createMerchantOrder keeps the staff choice and gives Invoice Orders none`() {
+        val productId = UUID.randomUUID()
+        stubActiveMerchantContext("WALK_IN_ORDERING", "DEFERRED_PAYMENT")
+        whenever(merchantGateway.findOrderableProducts(any())).thenReturn(
+            listOf(OrderableMerchantProduct(productId, merchantId, branchId, "Coffee", null, BigDecimal("2.00"), true))
+        )
+        whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
+        whenever(orderItemRepository.saveAll(any<List<OrderItem>>())).thenAnswer { it.arguments[0] }
+        val base = CreateMerchantOrderRequest(merchantId, branchId, items = listOf(CreateOrderItemRequest(productId, 1)))
+
+        assertEquals(FulfilmentType.DINE_IN, service.createMerchantOrder(base.copy(fulfilmentType = FulfilmentType.DINE_IN), "staff").fulfilmentType)
+        assertEquals(FulfilmentType.TAKE_AWAY, service.createMerchantOrder(base, "staff").fulfilmentType)
+        val invoice = base.copy(usesDeferredPayment = true, targetShopperId = "shopper-1", fulfilmentType = FulfilmentType.DINE_IN)
+        assertNull(service.createMerchantOrder(invoice, "staff").fulfilmentType)
     }
 
     @Test
