@@ -138,6 +138,11 @@ class Order(
     /** Table Name snapshot taken at order time, so renaming a Table never rewrites history. */
     @Column(name = "table_name", updatable = false, length = 100)
     val tableName: String? = null,
+
+    /** [OrderOrigin.KIOSK] for Orders placed on a Kiosk (exempt from the Walk-In presence check, ADR 0001). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origin", nullable = false, updatable = false, length = 16)
+    val origin: OrderOrigin = OrderOrigin.STANDARD,
 ) {
     fun advancePreparation(next: PreparationStatus, at: Instant = Instant.now()) {
         require(preparationStatus.canAdvanceTo(next)) {

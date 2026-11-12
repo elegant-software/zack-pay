@@ -32,6 +32,7 @@ class MerchantManagementService(
     private val menuLanguageService: MenuLanguageService,
     private val tableService: MerchantTableService,
     private val storefrontThemeService: StorefrontThemeService,
+    private val kioskService: com.elegant.software.blitzpay.merchant.iam.service.KioskService,
 ) {
     private val log = LoggerFactory.getLogger(MerchantManagementService::class.java)
 
@@ -107,7 +108,9 @@ class MerchantManagementService(
     fun deleteMerchant(merchantId: UUID) {
         val merchant = repository.findById(merchantId)
             .orElseThrow { NoSuchElementException("Merchant not found: $merchantId") }
-        tableService.deleteAllForBranches(branchRepository.findAllByMerchantId(merchantId).map { it.id })
+        val branchIds = branchRepository.findAllByMerchantId(merchantId).map { it.id }
+        tableService.deleteAllForBranches(branchIds)
+        kioskService.deleteAllForBranches(branchIds)
         branchRepository.deleteAllByMerchantId(merchantId)
         menuLanguageService.deleteAllFor(merchantId)
         repository.delete(merchant)

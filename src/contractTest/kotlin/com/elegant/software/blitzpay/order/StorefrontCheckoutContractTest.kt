@@ -69,7 +69,7 @@ class StorefrontCheckoutContractTest : ContractVerifierBase() {
 
     @Test
     fun `create guest order sets an HttpOnly session cookie and keeps the token out of the body`() {
-        whenever(orderService.createGuestOrder(any())).thenReturn(GuestOrderCreated(order, "tok-secret"))
+        whenever(orderService.createGuestOrder(any(), anyOrNull())).thenReturn(GuestOrderCreated(order, "tok-secret"))
 
         anonymous.post().uri("/v1/storefront/orders")
             .contentType(MediaType.APPLICATION_JSON)
@@ -91,7 +91,7 @@ class StorefrontCheckoutContractTest : ContractVerifierBase() {
     @Test
     fun `guest order at a Table accepts tableCode, location, guest count and cash, and returns the Table`() {
         val tableId = UUID.fromString("44444444-4444-4444-4444-444444444444")
-        whenever(orderService.createGuestOrder(any())).thenReturn(
+        whenever(orderService.createGuestOrder(any(), anyOrNull())).thenReturn(
             GuestOrderCreated(
                 order.copy(
                     orderType = com.elegant.software.blitzpay.order.persistence.model.OrderType.WALK_IN_ORDERING,
@@ -120,7 +120,7 @@ class StorefrontCheckoutContractTest : ContractVerifierBase() {
             .jsonPath("$.tableName").isEqualTo("Terrace 3")
 
         val request = org.mockito.kotlin.argumentCaptor<com.elegant.software.blitzpay.order.api.StorefrontOrderRequest>()
-            .also { org.mockito.kotlin.verify(orderService).createGuestOrder(it.capture()) }.firstValue
+            .also { org.mockito.kotlin.verify(orderService).createGuestOrder(it.capture(), anyOrNull()) }.firstValue
         assert(request.tableCode == "K7M2QX") { request }
         assert(request.guestCount == 3) { request }
         assert(request.checkoutPaymentMethod == com.elegant.software.blitzpay.order.api.CheckoutPaymentMethod.CASH) { request }
@@ -129,7 +129,7 @@ class StorefrontCheckoutContractTest : ContractVerifierBase() {
 
     @Test
     fun `guest order accepts an invoice email with consent`() {
-        whenever(orderService.createGuestOrder(any())).thenReturn(GuestOrderCreated(order, "tok-secret"))
+        whenever(orderService.createGuestOrder(any(), anyOrNull())).thenReturn(GuestOrderCreated(order, "tok-secret"))
 
         anonymous.post().uri("/v1/storefront/orders")
             .contentType(MediaType.APPLICATION_JSON)
@@ -142,14 +142,14 @@ class StorefrontCheckoutContractTest : ContractVerifierBase() {
             .expectBody().jsonPath("$.buyerEmail").doesNotExist()
 
         val request = org.mockito.kotlin.argumentCaptor<com.elegant.software.blitzpay.order.api.StorefrontOrderRequest>()
-            .also { org.mockito.kotlin.verify(orderService).createGuestOrder(it.capture()) }.firstValue
+            .also { org.mockito.kotlin.verify(orderService).createGuestOrder(it.capture(), anyOrNull()) }.firstValue
         assert(request.buyerEmail == "guest@example.com") { request }
         assert(request.invoiceEmailConsent) { request }
     }
 
     @Test
     fun `guest order with an invoice email but no consent is 400 INVOICE_EMAIL_CONSENT_REQUIRED`() {
-        whenever(orderService.createGuestOrder(org.mockito.kotlin.argThat { buyerEmail != null && !invoiceEmailConsent }))
+        whenever(orderService.createGuestOrder(org.mockito.kotlin.argThat { buyerEmail != null && !invoiceEmailConsent }, anyOrNull()))
             .thenThrow(
                 com.elegant.software.blitzpay.config.ApiException(
                     org.springframework.http.HttpStatus.BAD_REQUEST,

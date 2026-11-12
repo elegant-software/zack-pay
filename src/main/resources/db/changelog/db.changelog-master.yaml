@@ -163,3 +163,5 @@ databaseChangeLog:
       file: db/changelog/20261111-001-category-images.sql
   - include:
       file: db/changelog/20261112-001-orders-fulfilment-type.sql
+  - include:
+      file: db/changelog/20261112-001-kiosk.sql

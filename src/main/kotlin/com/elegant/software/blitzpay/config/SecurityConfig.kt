@@ -4,18 +4,21 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
+import org.springframework.security.authentication.AnonymousAuthenticationToken
 import org.springframework.security.authorization.AuthorizationDecision
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter
 import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
     @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}") private val issuerUri: String,
+    private val kioskTokenVerifier: KioskTokenVerifier,
 ) {
 
     @Bean
@@ -58,9 +61,22 @@ class SecurityConfig(
                         val roles = (jwt?.getClaim<Any>("realm_access") as? Map<*, *>)?.get("roles") as? Collection<*>
                         AuthorizationDecision(roles?.contains("blitzpay-admin") == true)
                     }
-                    .anyRequest().authenticated()
+                    // Kiosk sign-in: the shared Kiosk Login is the credential, so no token yet
+                    .requestMatchers(HttpMethod.POST, "/v1/kiosk/login").permitAll()
+                    // Kiosk-only endpoints
+                    .requestMatchers("/v1/kiosk/**").hasRole(KioskAuthentication.KIOSK_ROLE)
+                    // A Kiosk token is branch-scoped and only meant for the paths above and the public storefront ones
+                    .anyRequest().access { authentication, _ ->
+                        val auth = authentication.get()
+                        AuthorizationDecision(
+                            auth.isAuthenticated && auth !is AnonymousAuthenticationToken &&
+                                auth.authorities.none { it.authority == KioskAuthentication.KIOSK_AUTHORITY },
+                        )
+                    }
             }
+            .addFilterBefore(KioskTokenAuthenticationFilter(kioskTokenVerifier), BearerTokenAuthenticationFilter::class.java)
             .oauth2ResourceServer {
+                it.bearerTokenResolver(KioskTokenAuthenticationFilter.jwtBearerResolver)
                 it.jwt(Customizer.withDefaults())
                 // RFC 9728: point MCP clients straight at Keycloak for AS discovery
                 it.protectedResourceMetadata { m ->

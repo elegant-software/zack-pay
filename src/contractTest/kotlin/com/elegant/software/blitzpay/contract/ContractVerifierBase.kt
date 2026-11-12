@@ -199,6 +199,12 @@ abstract class ContractVerifierBase {
     protected lateinit var kitchenAccessService: KitchenAccessService
 
     @MockitoBean
+    protected lateinit var merchantKioskRepository: com.elegant.software.blitzpay.merchant.persistence.repository.MerchantKioskRepository
+
+    @MockitoBean
+    protected lateinit var merchantKioskTokenRepository: com.elegant.software.blitzpay.merchant.persistence.repository.MerchantKioskTokenRepository
+
+    @MockitoBean
     protected lateinit var voiceGateway: VoiceGateway
 
     @MockitoBean

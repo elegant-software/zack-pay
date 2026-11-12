@@ -3,6 +3,7 @@ package com.elegant.software.blitzpay.order.api
 import com.elegant.software.blitzpay.order.persistence.model.CreatorType
 import com.elegant.software.blitzpay.order.persistence.model.Order
 import com.elegant.software.blitzpay.order.persistence.model.OrderItem
+import com.elegant.software.blitzpay.order.persistence.model.OrderOrigin
 import com.elegant.software.blitzpay.order.persistence.model.OrderStatus
 import com.elegant.software.blitzpay.order.persistence.model.OrderType
 import com.elegant.software.blitzpay.order.persistence.model.PreparationStatus
@@ -150,6 +151,8 @@ data class OrderResponse(
     /** The Table the order was placed at, and its Table Name at order time. */
     val tableId: UUID? = null,
     val tableName: String? = null,
+    /** KIOSK when the Order was placed on a Kiosk. */
+    val origin: OrderOrigin = OrderOrigin.STANDARD,
 )
 
 data class MerchantOrderResponse(
@@ -172,6 +175,7 @@ data class MerchantOrderResponse(
     val qrCode: QrCodeResponse? = null,
     val items: List<OrderItemResponse>,
     val createdAt: Instant,
+    val origin: OrderOrigin = OrderOrigin.STANDARD,
 )
 
 data class OrderSummaryResponse(
@@ -192,6 +196,7 @@ data class OrderSummaryResponse(
     val paymentSource: PaymentSource? = null,
     val checkoutPaymentMethod: CheckoutPaymentMethod? = null,
     val createdAt: Instant,
+    val origin: OrderOrigin = OrderOrigin.STANDARD,
 )
 
 data class BranchCustomerResponse(
@@ -257,6 +262,7 @@ internal fun Order.toResponse(items: List<OrderItem>, paymentReference: PaymentR
     paymentReference = paymentReference,
     tableId = tableId,
     tableName = tableName,
+    origin = origin,
 )
 
 internal fun Order.toSummaryResponse() = OrderSummaryResponse(
@@ -277,6 +283,7 @@ internal fun Order.toSummaryResponse() = OrderSummaryResponse(
     paymentSource = paymentSource?.let { runCatching { PaymentSource.valueOf(it) }.getOrNull() },
     checkoutPaymentMethod = checkoutPaymentMethod?.let { runCatching { CheckoutPaymentMethod.valueOf(it) }.getOrNull() },
     createdAt = createdAt,
+    origin = origin,
 )
 
 internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: String? = null) = MerchantOrderResponse(
@@ -309,6 +316,7 @@ internal fun Order.toMerchantResponse(items: List<OrderItem>, qrPaymentUrl: Stri
         )
     },
     createdAt = createdAt,
+    origin = origin,
 )
 
 /**

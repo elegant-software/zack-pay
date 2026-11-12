@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.order.web
 
+import com.elegant.software.blitzpay.config.KioskAuthentication
 import com.elegant.software.blitzpay.config.LogContext
 import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.STOREFRONT_GUEST_TOKEN_COOKIE
@@ -15,6 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
@@ -33,8 +35,13 @@ class StorefrontOrderController(
 
     @Operation(summary = "Create a guest order priced from the catalog; sets the guest_token session cookie")
     @PostMapping
-    fun create(@RequestBody request: StorefrontOrderRequest): ResponseEntity<OrderResponse> {
-        val created = orderService.createGuestOrder(request)
+    fun create(
+        @RequestBody request: StorefrontOrderRequest,
+        authentication: Authentication?,
+    ): ResponseEntity<OrderResponse> {
+        // A valid Kiosk token (see config.KioskTokenAuthenticationFilter) marks the Order as Kiosk-originated.
+        val kiosk = (authentication as? KioskAuthentication)?.principal
+        val created = orderService.createGuestOrder(request, kiosk)
         LogContext.with(LogContext.ORDER_ID to created.order.orderId) {
             log.info("guest order created totalAmountMinor={} itemCount={}", created.order.totalAmountMinor, created.order.items.size)
         }
