@@ -106,4 +106,10 @@ class MerchantOnboardingService(
             ?.let { merchantRepository.findById(it.merchantId).orElse(null) }
             ?.logoStorageKey
             ?.let { runCatching { storageService.presignDownload(it) }.getOrNull() }
+
+    @Transactional(readOnly = true)
+    override fun findBranchLanguage(branchId: UUID): String? =
+        merchantBranchRepository.findById(branchId).orElse(null)
+            ?.let { merchantRepository.findById(it.merchantId).orElse(null) }
+            ?.originalMenuLanguage
 }

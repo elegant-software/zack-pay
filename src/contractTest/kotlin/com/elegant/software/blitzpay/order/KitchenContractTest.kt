@@ -87,10 +87,12 @@ class KitchenContractTest : ContractVerifierBase() {
     @Test
     fun `branding returns the merchant logo url for branch members`() {
         whenever(kitchenService.logoUrl(branchId)).thenReturn("https://cdn.example/logo.png")
+        whenever(kitchenService.language(branchId)).thenReturn("de")
 
         webTestClient.get().uri("$base/branding").header(HttpHeaders.AUTHORIZATION, member)
             .exchange().expectStatus().isOk
             .expectBody().jsonPath("$.logoUrl").isEqualTo("https://cdn.example/logo.png")
+            .jsonPath("$.language").isEqualTo("de")
 
         webTestClient.get().uri("$base/branding").header(HttpHeaders.AUTHORIZATION, token("/merchants/other"))
             .exchange().expectStatus().isForbidden

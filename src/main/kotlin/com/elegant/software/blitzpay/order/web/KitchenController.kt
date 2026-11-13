@@ -21,7 +21,8 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.util.UUID
 
-data class KitchenBranding(val logoUrl: String?)
+/** [language] is the Merchant's Original Menu Language (ISO 639-1); the Kitchen Screen shows its UI in it. */
+data class KitchenBranding(val logoUrl: String?, val language: String? = null)
 
 @Tag(name = "Kitchen Screen", description = "Live Orders of one Branch and their Preparation Status")
 @RestController
@@ -70,11 +71,11 @@ class KitchenController(
         return ResponseEntity.ok(kitchenService.updatePreparationStatus(branchId, orderId, request.status))
     }
 
-    @Operation(summary = "Branding of the Branch's Merchant for the Kitchen Screen header; logoUrl is a short-lived URL or null")
+    @Operation(summary = "Branding of the Branch's Merchant for the Kitchen Screen: logoUrl (short-lived URL or null) and the Merchant's Original Menu Language")
     @GetMapping("/branding")
     fun branding(@PathVariable branchId: UUID, @AuthenticationPrincipal jwt: Jwt?): KitchenBranding {
         requireKitchen(jwt, branchId)
-        return KitchenBranding(kitchenService.logoUrl(branchId))
+        return KitchenBranding(kitchenService.logoUrl(branchId), kitchenService.language(branchId))
     }
 
     @Operation(summary = "List stations available to this authorized branch, including unassigned work")
