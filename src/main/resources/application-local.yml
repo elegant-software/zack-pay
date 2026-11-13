@@ -2,8 +2,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: metrics,health,prometheus
+        include: info,metrics,health,prometheus
         exclude: env
+      cors:
+        allowed-origins: http://localhost:4200,http://localhost:4201,app://kitchen
+        allowed-methods: GET
 
 blitzpay:
   cors:

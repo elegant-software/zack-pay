@@ -100,6 +100,7 @@ The application expects the following environment variables to be set before run
   - Example: `<YOUR_MERCHANT_ACCOUNT_ID>`
 - TRUELAYER_PRIVATE_KEY_PATH: Path (relative to project root or absolute) to the private key file used for signing (PEM)
   - Example: `path/to/your-private-key.pem`
+- APP_VERSION (optional): deployed version reported as `build.version` by the public `GET /actuator/info`. Helm sets it from `image.tag` and the Fargate deploy from the image tag (the release tag, e.g. `v2.26.0`). Unset, the Gradle project version is reported.
 Note: Real credential values have been intentionally redacted in this README. Never commit secrets into the repository.
 
 Suggested minimal `.env` file (do NOT commit this to version control):
