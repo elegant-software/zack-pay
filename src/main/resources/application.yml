@@ -82,8 +82,13 @@ management:
   endpoints:
     web:
       exposure:
-        include: metrics,health,prometheus
+        include: info,metrics,health,prometheus
         exclude: env
+      # Actuator endpoints are not covered by blitzpay.cors (MVC mappings); clients read /actuator/info
+      # for the deployed backend version. Keep in sync with blitzpay.cors.allowed-origins (+ Kitchen Screen).
+      cors:
+        allowed-origins: ${FRONTEND_ORIGIN:http://localhost:4200},http://localhost:4200,app://kitchen
+        allowed-methods: GET
   endpoint:
     metrics:
       enabled: true
@@ -99,7 +104,7 @@ management:
   opentelemetry:
     resource-attributes:
       service.name: ${OTEL_SERVICE_NAME:${spring.application.name}}
-      service.version: ${OTEL_SERVICE_VERSION:dev}
+      service.version: ${OTEL_SERVICE_VERSION:${APP_VERSION:dev}}
       deployment.environment.name: ${OTEL_DEPLOYMENT_ENVIRONMENT:${spring.profiles.active:local}}
       cloud.platform: ${OTEL_CLOUD_PLATFORM:local}
     tracing:

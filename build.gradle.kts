@@ -33,6 +33,12 @@ tasks.named<BootJar>("bootJar") {
     archiveFileName.set("app.jar")
 }
 
+// META-INF/build-info.properties -> /actuator/info `build.*`. The deployed release tag overrides
+// `build.version` at runtime via APP_VERSION (see BuildInfoConfig); `-Pversion=<tag>` also works.
+springBoot {
+    buildInfo()
+}
+
 
 val mavenProxyUrl = providers.gradleProperty("mavenProxyUrl").orNull
 val sourceSets = the<org.gradle.api.tasks.SourceSetContainer>()

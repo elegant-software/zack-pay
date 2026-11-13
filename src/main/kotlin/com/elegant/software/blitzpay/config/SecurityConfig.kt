@@ -28,6 +28,8 @@ class SecurityConfig(
                 auth
                     // K8s liveness/readiness probes — cannot carry tokens
                     .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                    // Deployed version (build.version / build.time) shown by every client — no secrets in it
+                    .requestMatchers(HttpMethod.GET, "/actuator/info").permitAll()
                     // Payment provider webhooks — signature-verified in the controller
                     .requestMatchers("/*/webhooks/**").permitAll()
                     // Stripe Connect OAuth return redirect — browser redirect, no token available
