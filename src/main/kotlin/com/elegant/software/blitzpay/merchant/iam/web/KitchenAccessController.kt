@@ -1,6 +1,5 @@
 package com.elegant.software.blitzpay.merchant.iam.web
 
-import org.springframework.http.ProblemDetail
 import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.iam.service.KitchenAccessService
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
@@ -8,13 +7,11 @@ import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBra
 import com.elegant.software.blitzpay.merchant.web.MerchantCallerResolver
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.slf4j.LoggerFactory
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -38,8 +35,6 @@ class KitchenAccessController(
     private val branchRepository: MerchantBranchRepository,
     private val callerResolver: MerchantCallerResolver,
 ) {
-    private val log = LoggerFactory.getLogger(KitchenAccessController::class.java)
-
     @Operation(summary = "Enable the Kitchen Screen for the Branch, or reset its login; returns a new password once")
     @PostMapping("/enable")
     fun enable(
@@ -75,15 +70,4 @@ class KitchenAccessController(
 
     private fun <T : Any> noStore(body: T): ResponseEntity<T> =
         ResponseEntity.ok().cacheControl(CacheControl.noStore()).header("Pragma", "no-cache").body(body)
-
-    /** Keycloak refused an admin call: the backend's service account lacks a realm-management role. */
-    @ExceptionHandler(jakarta.ws.rs.ForbiddenException::class)
-    fun keycloakForbidden(ex: jakarta.ws.rs.ForbiddenException): ResponseEntity<ProblemDetail> {
-        log.error("Keycloak admin call forbidden; grant the service account realm-management roles manage-clients, manage-users, query-groups", ex)
-        val error = ApiException(
-            HttpStatus.BAD_GATEWAY,
-            "Keycloak refused the request: the backend service account is missing realm-management roles (manage-clients, manage-users, query-groups)",
-        )
-        return ResponseEntity.of(error.body).build()
-    }
 }

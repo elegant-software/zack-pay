@@ -1,10 +1,6 @@
 package com.elegant.software.blitzpay.order
 
-import com.elegant.software.blitzpay.config.KioskPrincipal
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantKiosk
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantKioskToken
-import com.elegant.software.blitzpay.merchant.iam.service.KioskTokenService
 import com.elegant.software.blitzpay.order.api.OrderItemResponse
 import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.persistence.model.CreatorType
@@ -24,17 +20,20 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.Instant
+import java.util.Base64
 import java.util.UUID
 
-/** Storefront guest order endpoint called with and without a Kiosk token (ADR 0001). */
+/** Storefront guest order endpoint called with and without a Kiosk Login token (ADR 0001). */
 class KioskOrderContractTest : ContractVerifierBase() {
     @MockitoBean
     private lateinit var orderService: OrderService
 
     private val merchantId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val branchId = UUID.fromString("00000000-0000-0000-0000-000000000002")
-    private val kioskToken = "kt_order-token"
     private val body = """{"branchId":"$branchId","items":[{"productId":"22222222-2222-2222-2222-222222222221","quantity":1}]}"""
+
+    private fun bearer(claims: String): String =
+        "Bearer fakeheader.${Base64.getUrlEncoder().withoutPadding().encodeToString(claims.toByteArray())}.fakesig"
 
     private fun order(origin: OrderOrigin) = OrderResponse(
         orderId = "ORDER-123", merchantId = merchantId, branchId = branchId, status = OrderStatus.CREATED,
@@ -44,19 +43,12 @@ class KioskOrderContractTest : ContractVerifierBase() {
         createdAt = Instant.parse("2026-11-03T10:00:00Z"), origin = origin,
     )
 
-    private fun validKioskToken() {
-        whenever(merchantKioskTokenRepository.findByTokenHash(KioskTokenService.hash(kioskToken))).thenReturn(
-            MerchantKioskToken(merchantId = merchantId, branchId = branchId, tokenHash = KioskTokenService.hash(kioskToken), expiresAt = Instant.now().plusSeconds(60))
-        )
-        whenever(merchantKioskRepository.findByBranchId(branchId)).thenReturn(MerchantKiosk(branchId = branchId, enabled = true))
-    }
-
     @Test
-    fun `a valid kiosk token reaches the order service as the kiosk of its branch and the order is KIOSK`() {
-        validKioskToken()
-        whenever(orderService.createGuestOrder(any(), eq(KioskPrincipal(merchantId, branchId)))).thenReturn(GuestOrderCreated(order(OrderOrigin.KIOSK), "tok"))
+    fun `a kiosk login token reaches the order service with its branch and the order is KIOSK`() {
+        whenever(orderService.createGuestOrder(any(), eq(branchId))).thenReturn(GuestOrderCreated(order(OrderOrigin.KIOSK), "tok"))
 
-        webTestClient.post().uri("/v1/storefront/orders").header(HttpHeaders.AUTHORIZATION, "Bearer $kioskToken")
+        webTestClient.post().uri("/v1/storefront/orders")
+            .header(HttpHeaders.AUTHORIZATION, bearer("""{"sub":"kiosk","azp":"blitzpay-kiosk","groups":["/merchants/merchant_x/branch_$branchId"]}"""))
             .contentType(MediaType.APPLICATION_JSON).bodyValue(body)
             .exchange()
             .expectStatus().isCreated
@@ -72,15 +64,26 @@ class KioskOrderContractTest : ContractVerifierBase() {
             .exchange()
             .expectStatus().isCreated
             .expectBody().jsonPath("$.origin").isEqualTo("STANDARD")
+
+        // A Kitchen Login of the same branch is no Kiosk either
+        webTestClient.post().uri("/v1/storefront/orders")
+            .header(HttpHeaders.AUTHORIZATION, bearer("""{"sub":"kitchen","azp":"blitzpay-kitchen","groups":["branch_$branchId"]}"""))
+            .contentType(MediaType.APPLICATION_JSON).bodyValue(body)
+            .exchange().expectStatus().isCreated
         verify(orderService, never()).createGuestOrder(any(), org.mockito.kotlin.argThat { this != null })
     }
 
     @Test
-    fun `a bad kiosk token is 401 and never creates an order`() {
-        webTestClient.post().uri("/v1/storefront/orders").header(HttpHeaders.AUTHORIZATION, "Bearer kt_forged")
-            .contentType(MediaType.APPLICATION_JSON).bodyValue(body)
-            .exchange()
-            .expectStatus().isUnauthorized
+    fun `a kiosk token without exactly one branch is 403 and never creates an order`() {
+        listOf(
+            """{"sub":"kiosk","azp":"blitzpay-kiosk"}""",
+            """{"sub":"kiosk","azp":"blitzpay-kiosk","groups":["branch_$branchId","branch_${UUID.randomUUID()}"]}""",
+        ).forEach { claims ->
+            webTestClient.post().uri("/v1/storefront/orders").header(HttpHeaders.AUTHORIZATION, bearer(claims))
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(body)
+                .exchange()
+                .expectStatus().isForbidden
+        }
         verify(orderService, never()).createGuestOrder(any(), anyOrNull())
     }
 }

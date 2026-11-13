@@ -1,7 +1,7 @@
 package com.elegant.software.blitzpay.order.web
 
-import com.elegant.software.blitzpay.config.KioskAuthentication
 import com.elegant.software.blitzpay.config.LogContext
+import com.elegant.software.blitzpay.merchant.api.KioskGateway
 import com.elegant.software.blitzpay.order.api.OrderResponse
 import com.elegant.software.blitzpay.order.api.STOREFRONT_GUEST_TOKEN_COOKIE
 import com.elegant.software.blitzpay.order.api.StorefrontOrderRequest
@@ -16,7 +16,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
-import org.springframework.security.core.Authentication
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
@@ -30,6 +31,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 class StorefrontOrderController(
     private val orderService: OrderService,
     private val bus: StorefrontOrderBus,
+    private val kioskGateway: KioskGateway,
 ) {
     private val log = LoggerFactory.getLogger(StorefrontOrderController::class.java)
 
@@ -37,11 +39,16 @@ class StorefrontOrderController(
     @PostMapping
     fun create(
         @RequestBody request: StorefrontOrderRequest,
-        authentication: Authentication?,
+        @AuthenticationPrincipal jwt: Jwt?,
     ): ResponseEntity<OrderResponse> {
-        // A valid Kiosk token (see config.KioskTokenAuthenticationFilter) marks the Order as Kiosk-originated.
-        val kiosk = (authentication as? KioskAuthentication)?.principal
-        val created = orderService.createGuestOrder(request, kiosk)
+        // A Kiosk Login token marks the Order as Kiosk-originated, for the one Branch the Kiosk belongs to.
+        val kioskBranchId = if (kioskGateway.isKioskToken(jwt)) {
+            BranchGroupAccess.branchIds(jwt).singleOrNull()
+                ?: throw BranchAccessDeniedException("Kiosk Login is not bound to exactly one Branch")
+        } else {
+            null
+        }
+        val created = orderService.createGuestOrder(request, kioskBranchId)
         LogContext.with(LogContext.ORDER_ID to created.order.orderId) {
             log.info("guest order created totalAmountMinor={} itemCount={}", created.order.totalAmountMinor, created.order.items.size)
         }

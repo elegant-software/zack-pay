@@ -71,9 +71,8 @@ status-name code is enough.
 | `LOCATION_EXPIRED` | 400 | `OrderService` | Location captured too long ago |
 | `OUTSIDE_GEOFENCE` | 422 | `OrderService` | Customer is outside the branch geofence |
 | `INVOICE_EMAIL_CONSENT_REQUIRED` | 400 | `OrderService` (storefront guest order) | `buyerEmail` sent without `invoiceEmailConsent: true` |
-| `KIOSK_BRANCH_MISMATCH` | 403 | `OrderService` (storefront guest order) | A Kiosk token for one Branch was used to order for another Branch |
+| `KIOSK_BRANCH_MISMATCH` | 403 | `OrderService` (storefront guest order) | A Kiosk Login token for one Branch was used to order for another Branch |
 | `KIOSK_PAYMENT_CHOICE_DISABLED` | 422 | `OrderService` | A Kiosk Order asked for cash payment, but cash is not enabled in the Branch's Kiosk Settings |
-| `INVALID_KIOSK_CREDENTIALS` | 401 | `KioskService` (`POST /v1/kiosk/login`) | Unknown login, wrong password or disabled Kiosk Login (indistinguishable on purpose) |
 | `UNKNOWN_KIOSK_PAYMENT_CHOICE` | 400 | `KioskService` (Kiosk Settings) | A payment choice other than `CARD`, `CASH`, `SCAN_TO_PAY` |
 | `KIOSK_PAYMENT_CHOICES_REQUIRED` | 400 | `KioskService` | `paymentChoices` is empty |
 | `KIOSK_RESET_SECONDS_OUT_OF_RANGE` | 400 | `KioskService` | `resetSeconds` outside 5..300 |

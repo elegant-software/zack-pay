@@ -3,7 +3,7 @@ package com.elegant.software.blitzpay.merchant.iam.web
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.util.UUID
 
-/** What a Merchant Manager configures for one Branch's Kiosk. */
+/** What a Merchant Manager configures for one Branch's Kiosks. */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class KioskSettings(
     /** Enabled Kiosk Payment Choices: `CARD`, `CASH`, `SCAN_TO_PAY`; at least one. */
@@ -16,15 +16,37 @@ data class KioskSettings(
     val advertisedProductIds: List<String> = emptyList(),
 )
 
-/** The Kiosk Login of a Branch, returned once by `POST .../kiosk/enable`; [toString] masks the password. */
-data class KioskLoginResponse(val login: String, val password: String) {
-    override fun toString(): String = "KioskLoginResponse(login=$login, password=****)"
-}
-
-/** Kiosk status of a Branch; `login` is null when no Kiosk Login was ever provisioned. Never includes the password. */
-data class KioskStatusResponse(val enabled: Boolean, val login: String?, val settings: KioskSettings)
-
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class KioskLoginRequest(val login: String, val password: String)
+data class CreateKioskRequest(
+    /** Shown in the web admin, e.g. "Entrance"; defaults to "Kiosk <number>". */
+    val name: String? = null,
+)
 
-data class KioskSessionResponse(val token: String, val merchantId: UUID, val branchId: UUID)
+/** A Kiosk of a Branch. Never includes the password. */
+data class KioskResponse(
+    val id: UUID,
+    val number: Int,
+    val name: String,
+    val username: String,
+    val enabled: Boolean,
+)
+
+/**
+ * The Kiosk Login of one Kiosk, returned once when the Kiosk is added or its login enabled or reset. Same shape as the
+ * Kitchen Login plus the Kiosk. The password exists only in this response, and [toString] masks it.
+ */
+data class KioskLoginResponse(
+    val kioskId: UUID,
+    val name: String,
+    val username: String,
+    val password: String,
+    val keycloakUrl: String,
+    val realm: String,
+    val clientId: String,
+    val apiBaseUrl: String,
+    val branchId: UUID,
+) {
+    override fun toString(): String =
+        "KioskLoginResponse(kioskId=$kioskId, name=$name, username=$username, password=****, keycloakUrl=$keycloakUrl, " +
+            "realm=$realm, clientId=$clientId, apiBaseUrl=$apiBaseUrl, branchId=$branchId)"
+}

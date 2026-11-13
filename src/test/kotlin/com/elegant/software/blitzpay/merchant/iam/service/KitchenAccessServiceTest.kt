@@ -347,7 +347,7 @@ class KitchenAccessServiceTest {
         givenExistingUser()
         whenever(user.groups()).thenReturn(listOf(GroupRepresentation().apply { name = "branch_${UUID.randomUUID()}" }))
 
-        assertThrows<KitchenLoginConflictException> { service.enable(branch) }
+        assertThrows<BranchLoginConflictException> { service.enable(branch) }
         verify(user, never()).resetPassword(any())
     }
 

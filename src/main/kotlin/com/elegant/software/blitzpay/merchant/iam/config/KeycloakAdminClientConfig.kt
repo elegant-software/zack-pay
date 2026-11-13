@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Profile
 
 @Configuration
 @Profile("!contract-test")
-@EnableConfigurationProperties(KeycloakProperties::class, KitchenAccessProperties::class)
+@EnableConfigurationProperties(KeycloakProperties::class, KitchenAccessProperties::class, KioskAccessProperties::class)
 class KeycloakAdminClientConfig {
 
     @Bean

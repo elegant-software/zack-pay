@@ -3,9 +3,8 @@ package com.elegant.software.blitzpay.order.service
 import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.api.ActiveBranchInfo
 import com.elegant.software.blitzpay.merchant.api.BranchLocationInfo
-import com.elegant.software.blitzpay.merchant.api.KioskSettingsGateway
+import com.elegant.software.blitzpay.merchant.api.KioskGateway
 import com.elegant.software.blitzpay.merchant.api.MerchantGateway
-import com.elegant.software.blitzpay.config.KioskPrincipal
 import com.elegant.software.blitzpay.order.persistence.model.OrderOrigin
 import com.elegant.software.blitzpay.merchant.api.OrderableMerchantProduct
 import com.elegant.software.blitzpay.merchant.api.TableGateway
@@ -57,10 +56,10 @@ class OrderServiceTest {
     private val pickupNumberAllocator = mock<PickupNumberAllocator>()
     private val kitchenOrderBus = mock<KitchenOrderBus>()
     private val tableGateway = mock<TableGateway>()
-    private val kioskSettingsGateway = mock<KioskSettingsGateway>()
+    private val kioskGateway = mock<KioskGateway>()
     private val service = OrderService(
         merchantGateway, orderRepository, orderItemRepository, paymentAttemptRepository, shopperProfileGateway, eventPublisher,
-        pickupNumberAllocator, kitchenOrderBus, mock<StorefrontOrderBus>(), tableGateway, kioskSettingsGateway,
+        pickupNumberAllocator, kitchenOrderBus, mock<StorefrontOrderBus>(), tableGateway, kioskGateway,
     )
 
     private val merchantId = UUID.fromString("11111111-1111-1111-1111-111111111111")
@@ -408,7 +407,7 @@ class OrderServiceTest {
         assertTrue(saved.guestTokenExpiresAt!!.isAfter(Instant.now().plusSeconds(55 * 60)))
     }
 
-    private fun kiosk(branch: UUID = branchId) = KioskPrincipal(merchantId, branch)
+    private fun kiosk(branch: UUID = branchId) = branch
 
     @Test
     fun `kiosk order needs no location or table, is walk-in and marked KIOSK`() {
@@ -466,14 +465,14 @@ class OrderServiceTest {
         val productId = UUID.randomUUID()
         stubGuestCatalog(productId)
         stubActiveMerchantContext("WALK_IN_ORDERING")
-        whenever(kioskSettingsGateway.findKioskPaymentChoices(branchId)).thenReturn(setOf("CARD", "SCAN_TO_PAY"))
+        whenever(kioskGateway.findKioskPaymentChoices(branchId)).thenReturn(setOf("CARD", "SCAN_TO_PAY"))
         val request = StorefrontOrderRequest(branchId, listOf(CreateOrderItemRequest(productId, 1)), checkoutPaymentMethod = CheckoutPaymentMethod.CASH)
 
         val ex = assertFailsWith<ApiException> { service.createGuestOrder(request, kiosk()) }
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, ex.status)
         assertEquals(OrderService.KIOSK_PAYMENT_CHOICE_DISABLED, ex.code)
 
-        whenever(kioskSettingsGateway.findKioskPaymentChoices(branchId)).thenReturn(setOf("CASH"))
+        whenever(kioskGateway.findKioskPaymentChoices(branchId)).thenReturn(setOf("CASH"))
         assertEquals(CheckoutPaymentMethod.CASH, service.createGuestOrder(request, kiosk()).order.checkoutPaymentMethod)
     }
 
@@ -485,7 +484,7 @@ class OrderServiceTest {
 
         service.createGuestOrder(request)
 
-        verify(kioskSettingsGateway, never()).findKioskPaymentChoices(any())
+        verify(kioskGateway, never()).findKioskPaymentChoices(any())
     }
 
     @Test

@@ -59,6 +59,19 @@ class KitchenContractTest : ContractVerifierBase() {
 
     private val member = token("/merchants/merchant_11111111-1111-1111-1111-111111111111/branch_$branchId")
 
+    @Test
+    fun `a kiosk of the branch cannot use the kitchen endpoints`() {
+        val payload = Base64.getUrlEncoder().withoutPadding().encodeToString(
+            """{"sub":"kiosk-user","azp":"blitzpay-kiosk","groups":["branch_$branchId"]}""".toByteArray()
+        )
+        val kiosk = "Bearer fakeheader.$payload.fakesig"
+
+        webTestClient.get().uri("$base/orders").header(HttpHeaders.AUTHORIZATION, kiosk).exchange().expectStatus().isForbidden
+        webTestClient.post().uri("$base/orders/$orderId/preparation-status").header(HttpHeaders.AUTHORIZATION, kiosk)
+            .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"status":"READY"}""")
+            .exchange().expectStatus().isForbidden
+    }
+
     private fun kitchenOrder(status: PreparationStatus = PreparationStatus.RECEIVED, cancelled: Boolean = false) = KitchenOrder(
         orderId = orderId,
         orderCode = "ORD-KITCHEN00001",

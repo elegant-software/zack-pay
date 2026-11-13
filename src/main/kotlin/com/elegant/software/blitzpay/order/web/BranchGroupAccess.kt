@@ -22,6 +22,12 @@ object BranchGroupAccess {
         return groups.any { it.substringAfterLast('/').equals(expected, ignoreCase = true) }
     }
 
+    /** The Branches whose groups the caller is in. */
+    fun branchIds(jwt: Jwt?): List<UUID> = jwt?.getClaimAsStringList(GROUPS_CLAIM).orEmpty().mapNotNull {
+        it.substringAfterLast('/').takeIf { name -> name.startsWith(BRANCH_GROUP_PREFIX, ignoreCase = true) }
+            ?.let { name -> runCatching { UUID.fromString(name.substring(BRANCH_GROUP_PREFIX.length)) }.getOrNull() }
+    }.distinct()
+
     fun require(jwt: Jwt?, branchId: UUID) {
         if (!isMember(jwt, branchId)) throw BranchAccessDeniedException("Caller is not a member of branch $branchId")
     }

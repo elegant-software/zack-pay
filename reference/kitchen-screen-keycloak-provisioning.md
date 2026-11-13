@@ -134,3 +134,22 @@ flowchart TD
 ```
 
 The offline session idle and max lifetimes are realm settings (Realm settings → Sessions). Set them by hand once. They are not provisioned by this API.
+
+## Kiosk Logins
+
+Kiosk Logins are provisioned exactly like the Kitchen Login, by the same `BranchLoginProvisioner`, with two differences: a Branch can have several Kiosks, and each Kiosk has its own Keycloak user. Code: `KioskAccessController`, `KioskAccessService`, `KioskAccessProperties`.
+
+All under `/v1/merchant/branches/{branchId}`, same caller rule and `Cache-Control: no-store`:
+
+| Method | Path | Response |
+|---|---|---|
+| `GET` | `/kiosks` | `[{ id, number, name, username, enabled }]` |
+| `POST` | `/kiosks` with optional `{ name }` | `201 { kioskId, name, username, password, keycloakUrl, realm, clientId, apiBaseUrl, branchId }` |
+| `POST` | `/kiosks/{kioskId}/enable` | Same as above: re-enables or resets, new password once |
+| `POST` | `/kiosks/{kioskId}/disable` | `{ id, number, name, username, enabled: false }`; sessions revoked |
+| `DELETE` | `/kiosks/{kioskId}` | `204`; the Keycloak user is deleted |
+| `GET` / `PUT` | `/kiosk/settings` | Kiosk Settings, shared by the Branch's Kiosks. A Kiosk of the Branch may `GET` them |
+
+- **Username**: `kiosk-<branch code, lower case>-<number>`, e.g. `kiosk-br-1a2b3c4d5e6f-2`. Numbers count up per Branch and are never reused while the Kiosk exists.
+- **Telling a Kiosk from the Kitchen Screen**: both users are in the Branch group, so the backend checks the token's `azp` (the client it was issued to). Only `blitzpay-kiosk` tokens place Kiosk Orders, and `blitzpay-kiosk` tokens are refused on the kitchen endpoints.
+- **Config**: `keycloak.iam.kiosk.client-id` (`KEYCLOAK_IAM_KIOSK_CLIENT_ID`, default `blitzpay-kiosk`), `keycloak.iam.kiosk.redirect-uri` (`KEYCLOAK_IAM_KIOSK_REDIRECT_URI`, default `app://kiosk/renderer/index.html`), `keycloak.iam.kiosk.api-base-url` (as for the kitchen), `keycloak.iam.kiosk.email-domain` (`kiosk.invalid`). The required admin roles are the same.
