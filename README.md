@@ -22,6 +22,21 @@ Product categories support optional images; see [category image API and storage 
 
 - API versioning guide: [reference/api-versioning-guide.md](reference/api-versioning-guide.md)
 
+## Invoices after payment
+
+Paid orders expose an invoice PDF through `GET /v1/shopper/orders/{orderId}/invoice`,
+`GET /v1/merchant/orders/{orderId}/invoice`, or `GET /v1/storefront/orders/{orderId}/invoice`.
+Shopper and merchant requests require authentication and order scope; storefront requests require
+the order's guest cookie. The first request generates and stores the PDF without requiring SMTP.
+The returned private-storage link expires after 30 minutes and can be displayed as a download QR.
+Unpaid orders cannot use these download endpoints. Refreshing obtains a new link.
+
+The storefront's optional **Email me the invoice** checkbox sends `buyerEmail` only with explicit
+`invoiceEmailConsent`. When SMTP is configured, the invoice batch sends the attachment and deletes
+the guest email after success. Downloads also work without giving an email address. See
+[guest invoice email privacy](reference/guest-invoice-email-privacy.md) and
+[SMTP setup](helm/blitz-pay/SECRET-SETUP.md).
+
 ## Mobile catalog browsing
 
 Shopper signup assigns each new Keycloak account to `/blitzpay-mobile-users`, which the shopper app requires at login. This group must already exist in the configured realm. If group lookup, assignment, or consent recording fails, signup fails and attempts to delete the new Keycloak account; failed cleanup is logged for operator follow-up.

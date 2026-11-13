@@ -42,7 +42,8 @@ class InvoiceBatchJobTest {
     private val mailSender = mock<JavaMailSender>()
 
     private val job = InvoiceBatchJob(
-        orderGateway, merchantInvoiceGateway, invoiceService, storageService, orderInvoiceRepository, mailSender,
+        orderGateway, storageService, orderInvoiceRepository, mailSender,
+        OrderInvoiceProvider(orderGateway, merchantInvoiceGateway, invoiceService, storageService, orderInvoiceRepository),
         fromAddress = "invoices@blitzpay.test", lookbackDays = 7, batchSize = 20,
     )
 
@@ -82,12 +83,13 @@ class InvoiceBatchJobTest {
         isInvoiceOrder = false,
         items = items,
         buyerEmail = buyerEmail,
+        paid = true,
     )
 
     private fun invoiceOrderSource() = paidSource(buyerContactName = null, buyerContactStreet = null, items = emptyList())
         .copy(
             buyerContactZip = null, buyerContactCity = null, buyerContactCountry = null,
-            isInvoiceOrder = true, dueDate = LocalDate.parse("2026-11-14"),
+            isInvoiceOrder = true, paid = false, dueDate = LocalDate.parse("2026-11-14"),
         )
 
     private fun guestSource(buyerEmail: String?) = paidSource(buyerContactName = null, buyerContactStreet = null, buyerEmail = buyerEmail)
@@ -159,13 +161,13 @@ class InvoiceBatchJobTest {
     }
 
     @Test
-    fun `skips paid order with incomplete buyer contact`() {
+    fun `generates a paid receipt with incomplete buyer contact`() {
         givenMissingInvoiceFor(paidSource(buyerContactStreet = null))
 
         job.run()
 
-        verify(invoiceService, never()).generatePdf(any())
-        verify(orderInvoiceRepository, never()).save(any<OrderInvoice>())
+        verify(invoiceService).generatePdf(any())
+        verify(orderInvoiceRepository).save(any<OrderInvoice>())
     }
 
     @Test
@@ -193,7 +195,7 @@ class InvoiceBatchJobTest {
     }
 
     @Test
-    fun `skips guest order without an invoice email`() {
+    fun `leaves guest receipts without email to on-demand downloads`() {
         givenMissingInvoiceFor(guestSource(buyerEmail = null))
 
         job.run()
@@ -288,5 +290,38 @@ class InvoiceBatchJobTest {
         job.run()
 
         assertEquals(DeliveryStatus.PENDING, invoice.deliveryStatus)
+    }
+
+    @Test
+    fun `does not send an existing invoice before payment is confirmed`() {
+        val invoice = givenPendingInvoice()
+        whenever(orderGateway.findInvoiceSource(orderId)).thenReturn(invoiceOrderSource().copy(paid = false))
+
+        job.run()
+
+        verify(mailSender, never()).send(any<MimeMessage>())
+        assertEquals(DeliveryStatus.PENDING, invoice.deliveryStatus)
+    }
+
+    @Test
+    fun `unpaid invoices at the front of the queue do not block paid invoice emails`() {
+        val paid = givenPendingInvoice()
+        val unpaid = OrderInvoice(orderIdFk = UUID.randomUUID(), orderId = "ORD-UNPAID001",
+            s3Key = "invoices/ORD-UNPAID001.pdf", generatedAt = Instant.parse("2026-11-10T10:00:00Z"))
+        whenever(orderInvoiceRepository.findByDeliveryStatusOrderByGeneratedAt(
+            DeliveryStatus.PENDING, org.springframework.data.domain.PageRequest.of(0, 1, org.springframework.data.domain.Sort.by("id")))).thenReturn(listOf(unpaid))
+        whenever(orderInvoiceRepository.findByDeliveryStatusOrderByGeneratedAt(
+            DeliveryStatus.PENDING, org.springframework.data.domain.PageRequest.of(1, 1, org.springframework.data.domain.Sort.by("id")))).thenReturn(listOf(paid))
+        whenever(orderGateway.findInvoiceSource(unpaid.orderId)).thenReturn(invoiceOrderSource().copy(paid = false))
+        whenever(orderGateway.findInvoiceSource(orderId)).thenReturn(paidSource())
+        val singleInvoiceBatch = InvoiceBatchJob(orderGateway, storageService, orderInvoiceRepository, mailSender,
+            OrderInvoiceProvider(orderGateway, merchantInvoiceGateway, invoiceService, storageService, orderInvoiceRepository),
+            "invoices@blitzpay.test", 7, 1)
+
+        singleInvoiceBatch.run()
+
+        verify(mailSender).send(any<MimeMessage>())
+        assertEquals(DeliveryStatus.SENT, paid.deliveryStatus)
+        assertEquals(DeliveryStatus.PENDING, unpaid.deliveryStatus)
     }
 }

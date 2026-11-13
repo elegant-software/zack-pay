@@ -26,6 +26,7 @@ data class OrderInvoiceSource(
     val buyerEmail: String? = null,
     /** Anonymous storefront order; its [buyerEmail] (if any) is the guest's consented invoice email. */
     val isGuestOrder: Boolean = false,
+    val paid: Boolean = false,
 )
 
 data class OrderItemSnapshot(

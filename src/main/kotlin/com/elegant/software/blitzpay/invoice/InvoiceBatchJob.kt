@@ -1,14 +1,8 @@
 package com.elegant.software.blitzpay.invoice
 
-import com.elegant.software.blitzpay.invoice.api.InvoiceData
-import com.elegant.software.blitzpay.invoice.api.InvoiceLineItem
-import com.elegant.software.blitzpay.invoice.api.InvoiceService
-import com.elegant.software.blitzpay.invoice.api.TradePartyData
 import com.elegant.software.blitzpay.invoice.persistence.OrderInvoice
 import com.elegant.software.blitzpay.invoice.persistence.OrderInvoice.DeliveryStatus
 import com.elegant.software.blitzpay.invoice.persistence.OrderInvoiceRepository
-import com.elegant.software.blitzpay.merchant.api.MerchantInvoiceGateway
-import com.elegant.software.blitzpay.merchant.api.MerchantInvoiceProfile
 import com.elegant.software.blitzpay.order.api.OrderGateway
 import com.elegant.software.blitzpay.order.api.OrderInvoiceSource
 import com.elegant.software.blitzpay.storage.StorageService
@@ -17,33 +11,29 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
-import java.math.BigDecimal
-import java.math.RoundingMode
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneOffset
-import java.util.Base64
 
 /**
  * Renders missing order invoices and emails them to the shopper, a few per run.
  * Rendering is memory-heavy, so it runs here instead of on the payment path. Only active
  * when SMTP is configured (`spring.mail.host`); until the job has run, the invoice
- * endpoints answer 404.
+ * endpoints generate the requested paid invoice on demand.
  */
 @Component
 @ConditionalOnProperty("spring.mail.host")
 class InvoiceBatchJob(
     private val orderGateway: OrderGateway,
-    private val merchantInvoiceGateway: MerchantInvoiceGateway,
-    private val invoiceService: InvoiceService,
     private val storageService: StorageService,
     private val orderInvoiceRepository: OrderInvoiceRepository,
     private val mailSender: JavaMailSender,
+    private val invoiceProvider: OrderInvoiceProvider,
     @Value("\${blitzpay.invoice.email.from}") private val fromAddress: String,
     @Value("\${blitzpay.invoice.batch.lookback-days:7}") private val lookbackDays: Long,
     @Value("\${blitzpay.invoice.batch.size:20}") private val batchSize: Int,
@@ -80,38 +70,28 @@ class InvoiceBatchJob(
 
     private fun generate(orderId: String): Boolean {
         val source = orderGateway.findInvoiceSource(orderId) ?: return false
-        // Invoice orders and consenting guests get the "—" buyer placeholder: a guest invoice is a
-        // Kleinbetragsrechnung-style B2C receipt (§33 UStDV), see reference/guest-invoice-email-privacy.md.
-        val placeholderBuyerAllowed = source.isInvoiceOrder || (source.isGuestOrder && !source.buyerEmail.isNullOrBlank())
-        if (!placeholderBuyerAllowed) {
-            val missingFields = missingBuyerContactFields(source)
-            if (missingFields.isNotEmpty()) {
-                log.info("invoice skipped — missing buyer contact fields orderId={} missing={}", orderId, missingFields)
-                return false
-            }
-        }
-        val merchant = merchantInvoiceGateway.findForInvoice(source.merchantId)
-        if (merchant == null) {
-            log.warn("invoice skipped — merchant not found merchantId={} orderId={}", source.merchantId, orderId)
-            return false
-        }
-
-        val pdfBytes = invoiceService.generatePdf(buildInvoiceData(source, merchant))
-        val s3Key = "invoices/$orderId.pdf"
-        storageService.upload(s3Key, "application/pdf", pdfBytes)
-        orderInvoiceRepository.save(
-            OrderInvoice(orderIdFk = source.orderIdFk, orderId = orderId, s3Key = s3Key, generatedAt = Instant.now())
-        )
-        log.info("invoice generated and stored orderId={} s3Key={}", orderId, s3Key)
-        return true
+        if (source.buyerEmail.isNullOrBlank()) return false
+        return invoiceProvider.findOrCreate(orderId, paidOnly = false) != null
     }
 
     private fun emailPendingInvoices() {
-        val pending = orderInvoiceRepository.findByDeliveryStatusOrderByGeneratedAt(
-            DeliveryStatus.PENDING, PageRequest.of(0, batchSize),
-        )
-        for (invoice in pending) {
-            val recipient = orderGateway.findInvoiceSource(invoice.orderId)?.buyerEmail
+        val pending = mutableListOf<Pair<OrderInvoice, OrderInvoiceSource?>>()
+        var page = 0
+        // Select before changing statuses: flushing SENT rows would shift subsequent pages.
+        while (pending.size < batchSize) {
+            val rows = orderInvoiceRepository.findByDeliveryStatusOrderByGeneratedAt(
+                DeliveryStatus.PENDING, PageRequest.of(page++, batchSize, Sort.by("id")),
+            )
+            for (invoice in rows) {
+                val source = orderGateway.findInvoiceSource(invoice.orderId)
+                if (source != null && !source.paid) continue
+                pending.add(invoice to source)
+                if (pending.size == batchSize) break
+            }
+            if (rows.size < batchSize) break
+        }
+        for ((invoice, source) in pending) {
+            val recipient = source?.buyerEmail
             if (recipient.isNullOrBlank()) {
                 invoice.deliveryStatus = DeliveryStatus.SKIPPED
                 log.info("invoice email skipped — no recipient email orderId={}", invoice.orderId)
@@ -142,76 +122,6 @@ class InvoiceBatchJob(
         }
         mailSender.send(message)
     }
-
-    private fun missingBuyerContactFields(source: OrderInvoiceSource): String =
-        buildList {
-            if (source.buyerContactName == null) add("name")
-            if (source.buyerContactStreet == null) add("street")
-            if (source.buyerContactZip == null) add("zip")
-            if (source.buyerContactCity == null) add("city")
-            if (source.buyerContactCountry == null) add("country")
-        }.joinToString(",")
-
-    private fun buildInvoiceData(source: OrderInvoiceSource, merchant: MerchantInvoiceProfile): InvoiceData {
-        val issueDate = source.issuedAt.atZone(ZoneOffset.UTC).toLocalDate()
-        val vatPercent = merchant.defaultVatPercent ?: BigDecimal.ZERO
-
-        val logoBase64 = merchant.logoStorageKey?.let { key ->
-            runCatching { Base64.getEncoder().encodeToString(storageService.download(key)) }
-                .onFailure { log.warn("invoice logo fetch failed key={} orderId={}", key, source.orderId) }
-                .getOrNull()
-        }
-
-        val buyer = if (source.buyerContactName != null) {
-            TradePartyData(
-                name = source.buyerContactName,
-                street = source.buyerContactStreet ?: "",
-                zip = source.buyerContactZip ?: "",
-                city = source.buyerContactCity ?: "",
-                country = source.buyerContactCountry ?: "",
-            )
-        } else {
-            TradePartyData(name = "—", street = "", zip = "", city = "", country = "")
-        }
-
-        return InvoiceData(
-            invoiceNumber = "INV-${source.orderId}",
-            issueDate = issueDate,
-            dueDate = if (source.isInvoiceOrder) source.dueDate ?: issueDate else issueDate,
-            currency = source.currency,
-            seller = TradePartyData(
-                name = merchant.merchantName,
-                street = merchant.addressLine1 ?: "",
-                zip = merchant.postalCode ?: "",
-                city = merchant.city ?: "",
-                country = merchant.country ?: "",
-                vatId = merchant.registrationNumber,
-            ),
-            buyer = buyer,
-            lineItems = if (source.items.isNotEmpty()) {
-                source.items.map { item ->
-                    InvoiceLineItem(
-                        description = item.productName,
-                        quantity = item.quantity.toBigDecimal(),
-                        unitPrice = item.effectiveUnitPriceMinor.toMajor(),
-                        vatPercent = vatPercent,
-                    )
-                }
-            } else {
-                listOf(
-                    InvoiceLineItem(
-                        description = "Order ${source.orderId}",
-                        quantity = BigDecimal.ONE,
-                        unitPrice = source.totalAmountMinor.toMajor(),
-                        vatPercent = vatPercent,
-                    )
-                )
-            },
-            logoBase64 = logoBase64,
-        )
-    }
-
-    private fun Long.toMajor(): BigDecimal = toBigDecimal().movePointLeft(2).setScale(2, RoundingMode.HALF_UP)
 
     companion object {
         /** Arbitrary constant identifying this job's Postgres advisory lock. */

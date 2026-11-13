@@ -4000,6 +4000,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+  /{version}/storefront/orders/{orderId}/invoice:
+    get:
+      tags:
+      - storefront-invoice-controller
+      summary: Get a 30-minute invoice PDF link for a paid guest order
+      operationId: getInvoice
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: guest_token
+        in: cookie
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InvoiceDownloadResponse"
   /{version}/storefront/orders/{orderId}/events:
     get:
       tags:
@@ -4051,7 +4075,7 @@ paths:
       tags:
       - Invoices
       summary: Get a presigned download URL for the invoice of a paid order
-      operationId: getInvoice
+      operationId: getInvoice_1
       parameters:
       - name: orderId
         in: path
@@ -4968,7 +4992,7 @@ paths:
       tags:
       - Invoices
       summary: Get a presigned download URL for a merchant order invoice
-      operationId: getInvoice_1
+      operationId: getInvoice_2
       parameters:
       - name: orderId
         in: path
@@ -9632,6 +9656,16 @@ components:
       - merchantId
       - merchantName
       - occupied
+    InvoiceDownloadResponse:
+      type: object
+      properties:
+        url:
+          type: string
+        filename:
+          type: string
+      required:
+      - filename
+      - url
     SseEmitter:
       type: object
       properties:
@@ -9654,16 +9688,6 @@ components:
       - free
       - freeSeats
       - total
-    InvoiceDownloadResponse:
-      type: object
-      properties:
-        url:
-          type: string
-        filename:
-          type: string
-      required:
-      - filename
-      - url
     SettlementPageResponse:
       type: object
       properties:

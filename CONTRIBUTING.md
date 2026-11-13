@@ -6,6 +6,10 @@ For category image changes, keep JSON category clients compatible and cover mult
 
 This repository uses `CONTRIBUTING.md` as the source of truth for contributor workflow conventions, including Git commit structure. Human contributors and AI agents should follow the same rules.
 
+Invoice delivery changes must preserve paid-order and ownership checks. Run `./gradlew check`;
+the invoice suite includes a loopback SMTP capture test that checks the recipient and PDF attachment
+without sending mail to an external inbox. Guest download contracts cover missing and foreign cookies.
+
 ## Architecture Principles
 
 Contributors should preserve the project architecture described in `README.md`. In practice, that means:
