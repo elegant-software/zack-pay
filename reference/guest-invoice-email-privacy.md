@@ -22,6 +22,15 @@ optionally give an email address to receive the invoice of that one order.
 
 Nothing else about the guest is collected (no name, no address).
 
+## Download without email
+
+A paid guest order can download its invoice using `GET /v1/storefront/orders/{orderId}/invoice`
+with its existing order-scoped guest cookie. This is independent of the email opt-in and SMTP.
+The first authorized request creates the stored PDF. It returns an expiring 30-minute storage link
+that can be shown as a QR code and used from another device without exposing the order API.
+The link grants access only to that PDF; treat it as a private document link. An expired link is
+renewed by the original authenticated app or guest browser. Invoice endpoints use `Cache-Control: no-store`.
+
 ## Deletion
 
 `InvoiceBatchJob` calls `OrderGateway.clearGuestInvoiceEmail` right after the invoice is marked

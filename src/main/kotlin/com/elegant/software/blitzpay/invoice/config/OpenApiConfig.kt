@@ -24,6 +24,7 @@ class InvoiceOpenApiConfig(
                 "/{version}/invoices/**",
                 "/{version}/shopper/orders/*/invoice",
                 "/{version}/merchant/orders/*/invoice",
+                "/{version}/storefront/orders/*/invoice",
             )
             .addOpenApiCustomizer { openApi ->
                 openApi.info = Info().title("BlitzPay — Invoice API").version("v${apiVersionProperties.versions.invoice}")

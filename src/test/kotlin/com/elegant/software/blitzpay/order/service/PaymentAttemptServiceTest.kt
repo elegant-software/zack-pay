@@ -40,6 +40,7 @@ class PaymentAttemptServiceTest {
 
         val source = service.findInvoiceSource(order.orderId)!!
 
+        assertTrue(source.paid)
         assertEquals(paidAt, source.issuedAt)
         assertEquals("Alice", source.buyerContactName)
         assertEquals("DE", source.buyerContactCountry)
@@ -69,6 +70,7 @@ class PaymentAttemptServiceTest {
 
         val source = service.findInvoiceSource(order.orderId)!!
 
+        assertEquals(false, source.paid)
         assertTrue(source.isInvoiceOrder)
         assertEquals(createdAt, source.issuedAt)
         assertEquals(LocalDate.parse("2026-10-16"), source.dueDate)

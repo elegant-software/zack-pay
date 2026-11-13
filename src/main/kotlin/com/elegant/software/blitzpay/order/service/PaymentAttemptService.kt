@@ -159,6 +159,7 @@ class PaymentAttemptService(
             items = items,
             buyerEmail = buyerEmail,
             isGuestOrder = order.creatorType == CreatorType.GUEST,
+            paid = order.status == OrderStatus.PAID,
         )
     }
 

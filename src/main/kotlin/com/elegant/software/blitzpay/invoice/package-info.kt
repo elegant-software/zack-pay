@@ -6,6 +6,6 @@ import org.springframework.modulith.PackageInfo
 @PackageInfo
 @ApplicationModule(
     displayName = "invoice",
-    allowedDependencies = ["order :: OrderGateway", "merchant :: MerchantInvoiceGateway", "storage", "config"]
+    allowedDependencies = ["order :: OrderGateway", "merchant :: MerchantInvoiceGateway", "merchant :: MerchantGateway", "storage", "config"]
 )
 class ModuleMetadata

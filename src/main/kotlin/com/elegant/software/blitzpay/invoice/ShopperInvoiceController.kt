@@ -1,10 +1,13 @@
 package com.elegant.software.blitzpay.invoice
 
-import com.elegant.software.blitzpay.invoice.persistence.OrderInvoiceRepository
 import com.elegant.software.blitzpay.order.api.OrderGateway
+import com.elegant.software.blitzpay.merchant.api.MerchantAccessGateway
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import com.elegant.software.blitzpay.storage.StorageService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -20,7 +23,7 @@ import java.util.UUID
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/shopper/orders", version = "1")
 class ShopperInvoiceController(
-    private val orderInvoiceRepository: OrderInvoiceRepository,
+    private val invoiceProvider: OrderInvoiceProvider,
     private val orderGateway: OrderGateway,
     private val storageService: StorageService,
 ) {
@@ -35,10 +38,11 @@ class ShopperInvoiceController(
         if (!orderGateway.isShopperOrder(orderId, shopperId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
-        val invoice = orderInvoiceRepository.findByOrderId(orderId)
+        val invoice = invoiceProvider.findOrCreate(orderId)
             ?: return ResponseEntity.notFound().build()
         val url = storageService.presignDownload(invoice.s3Key, ttlMinutes = 30)
-        return ResponseEntity.ok(InvoiceDownloadResponse(url = url, filename = "invoice-$orderId.pdf"))
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+            .body(InvoiceDownloadResponse(url = url, filename = "invoice-$orderId.pdf"))
     }
 
     private fun requireSubject(authorization: String?): String =
@@ -67,9 +71,10 @@ class ShopperInvoiceController(
 @RestController
 @RequestMapping("/{version:v\\d+(?:\\.\\d+)*}/merchant/orders", version = "1")
 class MerchantInvoiceController(
-    private val orderInvoiceRepository: OrderInvoiceRepository,
+    private val invoiceProvider: OrderInvoiceProvider,
     private val orderGateway: OrderGateway,
     private val storageService: StorageService,
+    private val merchantAccess: MerchantAccessGateway,
 ) {
 
     @Operation(summary = "Get a presigned download URL for a merchant order invoice")
@@ -78,14 +83,20 @@ class MerchantInvoiceController(
         @PathVariable orderId: String,
         @RequestParam merchantId: UUID,
         @RequestParam(required = false) branchId: UUID?,
+        @AuthenticationPrincipal jwt: Jwt? = null,
     ): ResponseEntity<InvoiceDownloadResponse> {
+        if (!merchantAccess.isManagerOrPlatformAdmin(merchantId, jwt) &&
+            (branchId == null || !merchantAccess.worksAtBranch(merchantId, branchId, jwt))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
         if (!orderGateway.isMerchantOrder(orderId, merchantId, branchId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
-        val invoice = orderInvoiceRepository.findByOrderId(orderId)
+        val invoice = invoiceProvider.findOrCreate(orderId)
             ?: return ResponseEntity.notFound().build()
         val url = storageService.presignDownload(invoice.s3Key, ttlMinutes = 30)
-        return ResponseEntity.ok(InvoiceDownloadResponse(url = url, filename = "invoice-$orderId.pdf"))
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+            .body(InvoiceDownloadResponse(url = url, filename = "invoice-$orderId.pdf"))
     }
 }
 

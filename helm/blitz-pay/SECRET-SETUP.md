@@ -56,8 +56,8 @@ kubectl create secret generic blitz-pay-secrets \
 > ```
 
 > **Invoice email (SMTP)**: `SPRING_MAIL_*` and `BLITZPAY_INVOICE_EMAIL_FROM` are optional.
-> `InvoiceBatchJob` only runs when `SPRING_MAIL_HOST` is set; without it **no invoices are
-> generated or emailed** in that environment.
+> `InvoiceBatchJob` only runs when `SPRING_MAIL_HOST` is set; without it invoices are **not emailed**. Paid invoice downloads still work: the first authorized
+> request generates and stores the PDF independently of SMTP.
 >
 > | Key | Value (Gmail) |
 > |---|---|

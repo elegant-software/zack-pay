@@ -1,0 +1,18 @@
+{
+  "orderId": "ORD-INVOICE001",
+  "orderIdFk": "11111111-1111-1111-1111-111111111111",
+  "merchantId": "22222222-2222-2222-2222-222222222222",
+  "currency": "EUR",
+  "totalAmountMinor": 700,
+  "buyerContactName": null,
+  "buyerContactStreet": null,
+  "buyerContactZip": null,
+  "buyerContactCity": null,
+  "buyerContactCountry": null,
+  "issuedAt": "2026-11-11T12:00:00Z",
+  "dueDate": null,
+  "isInvoiceOrder": false,
+  "isGuestOrder": true,
+  "paid": true,
+  "items": [{"productName": "Coffee", "quantity": 2, "effectiveUnitPriceMinor": 350}]
+}
