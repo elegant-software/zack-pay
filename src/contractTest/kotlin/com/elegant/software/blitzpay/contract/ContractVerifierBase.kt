@@ -202,7 +202,10 @@ abstract class ContractVerifierBase {
     protected lateinit var merchantKioskRepository: com.elegant.software.blitzpay.merchant.persistence.repository.MerchantKioskRepository
 
     @MockitoBean
-    protected lateinit var merchantKioskTokenRepository: com.elegant.software.blitzpay.merchant.persistence.repository.MerchantKioskTokenRepository
+    protected lateinit var merchantKioskSettingsRepository: com.elegant.software.blitzpay.merchant.persistence.repository.MerchantKioskSettingsRepository
+
+    @MockitoBean
+    protected lateinit var kioskAccessService: com.elegant.software.blitzpay.merchant.iam.service.KioskAccessService
 
     @MockitoBean
     protected lateinit var voiceGateway: VoiceGateway

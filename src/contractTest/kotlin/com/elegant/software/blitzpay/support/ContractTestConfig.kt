@@ -58,7 +58,7 @@ class ContractTestConfig {
 
     // Accepts any bearer token so contract tests don't need a live Keycloak server.
     // A `groups` claim in the (unsigned) payload is passed through for branch-scoped endpoints,
-    // and `realm_access.roles` for endpoints that also admit a platform admin.
+    // `realm_access.roles` for endpoints that also admit a platform admin, and `azp` for Kiosk tokens.
     @Bean
     @Primary
     fun mockJwtDecoder(): JwtDecoder = JwtDecoder { token ->
@@ -70,7 +70,14 @@ class ContractTestConfig {
             .expiresAt(Instant.now().plusSeconds(3600))
             .apply { groupsClaim(token)?.let { claim("groups", it) } }
             .apply { realmRolesClaim(token)?.let { claim("realm_access", mapOf("roles" to it)) } }
+            .apply { azpClaim(token)?.let { claim("azp", it) } }
             .build()
+    }
+
+    private fun azpClaim(token: String): String? {
+        val payload = token.split('.').getOrNull(1) ?: return null
+        val json = runCatching { String(Base64.getUrlDecoder().decode(payload)) }.getOrNull() ?: return null
+        return Regex("\"azp\"\\s*:\\s*\"([^\"]*)\"").find(json)?.groupValues?.get(1)
     }
 
     private fun groupsClaim(token: String): List<String>? = stringArray(token, "\"groups\"\\s*:\\s*\\[([^\\]]*)]")

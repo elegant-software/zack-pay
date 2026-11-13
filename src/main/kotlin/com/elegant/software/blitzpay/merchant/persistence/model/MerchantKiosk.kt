@@ -4,14 +4,12 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
-import org.hibernate.annotations.JdbcTypeCode
-import org.hibernate.type.SqlTypes
 import java.time.Instant
 import java.util.UUID
 
 /**
- * The Kiosk of a Branch: its shared Kiosk Login and its Kiosk Settings. Only the BCrypt hash of the password is kept;
- * the password itself is shown once when the login is enabled or reset.
+ * One Kiosk of a Branch. Its Kiosk Login is a Keycloak user named [username]; whether it is enabled and its password
+ * live in Keycloak only.
  */
 @Entity
 @Table(name = "merchant_kiosks", schema = "blitzpay")
@@ -22,38 +20,16 @@ class MerchantKiosk(
     @Column(name = "branch_id", nullable = false, updatable = false)
     val branchId: UUID,
 
-    @Column(length = 128)
-    var login: String? = null,
+    /** 1, 2, 3… within the Branch; part of [username]. */
+    @Column(nullable = false, updatable = false)
+    val number: Int,
 
-    @Column(name = "password_hash", length = 100)
-    var passwordHash: String? = null,
+    @Column(nullable = false, length = 100)
+    var name: String,
 
-    @Column(nullable = false)
-    var enabled: Boolean = false,
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "payment_choices", nullable = false, columnDefinition = "jsonb")
-    var paymentChoices: List<String> = DEFAULT_PAYMENT_CHOICES,
-
-    @Column(name = "reset_seconds", nullable = false)
-    var resetSeconds: Int = DEFAULT_RESET_SECONDS,
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
-    var languages: List<String> = emptyList(),
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "advertised_product_ids", nullable = false, columnDefinition = "jsonb")
-    var advertisedProductIds: List<String> = emptyList(),
+    @Column(nullable = false, updatable = false, length = 128)
+    val username: String,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: Instant = createdAt,
-) {
-    companion object {
-        val DEFAULT_PAYMENT_CHOICES = listOf("CARD", "CASH", "SCAN_TO_PAY")
-        const val DEFAULT_RESET_SECONDS = 30
-    }
-}
+)

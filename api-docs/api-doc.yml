@@ -43,6 +43,9 @@ tags:
   description: KPI dashboards for platform admins and merchant app users
 - name: Kitchen Access
   description: "Enable, reset and disable the Kitchen Login of a Branch"
+- name: Kiosk Access
+  description: "Add, enable, reset, disable and remove the Kiosks of a Branch and\
+    \ manage its Kiosk Settings"
 - name: Invoices
   description: EU-standard ZUGFeRD / Factur-X invoice generation
 - name: Payment Status
@@ -66,15 +69,10 @@ tags:
   description: Product catalog management for merchants
 - name: Merchant Catalog Translations
   description: Product and category translations for the International Menu
-- name: Kiosk
-  description: "Kiosk sign-in and Kiosk Settings, called by the Kiosk device"
 - name: Branch Opening Hours
   description: Manage branch recurring opening hours and date-specific exceptions
 - name: User Management
   description: Manage Platform User assignments to Merchants and Branches
-- name: Kiosk Access
-  description: "Enable, reset and disable the Kiosk Login of a Branch and manage its\
-    \ Kiosk Settings"
 - name: Merchant Orders
   description: Create and list orders for authenticated merchant branches
 - name: Appointments
@@ -1278,6 +1276,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/MerchantSummary"
   /{version}/merchant/branches/{branchId}/kiosk/settings:
+    get:
+      tags:
+      - Kiosk Access
+      summary: Kiosk Settings of the Branch; also readable by the Branch's Kiosks
+      operationId: settings
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KioskSettings"
     put:
       tags:
       - Kiosk Access
@@ -3266,15 +3288,77 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/KitchenAccessStatusResponse"
-  /{version}/merchant/branches/{branchId}/kiosk/enable:
+  /{version}/merchant/branches/{branchId}/kiosks:
+    get:
+      tags:
+      - Kiosk Access
+      summary: The Kiosks of the Branch (never includes passwords)
+      operationId: list_7
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KioskResponse"
     post:
       tags:
       - Kiosk Access
-      summary: "Enable the Kiosk for the Branch, or reset its login; returns a new\
-        \ password once"
+      summary: Add a Kiosk and provision its Kiosk Login; returns the password once
+      operationId: create_9
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKioskRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KioskLoginResponse"
+  /{version}/merchant/branches/{branchId}/kiosks/{kioskId}/enable:
+    post:
+      tags:
+      - Kiosk Access
+      summary: "Enable the Kiosk's login again, or reset it; returns a new password\
+        \ once"
       operationId: enable_2
       parameters:
       - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: kioskId
         in: path
         required: true
         schema:
@@ -3292,14 +3376,21 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/KioskLoginResponse"
-  /{version}/merchant/branches/{branchId}/kiosk/disable:
+  /{version}/merchant/branches/{branchId}/kiosks/{kioskId}/disable:
     post:
       tags:
       - Kiosk Access
-      summary: Disable the Branch's Kiosk Login and revoke its Kiosk sessions
+      summary: "Disable the Kiosk's login and revoke its sessions, offline sessions\
+        \ included"
       operationId: disable_2
       parameters:
       - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: kioskId
         in: path
         required: true
         schema:
@@ -3316,27 +3407,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/KioskStatusResponse"
-  /{version}/kiosk/login:
-    post:
-      tags:
-      - Kiosk
-      summary: Sign a Kiosk in with the Branch's Kiosk Login; the token is scoped
-        to that Branch
-      operationId: login
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/KioskLoginRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/KioskSessionResponse"
+                $ref: "#/components/schemas/KioskResponse"
   /{version}/invoices:
     post:
       tags:
@@ -3866,7 +3937,7 @@ paths:
       - Storefront Themes
       summary: List the published themes a merchant can pick; includeDrafts=true adds
         drafts for preview
-      operationId: list_7
+      operationId: list_8
       parameters:
       - name: includeDrafts
         in: query
@@ -4004,7 +4075,7 @@ paths:
       tags:
       - Settlement Reporting
       summary: Paginated settlement transaction list for a merchant (admin only)
-      operationId: list_8
+      operationId: list_9
       parameters:
       - name: merchantId
         in: query
@@ -4315,7 +4386,7 @@ paths:
       tags:
       - Merchant Provider Accounts
       summary: List all provider accounts for a merchant
-      operationId: list_9
+      operationId: list_10
       parameters:
       - name: merchantId
         in: path
@@ -4815,7 +4886,7 @@ paths:
       tags:
       - Merchant Verticals
       summary: List all active merchant verticals
-      operationId: list_10
+      operationId: list_11
       responses:
         "200":
           description: OK
@@ -4863,7 +4934,7 @@ paths:
       tags:
       - Merchant Menu Languages
       summary: List the Menu Language Catalogue
-      operationId: list_11
+      operationId: list_12
       responses:
         "200":
           description: OK
@@ -5129,32 +5200,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/KitchenBranding"
-  /{version}/merchant/branches/{branchId}/kiosk:
-    get:
-      tags:
-      - Kiosk Access
-      summary: Kiosk Login status and Kiosk Settings of the Branch (never includes
-        the password)
-      operationId: status_1
-      parameters:
-      - name: branchId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: Authorization
-        in: header
-        required: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/KioskStatusResponse"
   /{version}/legal:
     get:
       tags:
@@ -5200,19 +5245,6 @@ paths:
               schema:
                 type: string
                 format: binary
-  /{version}/kiosk/settings:
-    get:
-      tags:
-      - Kiosk
-      summary: Kiosk Settings of the token's Branch
-      operationId: settings
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/KioskSettings"
   /{version}/geofence/regions:
     get:
       tags:
@@ -5312,7 +5344,7 @@ paths:
       tags:
       - Storefront Languages
       summary: List storefront interface languages
-      operationId: list_12
+      operationId: list_13
       responses:
         "200":
           description: OK
@@ -5718,6 +5750,33 @@ paths:
       - name: Authorization
         in: header
         required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+  /{version}/merchant/branches/{branchId}/kiosks/{kioskId}:
+    delete:
+      tags:
+      - Kiosk Access
+      summary: Remove the Kiosk and its Kiosk Login
+      operationId: delete_3
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: kioskId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Authorization
+        in: header
+        required: false
         schema:
           type: string
       responses:
@@ -9161,55 +9220,67 @@ components:
           - "null"
       required:
       - enabled
-    KioskLoginResponse:
+    CreateKioskRequest:
       type: object
       properties:
-        login:
-          type: string
-        password:
-          type: string
-      required:
-      - login
-      - password
-    KioskStatusResponse:
-      type: object
-      properties:
-        enabled:
-          type: boolean
-        login:
+        name:
           type:
           - string
           - "null"
-        settings:
-          $ref: "#/components/schemas/KioskSettings"
-      required:
-      - enabled
-      - settings
-    KioskLoginRequest:
+    KioskLoginResponse:
       type: object
       properties:
-        login:
+        kioskId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        username:
           type: string
         password:
           type: string
-      required:
-      - login
-      - password
-    KioskSessionResponse:
-      type: object
-      properties:
-        token:
+        keycloakUrl:
           type: string
-        merchantId:
+        realm:
           type: string
-          format: uuid
+        clientId:
+          type: string
+        apiBaseUrl:
+          type: string
         branchId:
           type: string
           format: uuid
       required:
+      - apiBaseUrl
       - branchId
-      - merchantId
-      - token
+      - clientId
+      - keycloakUrl
+      - kioskId
+      - name
+      - password
+      - realm
+      - username
+    KioskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          format: int32
+        name:
+          type: string
+        username:
+          type: string
+        enabled:
+          type: boolean
+      required:
+      - enabled
+      - id
+      - name
+      - number
+      - username
     BankAccountData:
       type: object
       properties:

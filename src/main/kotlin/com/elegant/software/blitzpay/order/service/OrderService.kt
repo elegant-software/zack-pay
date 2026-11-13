@@ -19,8 +19,7 @@ import com.elegant.software.blitzpay.order.api.FulfilmentType
 import com.elegant.software.blitzpay.order.api.CreateOrderRequest
 import com.elegant.software.blitzpay.order.api.InvoiceOrderCreated
 import com.elegant.software.blitzpay.order.api.KitchenEventType
-import com.elegant.software.blitzpay.config.KioskPrincipal
-import com.elegant.software.blitzpay.merchant.api.KioskSettingsGateway
+import com.elegant.software.blitzpay.merchant.api.KioskGateway
 import com.elegant.software.blitzpay.order.persistence.model.OrderOrigin
 import com.elegant.software.blitzpay.order.api.toKitchenOrder
 import com.elegant.software.blitzpay.order.api.OrderItemSnapshot
@@ -71,7 +70,7 @@ class OrderService(
     private val kitchenOrderBus: KitchenOrderBus,
     private val storefrontOrderBus: StorefrontOrderBus,
     private val tableGateway: TableGateway,
-    private val kioskSettingsGateway: KioskSettingsGateway,
+    private val kioskGateway: KioskGateway,
 ) {
     private val log = LoggerFactory.getLogger(OrderService::class.java)
 
@@ -86,12 +85,13 @@ class OrderService(
      * Web storefront guest order. Priced from the catalog like a shopper order; the returned raw token is the
      * only proof of ownership and is never stored (only its hash).
      */
-    fun createGuestOrder(request: StorefrontOrderRequest, kiosk: KioskPrincipal? = null): GuestOrderCreated {
-        if (kiosk != null && request.branchId != kiosk.branchId) {
+    fun createGuestOrder(request: StorefrontOrderRequest, kioskBranchId: UUID? = null): GuestOrderCreated {
+        val kiosk = kioskBranchId != null
+        if (kioskBranchId != null && request.branchId != kioskBranchId) {
             throw ApiException(HttpStatus.FORBIDDEN, "This Kiosk belongs to another Branch", KIOSK_BRANCH_MISMATCH)
         }
-        if (kiosk != null && request.checkoutPaymentMethod == CheckoutPaymentMethod.CASH &&
-            KIOSK_CASH !in kioskSettingsGateway.findKioskPaymentChoices(kiosk.branchId)
+        if (kioskBranchId != null && request.checkoutPaymentMethod == CheckoutPaymentMethod.CASH &&
+            KIOSK_CASH !in kioskGateway.findKioskPaymentChoices(kioskBranchId)
         ) {
             throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Cash payment is not enabled for this Kiosk", KIOSK_PAYMENT_CHOICE_DISABLED)
         }
@@ -108,7 +108,7 @@ class OrderService(
             CreateOrderRequest(
                 branchId = request.branchId,
                 // A Kiosk is in the restaurant, so its Orders are Walk-In without a Table or the presence proof.
-                orderType = if (tableCode != null || kiosk != null) OrderType.WALK_IN_ORDERING else OrderType.PRE_ORDER,
+                orderType = if (tableCode != null || kiosk) OrderType.WALK_IN_ORDERING else OrderType.PRE_ORDER,
                 usesDeferredPayment = false,
                 customerLocation = request.customerLocation,
                 items = request.items,
@@ -122,7 +122,7 @@ class OrderService(
             guestTokenHash = GuestToken.hash(token),
             guestTokenExpiresAt = Instant.now().plus(GuestToken.TTL),
             invoiceEmail = invoiceEmail,
-            origin = if (kiosk != null) OrderOrigin.KIOSK else OrderOrigin.STANDARD,
+            origin = if (kiosk) OrderOrigin.KIOSK else OrderOrigin.STANDARD,
         ) { null }
         return GuestOrderCreated(order, token)
     }

@@ -276,3 +276,7 @@ keycloak:
       client-id: ${KEYCLOAK_IAM_KITCHEN_CLIENT_ID:blitzpay-kitchen}
       redirect-uri: ${KEYCLOAK_IAM_KITCHEN_REDIRECT_URI:app://kitchen/renderer/index.html}
       api-base-url: ${API_BASE_URL:${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}}
+    kiosk:
+      client-id: ${KEYCLOAK_IAM_KIOSK_CLIENT_ID:blitzpay-kiosk}
+      redirect-uri: ${KEYCLOAK_IAM_KIOSK_REDIRECT_URI:app://kiosk/renderer/index.html}
+      api-base-url: ${API_BASE_URL:${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}}

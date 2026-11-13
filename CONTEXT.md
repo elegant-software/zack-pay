@@ -445,15 +445,15 @@ The one shared login per Branch that its Kitchen Screens sign in with. A Merchan
 _Avoid_: kitchen account, kitchen user, device login
 
 **Kiosk**:
-A restaurant-owned device, fixed to one Branch, on which walk-in guests order without their own phone, registering or logging in. Its Orders are ordinary Orders of that Branch, marked as placed on a Kiosk, and are exempt from the Walk-In presence check.
+A restaurant-owned device, fixed to one Branch, on which walk-in guests order without their own phone, registering or logging in. A Branch may have several Kiosks. Their Orders are ordinary Orders of that Branch, marked as placed on a Kiosk, and are exempt from the Walk-In presence check.
 _Avoid_: storefront, shopper app, POS, kitchen screen
 
 **Kiosk Login**:
-The one shared login per Branch that its Kiosk signs in with once during setup. It binds the Kiosk to that Branch only. A Merchant Manager enables, resets or disables it; enabling or resetting shows a new password once, and the password is never stored or shown again.
+The login one Kiosk signs in with once during setup; each Kiosk has its own. It works like the Kitchen Login and binds the Kiosk to its Branch only. It is created when a Merchant Manager adds the Kiosk, and the Manager can reset, disable or remove it; adding or resetting shows a new password once, and the password is never stored or shown again.
 _Avoid_: kiosk account, device key, API key
 
 **Kiosk Settings**:
-What a Merchant Manager configures for one Branch's Kiosk: which payment choices it offers (card, cash, Scan to Pay), how many seconds the confirmation screen shows before the Kiosk resets, which of the Merchant's Supported Menu Languages it offers (none: the Merchant's original language only), and its Advertised Products.
+What a Merchant Manager configures for one Branch's Kiosks, shared by all of them: which payment choices it offers (card, cash, Scan to Pay), how many seconds the confirmation screen shows before the Kiosk resets, which of the Merchant's Supported Menu Languages it offers (none: the Merchant's original language only), and its Advertised Products.
 _Avoid_: kiosk config, device settings
 
 **Advertised Product**:

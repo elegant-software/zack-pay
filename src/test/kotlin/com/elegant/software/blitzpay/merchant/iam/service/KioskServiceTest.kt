@@ -3,50 +3,40 @@ package com.elegant.software.blitzpay.merchant.iam.service
 import com.elegant.software.blitzpay.config.ApiException
 import com.elegant.software.blitzpay.merchant.iam.web.KioskSettings
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantKiosk
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantKioskSettings
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantProduct
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantSupportedMenuLanguage
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantBranchRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantKioskRepository
-import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantKioskTokenRepository
+import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantKioskSettingsRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantProductRepository
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantSupportedMenuLanguageRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.http.HttpStatus
+import org.springframework.security.oauth2.jwt.Jwt
 import java.math.BigDecimal
 import java.util.Optional
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class KioskServiceTest {
-    private val kiosks = mock<MerchantKioskRepository>()
-    private val tokens = mock<MerchantKioskTokenRepository>()
-    private val branches = mock<MerchantBranchRepository>()
+    private val settingsRepository = mock<MerchantKioskSettingsRepository>()
     private val products = mock<MerchantProductRepository>()
     private val languages = mock<MerchantSupportedMenuLanguageRepository>()
-    private val tokenService = KioskTokenService(tokens, kiosks)
-    private val service = KioskService(kiosks, tokens, tokenService, branches, products, languages, KitchenPasswordGenerator())
+    private val service = KioskService(mock<MerchantKioskRepository>(), settingsRepository, products, languages, "blitzpay-kiosk")
 
     private val merchantId = UUID.randomUUID()
     private val branch = MerchantBranch(merchantId = merchantId, name = "Altstadt", branchCode = "BR-1A2B3C4D5E6F")
-    private var stored: MerchantKiosk? = null
+    private var stored: MerchantKioskSettings? = null
 
     init {
-        whenever(kiosks.findByBranchId(branch.id)).thenAnswer { stored }
-        whenever(kiosks.findByLogin(any())).thenAnswer { inv -> stored?.takeIf { it.login == inv.arguments[0] } }
-        whenever(kiosks.save(any<MerchantKiosk>())).thenAnswer { stored = it.arguments[0] as MerchantKiosk; stored }
-        whenever(branches.findById(branch.id)).thenReturn(Optional.of(branch))
+        whenever(settingsRepository.findByBranchId(branch.id)).thenAnswer { stored }
+        whenever(settingsRepository.save(any<MerchantKioskSettings>())).thenAnswer { stored = it.arguments[0] as MerchantKioskSettings; stored }
         whenever(languages.findAllByMerchantId(merchantId)).thenReturn(
             listOf(MerchantSupportedMenuLanguage(merchantId, "en"), MerchantSupportedMenuLanguage(merchantId, "de")),
         )
@@ -64,75 +54,20 @@ class KioskServiceTest {
     private fun apiError(block: () -> Unit): ApiException = assertFailsWith<ApiException> { block() }
 
     @Test
-    fun `enable returns a login and a password that is never stored in clear`() {
-        val response = service.enable(branch)
-
-        assertEquals("kiosk-br-1a2b3c4d5e6f", response.login)
-        assertTrue(response.password.length >= 32)
-        val kiosk = stored!!
-        assertTrue(kiosk.enabled)
-        assertNotEquals(response.password, kiosk.passwordHash)
-        assertFalse(response.toString().contains(response.password))
-    }
-
-    @Test
-    fun `reset issues a new password, keeps sessions and settings`() {
-        val first = service.enable(branch)
-        service.updateSettings(branch, KioskSettings(resetSeconds = 60))
-        val second = service.enable(branch)
-
-        assertNotEquals(first.password, second.password)
-        assertEquals(60, stored!!.resetSeconds)
-        verify(tokens, never()).deleteAllByBranchId(any())
-        assertFailsWith<ApiException> { service.login(first.login, first.password) }
-        assertNotNull(service.login(second.login, second.password))
-    }
-
-    @Test
-    fun `disable turns the login off and revokes the branch's sessions`() {
-        val login = service.enable(branch)
-        val session = service.login(login.login, login.password)
-
-        val status = service.disable(branch)
-
-        assertFalse(status.enabled)
-        assertEquals(login.login, status.login)
-        verify(tokens).deleteAllByBranchId(branch.id)
-        assertEquals(HttpStatus.UNAUTHORIZED, apiError { service.login(login.login, login.password) }.status)
-        assertNotNull(session.token)
-    }
-
-    @Test
-    fun `disable and status of a never enabled kiosk are empty with default settings`() {
-        assertEquals(KioskSettings(), service.status(branch).settings)
-        assertNull(service.status(branch).login)
-        assertFalse(service.disable(branch).enabled)
+    fun `a branch without settings gets the defaults`() {
+        assertEquals(KioskSettings(), service.settings(branch.id))
         assertEquals(setOf("CARD", "CASH", "SCAN_TO_PAY"), service.findKioskPaymentChoices(branch.id))
     }
 
     @Test
-    fun `login returns a token scoped to the branch and the merchant`() {
-        val login = service.enable(branch)
+    fun `only tokens issued to the kiosk client are kiosk tokens`() {
+        fun jwt(azp: String?) = Jwt.withTokenValue("t").header("alg", "none").subject("u")
+            .apply { if (azp != null) claim("azp", azp) }.build()
 
-        val session = service.login(login.login, login.password)
-
-        assertEquals(branch.id, session.branchId)
-        assertEquals(merchantId, session.merchantId)
-        assertTrue(session.token.startsWith("kt_"))
-    }
-
-    @Test
-    fun `login rejects a wrong password, an unknown login and a disabled login with the same error`() {
-        val login = service.enable(branch)
-        val wrong = apiError { service.login(login.login, "nope") }
-        val unknown = apiError { service.login("kiosk-unknown", "nope") }
-        service.disable(branch)
-        val disabled = apiError { service.login(login.login, login.password) }
-
-        listOf(wrong, unknown, disabled).forEach {
-            assertEquals(HttpStatus.UNAUTHORIZED, it.status)
-            assertEquals(KioskService.INVALID_KIOSK_CREDENTIALS, it.code)
-        }
+        assertTrue(service.isKioskToken(jwt("blitzpay-kiosk")))
+        assertFalse(service.isKioskToken(jwt("blitzpay-kitchen")))
+        assertFalse(service.isKioskToken(jwt(null)))
+        assertFalse(service.isKioskToken(null))
     }
 
     @Test

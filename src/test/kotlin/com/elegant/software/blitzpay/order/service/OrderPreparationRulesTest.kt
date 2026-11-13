@@ -45,7 +45,7 @@ class OrderPreparationRulesTest {
     private val service = OrderService(
         merchantGateway, orderRepository, orderItemRepository, mock<PaymentAttemptRepository>(),
         mock<ShopperProfileGateway>(), events, pickupNumberAllocator, kitchenOrderBus, mock<StorefrontOrderBus>(),
-        mock<com.elegant.software.blitzpay.merchant.api.TableGateway>(), mock<com.elegant.software.blitzpay.merchant.api.KioskSettingsGateway>(),
+        mock<com.elegant.software.blitzpay.merchant.api.TableGateway>(), mock<com.elegant.software.blitzpay.merchant.api.KioskGateway>(),
     )
 
     private val merchantId = UUID.randomUUID()

@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.order.web
 
+import com.elegant.software.blitzpay.merchant.api.KioskGateway
 import com.elegant.software.blitzpay.order.api.KitchenOrder
 import com.elegant.software.blitzpay.order.api.UpdatePreparationStatusRequest
 import com.elegant.software.blitzpay.order.service.KitchenOrderBus
@@ -28,6 +29,7 @@ data class KitchenBranding(val logoUrl: String?)
 class KitchenController(
     private val kitchenService: KitchenService,
     private val bus: KitchenOrderBus,
+    private val kioskGateway: KioskGateway,
 ) {
     private val log = LoggerFactory.getLogger(KitchenController::class.java)
 
@@ -37,7 +39,7 @@ class KitchenController(
         @PathVariable branchId: UUID,
         @AuthenticationPrincipal jwt: Jwt?,
     ): ResponseEntity<List<KitchenOrder>> {
-        BranchGroupAccess.require(jwt, branchId)
+        requireKitchen(jwt, branchId)
         return ResponseEntity.ok(kitchenService.listOpenOrders(branchId))
     }
 
@@ -47,7 +49,7 @@ class KitchenController(
         @PathVariable branchId: UUID,
         @AuthenticationPrincipal jwt: Jwt?,
     ): SseEmitter {
-        BranchGroupAccess.require(jwt, branchId)
+        requireKitchen(jwt, branchId)
         log.info("kitchen SSE client connected branchId={}", branchId)
         return SseEmitter(STREAM_TIMEOUT_MS).also {
             bus.register(branchId, it)
@@ -64,35 +66,35 @@ class KitchenController(
         @RequestBody request: UpdatePreparationStatusRequest,
         @AuthenticationPrincipal jwt: Jwt?,
     ): ResponseEntity<KitchenOrder> {
-        BranchGroupAccess.require(jwt, branchId)
+        requireKitchen(jwt, branchId)
         return ResponseEntity.ok(kitchenService.updatePreparationStatus(branchId, orderId, request.status))
     }
 
     @Operation(summary = "Branding of the Branch's Merchant for the Kitchen Screen header; logoUrl is a short-lived URL or null")
     @GetMapping("/branding")
     fun branding(@PathVariable branchId: UUID, @AuthenticationPrincipal jwt: Jwt?): KitchenBranding {
-        BranchGroupAccess.require(jwt, branchId)
+        requireKitchen(jwt, branchId)
         return KitchenBranding(kitchenService.logoUrl(branchId))
     }
 
     @Operation(summary = "List stations available to this authorized branch, including unassigned work")
     @GetMapping("/stations")
     fun stations(@PathVariable branchId: UUID, @AuthenticationPrincipal jwt: Jwt?): List<com.elegant.software.blitzpay.merchant.api.PreparationStation> {
-        BranchGroupAccess.require(jwt, branchId)
+        requireKitchen(jwt, branchId)
         return kitchenService.stations(branchId)
     }
 
     @GetMapping("/stations/{stationId}/orders")
     fun stationOrders(@PathVariable branchId: UUID, @PathVariable stationId: UUID,
                       @AuthenticationPrincipal jwt: Jwt?): List<KitchenOrder> {
-        BranchGroupAccess.require(jwt, branchId)
+        requireKitchen(jwt, branchId)
         return kitchenService.listStationOrders(branchId, stationId)
     }
 
     @GetMapping("/stations/{stationId}/stream", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
     fun stationStream(@PathVariable branchId: UUID, @PathVariable stationId: UUID,
                       @AuthenticationPrincipal jwt: Jwt?): SseEmitter {
-        BranchGroupAccess.require(jwt, branchId)
+        requireKitchen(jwt, branchId)
         kitchenService.requireStation(branchId, stationId)
         return SseEmitter(STREAM_TIMEOUT_MS).also {
             bus.register(branchId, it, stationId)
@@ -104,12 +106,18 @@ class KitchenController(
     fun stationStatus(@PathVariable branchId: UUID, @PathVariable stationId: UUID,
                       @PathVariable orderId: UUID, @RequestBody request: UpdatePreparationStatusRequest,
                       @AuthenticationPrincipal jwt: Jwt?): KitchenOrder {
-        BranchGroupAccess.require(jwt, branchId)
+        requireKitchen(jwt, branchId)
         return kitchenService.updateStationPreparationStatus(branchId, orderId, stationId, request.status)
     }
 
     private companion object {
         /** Screens reconnect (and re-sync via the list endpoint) after this; heartbeats keep the connection alive meanwhile. */
         const val STREAM_TIMEOUT_MS = 60 * 60 * 1000L
+    }
+
+    /** Kitchen Screens and other Branch members; a Kiosk is in the Branch group too, but must not run the kitchen. */
+    private fun requireKitchen(jwt: Jwt?, branchId: UUID) {
+        if (kioskGateway.isKioskToken(jwt)) throw BranchAccessDeniedException("A Kiosk cannot use the Kitchen Screen")
+        BranchGroupAccess.require(jwt, branchId)
     }
 }

@@ -3,24 +3,25 @@ package com.elegant.software.blitzpay.merchant
 import com.elegant.software.blitzpay.contract.ContractVerifierBase
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantUserAssignment
-import com.elegant.software.blitzpay.merchant.iam.service.KioskTokenService
+import com.elegant.software.blitzpay.merchant.iam.web.KioskLoginResponse
+import com.elegant.software.blitzpay.merchant.iam.web.KioskResponse
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantKiosk
-import com.elegant.software.blitzpay.merchant.persistence.model.MerchantKioskToken
+import com.elegant.software.blitzpay.merchant.persistence.model.MerchantKioskSettings
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import java.time.Instant
 import java.util.Base64
 import java.util.Optional
 import java.util.UUID
 
-/** Kiosk Login lifecycle, Kiosk Settings and Kiosk token authentication. Runs the real service over mocked repositories. */
+/** The Kiosks of a Branch (Keycloak provisioning mocked) and its Kiosk Settings (real service over mocked repositories). */
 class KioskContractTest : ContractVerifierBase() {
 
     private val merchantId = UUID.fromString("11111111-1111-1111-1111-111111111111")
@@ -33,17 +34,24 @@ class KioskContractTest : ContractVerifierBase() {
         branchCode = "BR-1A2B3C4D5E6F",
     )
     private val otherBranchId = UUID.fromString("44444444-4444-4444-4444-444444444444")
-    private val base = "/v1/merchant/branches/${branch.id}/kiosk"
+    private val kioskId = UUID.fromString("77777777-7777-7777-7777-777777777777")
+    private val base = "/v1/merchant/branches/${branch.id}"
 
-    private var stored: MerchantKiosk? = null
+    private var stored: MerchantKioskSettings? = null
 
-    private fun bearer(sub: UUID): String {
-        val payload = Base64.getUrlEncoder().withoutPadding().encodeToString("""{"sub":"$sub"}""".toByteArray())
-        return "Bearer fakeheader.$payload.fakesig"
-    }
+    private fun bearer(claims: String): String =
+        "Bearer fakeheader.${Base64.getUrlEncoder().withoutPadding().encodeToString(claims.toByteArray())}.fakesig"
 
-    private val manager = bearer(managerId)
-    private val employee = bearer(employeeId)
+    private val manager = bearer("""{"sub":"$managerId"}""")
+    private val employee = bearer("""{"sub":"$employeeId"}""")
+    private fun kiosk(branchId: UUID, azp: String = "blitzpay-kiosk") =
+        bearer("""{"sub":"kiosk-user","azp":"$azp","groups":["branch_$branchId"]}""")
+
+    private fun login(name: String = "Kiosk 1") = KioskLoginResponse(
+        kioskId = kioskId, name = name, username = "kiosk-br-1a2b3c4d5e6f-1", password = "secret-password-shown-once",
+        keycloakUrl = "https://auth.example", realm = "blitzpay", clientId = "blitzpay-kiosk",
+        apiBaseUrl = "https://api.example", branchId = branch.id,
+    )
 
     @BeforeEach
     fun givenBranchAndRepositories() {
@@ -55,151 +63,115 @@ class KioskContractTest : ContractVerifierBase() {
         whenever(merchantUserAssignmentRepository.findAllByKeycloakUserId(employeeId)).thenReturn(
             listOf(MerchantUserAssignment(keycloakUserId = employeeId, merchantId = merchantId, branchId = branch.id, role = MerchantOperationsRole.MERCHANT_EMPLOYEE))
         )
-        whenever(merchantKioskRepository.findByBranchId(branch.id)).thenAnswer { stored }
-        whenever(merchantKioskRepository.findByLogin(any())).thenAnswer { inv -> stored?.takeIf { it.login == inv.arguments[0] } }
-        whenever(merchantKioskRepository.save(any<MerchantKiosk>())).thenAnswer { stored = it.arguments[0] as MerchantKiosk; stored }
-        whenever(merchantKioskTokenRepository.save(any<MerchantKioskToken>())).thenAnswer { it.arguments[0] }
+        whenever(merchantKioskSettingsRepository.findByBranchId(branch.id)).thenAnswer { stored }
+        whenever(merchantKioskSettingsRepository.save(any<MerchantKioskSettings>())).thenAnswer { stored = it.arguments[0] as MerchantKioskSettings; stored }
         whenever(merchantSupportedMenuLanguageRepository.findAllByMerchantId(merchantId)).thenReturn(
             listOf(com.elegant.software.blitzpay.merchant.persistence.model.MerchantSupportedMenuLanguage(merchantId, "de"))
         )
     }
 
-    private fun enable(): Pair<String, String> {
-        var login = ""
-        var password = ""
-        webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, manager)
+    @Test
+    fun `adding a kiosk provisions its login and returns the password once`() {
+        whenever(kioskAccessService.create(any(), eq("Entrance"))).thenReturn(login("Entrance"))
+
+        webTestClient.post().uri("$base/kiosks").header(HttpHeaders.AUTHORIZATION, manager)
+            .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"name":"Entrance"}""")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus().isCreated
             .expectHeader().valueEquals(HttpHeaders.CACHE_CONTROL, "no-store")
             .expectBody()
-            .jsonPath("$.login").value<String> { login = it }
-            .jsonPath("$.password").value<String> { password = it }
-        return login to password
-    }
-
-    private fun signIn(login: String, password: String): String {
-        var token = ""
-        webTestClient.post().uri("/v1/kiosk/login").header(HttpHeaders.AUTHORIZATION, "")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"login":"$login","password":"$password"}""")
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
+            .jsonPath("$.kioskId").isEqualTo(kioskId.toString())
+            .jsonPath("$.name").isEqualTo("Entrance")
+            .jsonPath("$.username").isEqualTo("kiosk-br-1a2b3c4d5e6f-1")
+            .jsonPath("$.password").isEqualTo("secret-password-shown-once")
+            .jsonPath("$.clientId").isEqualTo("blitzpay-kiosk")
+            .jsonPath("$.realm").isEqualTo("blitzpay")
             .jsonPath("$.branchId").isEqualTo(branch.id.toString())
-            .jsonPath("$.merchantId").isEqualTo(merchantId.toString())
-            .jsonPath("$.token").value<String> { token = it }
-        return token
-    }
-
-    /** Makes [token] resolve like the database would after sign-in. */
-    private fun knownToken(token: String, branchId: UUID = branch.id) {
-        whenever(merchantKioskTokenRepository.findByTokenHash(KioskTokenService.hash(token))).thenReturn(
-            MerchantKioskToken(merchantId = merchantId, branchId = branchId, tokenHash = KioskTokenService.hash(token), expiresAt = Instant.now().plusSeconds(60))
-        )
     }
 
     @Test
-    fun `enable returns login and password once, status never shows the password`() {
-        val (login, password) = enable()
+    fun `a kiosk can be added without a body`() {
+        whenever(kioskAccessService.create(any(), anyOrNull())).thenReturn(login())
 
-        org.junit.jupiter.api.Assertions.assertEquals("kiosk-br-1a2b3c4d5e6f", login)
-        org.junit.jupiter.api.Assertions.assertTrue(password.length >= 32)
-        webTestClient.get().uri(base).header(HttpHeaders.AUTHORIZATION, manager)
+        webTestClient.post().uri("$base/kiosks").header(HttpHeaders.AUTHORIZATION, manager)
+            .exchange().expectStatus().isCreated
+            .expectBody().jsonPath("$.name").isEqualTo("Kiosk 1")
+    }
+
+    @Test
+    fun `the list shows every kiosk of the branch without passwords`() {
+        whenever(kioskAccessService.list(any())).thenReturn(
+            listOf(
+                KioskResponse(kioskId, 1, "Entrance", "kiosk-br-1a2b3c4d5e6f-1", enabled = true),
+                KioskResponse(UUID.randomUUID(), 2, "Kiosk 2", "kiosk-br-1a2b3c4d5e6f-2", enabled = false),
+            )
+        )
+
+        webTestClient.get().uri("$base/kiosks").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange()
             .expectStatus().isOk
             .expectHeader().valueEquals(HttpHeaders.CACHE_CONTROL, "no-store")
             .expectBody()
-            .jsonPath("$.enabled").isEqualTo(true)
-            .jsonPath("$.login").isEqualTo(login)
-            .jsonPath("$.password").doesNotExist()
-            .jsonPath("$.settings.paymentChoices[0]").isEqualTo("CARD")
-            .jsonPath("$.settings.paymentChoices.length()").isEqualTo(3)
-            .jsonPath("$.settings.resetSeconds").isEqualTo(30)
-            .jsonPath("$.settings.languages.length()").isEqualTo(0)
-            .jsonPath("$.settings.advertisedProductIds.length()").isEqualTo(0)
+            .jsonPath("$.length()").isEqualTo(2)
+            .jsonPath("$[0].enabled").isEqualTo(true)
+            .jsonPath("$[1].username").isEqualTo("kiosk-br-1a2b3c4d5e6f-2")
+            .jsonPath("$[0].password").doesNotExist()
     }
 
     @Test
-    fun `status of a branch without a kiosk is disabled with null login and default settings`() {
-        webTestClient.get().uri(base).header(HttpHeaders.AUTHORIZATION, manager)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.enabled").isEqualTo(false)
-            .jsonPath("$.login").isEmpty
-            .jsonPath("$.settings.resetSeconds").isEqualTo(30)
+    fun `enable resets the login, disable and delete revoke it`() {
+        whenever(kioskAccessService.enable(any(), eq(kioskId))).thenReturn(login())
+        whenever(kioskAccessService.disable(any(), eq(kioskId))).thenReturn(KioskResponse(kioskId, 1, "Kiosk 1", "kiosk-br-1a2b3c4d5e6f-1", enabled = false))
+
+        webTestClient.post().uri("$base/kiosks/$kioskId/enable").header(HttpHeaders.AUTHORIZATION, manager)
+            .exchange().expectStatus().isOk
+            .expectBody().jsonPath("$.password").isEqualTo("secret-password-shown-once")
+        webTestClient.post().uri("$base/kiosks/$kioskId/disable").header(HttpHeaders.AUTHORIZATION, manager)
+            .exchange().expectStatus().isOk
+            .expectBody().jsonPath("$.enabled").isEqualTo(false).jsonPath("$.password").doesNotExist()
+        webTestClient.delete().uri("$base/kiosks/$kioskId").header(HttpHeaders.AUTHORIZATION, manager)
+            .exchange().expectStatus().isNoContent
+        verify(kioskAccessService).delete(any(), eq(kioskId))
     }
 
     @Test
-    fun `reset returns a different password`() {
-        val first = enable()
-        val second = enable()
-
-        org.junit.jupiter.api.Assertions.assertNotEquals(first.second, second.second)
-        webTestClient.post().uri("/v1/kiosk/login").contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"login":"${first.first}","password":"${first.second}"}""")
-            .exchange().expectStatus().isUnauthorized
-        signIn(second.first, second.second)
-    }
-
-    @Test
-    fun `disable revokes the login and sessions`() {
-        val (login, password) = enable()
-
-        webTestClient.post().uri("$base/disable").header(HttpHeaders.AUTHORIZATION, manager)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.enabled").isEqualTo(false)
-            .jsonPath("$.login").isEqualTo(login)
-            .jsonPath("$.password").doesNotExist()
-        verify(merchantKioskTokenRepository).deleteAllByBranchId(branch.id)
-        webTestClient.post().uri("/v1/kiosk/login").contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"login":"$login","password":"$password"}""")
-            .exchange()
-            .expectStatus().isUnauthorized
-            .expectBody().jsonPath("$.code").isEqualTo("INVALID_KIOSK_CREDENTIALS")
-    }
-
-    @Test
-    fun `login with a wrong password is 401 and needs no token`() {
-        val (login, _) = enable()
-
-        webTestClient.post().uri("/v1/kiosk/login").header(HttpHeaders.AUTHORIZATION, "")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"login":"$login","password":"wrong"}""")
-            .exchange()
-            .expectStatus().isUnauthorized
-            .expectBody().jsonPath("$.code").isEqualTo("INVALID_KIOSK_CREDENTIALS")
-    }
-
-    @Test
-    fun `only Merchant Managers and platform admins manage the kiosk`() {
-        listOf(employee, "Bearer $fakeJwt").forEach { token ->
-            webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
-            webTestClient.post().uri("$base/disable").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
-            webTestClient.get().uri(base).header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
-            webTestClient.put().uri("$base/settings").header(HttpHeaders.AUTHORIZATION, token)
+    fun `only Merchant Managers and platform admins manage kiosks`() {
+        listOf(employee, "Bearer $fakeJwt", kiosk(branch.id)).forEach { token ->
+            webTestClient.get().uri("$base/kiosks").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
+            webTestClient.post().uri("$base/kiosks").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
+            webTestClient.post().uri("$base/kiosks/$kioskId/enable").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
+            webTestClient.post().uri("$base/kiosks/$kioskId/disable").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
+            webTestClient.delete().uri("$base/kiosks/$kioskId").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
+            webTestClient.put().uri("$base/kiosk/settings").header(HttpHeaders.AUTHORIZATION, token)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange().expectStatus().isForbidden
         }
-        verify(merchantKioskRepository, never()).save(any<MerchantKiosk>())
+        verify(kioskAccessService, never()).create(any(), anyOrNull())
+        verify(merchantKioskSettingsRepository, never()).save(any<MerchantKioskSettings>())
     }
 
     @Test
-    fun `unknown branch is 404`() {
+    fun `a platform admin manages kiosks of any merchant`() {
+        whenever(kioskAccessService.list(any())).thenReturn(emptyList())
+        val admin = bearer("""{"sub":"admin","realm_access":{"roles":["blitzpay-admin"]}}""")
+
+        webTestClient.get().uri("$base/kiosks").header(HttpHeaders.AUTHORIZATION, admin).exchange().expectStatus().isOk
+    }
+
+    @Test
+    fun `unknown branch or kiosk is 404`() {
         val unknown = UUID.fromString("99999999-9999-9999-9999-999999999999")
         whenever(merchantBranchRepository.findById(unknown)).thenReturn(Optional.empty())
+        whenever(kioskAccessService.enable(any(), eq(unknown))).thenThrow(NoSuchElementException("Kiosk not found: $unknown"))
 
-        webTestClient.post().uri("/v1/merchant/branches/$unknown/kiosk/enable").header(HttpHeaders.AUTHORIZATION, manager)
+        webTestClient.post().uri("/v1/merchant/branches/$unknown/kiosks").header(HttpHeaders.AUTHORIZATION, manager)
+            .exchange().expectStatus().isNotFound
+        webTestClient.post().uri("$base/kiosks/$unknown/enable").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange().expectStatus().isNotFound
     }
 
     @Test
-    fun `settings can be saved and the kiosk reads them with its token`() {
-        val token = "kt_test-token".also(::knownToken)
-        stored = MerchantKiosk(branchId = branch.id, enabled = true, login = "kiosk-br-1a2b3c4d5e6f")
-
-        webTestClient.put().uri("$base/settings").header(HttpHeaders.AUTHORIZATION, manager)
+    fun `settings saved by a manager are read by the branch's kiosks`() {
+        webTestClient.put().uri("$base/kiosk/settings").header(HttpHeaders.AUTHORIZATION, manager)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue("""{"paymentChoices":["CASH","SCAN_TO_PAY"],"resetSeconds":45,"languages":["de"],"advertisedProductIds":[]}""")
             .exchange()
@@ -209,19 +181,41 @@ class KioskContractTest : ContractVerifierBase() {
             .jsonPath("$.resetSeconds").isEqualTo(45)
             .jsonPath("$.languages[0]").isEqualTo("de")
 
-        webTestClient.get().uri("/v1/kiosk/settings").header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+        listOf(kiosk(branch.id), manager).forEach { token ->
+            webTestClient.get().uri("$base/kiosk/settings").header(HttpHeaders.AUTHORIZATION, token)
+                .exchange()
+                .expectStatus().isOk
+                .expectBody()
+                .jsonPath("$.paymentChoices.length()").isEqualTo(2)
+                .jsonPath("$.resetSeconds").isEqualTo(45)
+        }
+    }
+
+    @Test
+    fun `a branch without settings returns the defaults`() {
+        webTestClient.get().uri("$base/kiosk/settings").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange()
             .expectStatus().isOk
             .expectBody()
-            .jsonPath("$.paymentChoices.length()").isEqualTo(2)
-            .jsonPath("$.resetSeconds").isEqualTo(45)
-            .jsonPath("$.languages[0]").isEqualTo("de")
+            .jsonPath("$.paymentChoices.length()").isEqualTo(3)
+            .jsonPath("$.resetSeconds").isEqualTo(30)
+            .jsonPath("$.languages.length()").isEqualTo(0)
+            .jsonPath("$.advertisedProductIds.length()").isEqualTo(0)
+    }
+
+    @Test
+    fun `kiosks of other branches, other device logins and employees cannot read the settings`() {
+        listOf(kiosk(otherBranchId), kiosk(branch.id, azp = "blitzpay-kitchen"), employee).forEach { token ->
+            webTestClient.get().uri("$base/kiosk/settings").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
+        }
+        val anonymous = webTestClient.mutate().defaultHeaders { it.remove("Authorization") }.build()
+        anonymous.get().uri("$base/kiosk/settings").exchange().expectStatus().isUnauthorized
     }
 
     @Test
     fun `invalid settings are rejected with their error code`() {
         fun put(body: String, status: Int, code: String) =
-            webTestClient.put().uri("$base/settings").header(HttpHeaders.AUTHORIZATION, manager)
+            webTestClient.put().uri("$base/kiosk/settings").header(HttpHeaders.AUTHORIZATION, manager)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(body)
                 .exchange().expectStatus().isEqualTo(status).expectBody().jsonPath("$.code").isEqualTo(code)
 
@@ -231,40 +225,6 @@ class KioskContractTest : ContractVerifierBase() {
         put("""{"resetSeconds":301}""", 400, "KIOSK_RESET_SECONDS_OUT_OF_RANGE")
         put("""{"languages":["fr"]}""", 422, "KIOSK_LANGUAGE_NOT_SUPPORTED")
         put("""{"advertisedProductIds":["${UUID.randomUUID()}"]}""", 422, "KIOSK_ADVERTISED_PRODUCT_INVALID")
-        verify(merchantKioskRepository, never()).save(any<MerchantKiosk>())
-    }
-
-    @Test
-    fun `kiosk settings need a valid kiosk token`() {
-        val anonymous = webTestClient.mutate().defaultHeaders { it.remove("Authorization") }.build()
-        anonymous.get().uri("/v1/kiosk/settings").exchange().expectStatus().isUnauthorized
-
-        // A Merchant/shopper JWT is not a Kiosk
-        webTestClient.get().uri("/v1/kiosk/settings").header(HttpHeaders.AUTHORIZATION, manager).exchange().expectStatus().isForbidden
-
-        webTestClient.get().uri("/v1/kiosk/settings").header(HttpHeaders.AUTHORIZATION, "Bearer kt_unknown").exchange().expectStatus().isUnauthorized
-    }
-
-    @Test
-    fun `a disabled kiosk's token is rejected`() {
-        val token = "kt_revoked".also(::knownToken)
-        stored = MerchantKiosk(branchId = branch.id, enabled = false)
-
-        webTestClient.get().uri("/v1/kiosk/settings").header(HttpHeaders.AUTHORIZATION, "Bearer $token")
-            .exchange().expectStatus().isUnauthorized
-    }
-
-    @Test
-    fun `a kiosk token only reads its own branch settings and cannot reach merchant endpoints`() {
-        val token = "kt_branch-a".also(::knownToken)
-        stored = MerchantKiosk(branchId = branch.id, enabled = true, resetSeconds = 77)
-        whenever(merchantKioskRepository.findByBranchId(otherBranchId)).thenReturn(MerchantKiosk(branchId = otherBranchId, enabled = true, resetSeconds = 12))
-
-        webTestClient.get().uri("/v1/kiosk/settings").header(HttpHeaders.AUTHORIZATION, "Bearer $token")
-            .exchange().expectStatus().isOk.expectBody().jsonPath("$.resetSeconds").isEqualTo(77)
-
-        // Kiosk tokens are rejected on authenticated merchant endpoints, whoever the caller claims to be
-        webTestClient.get().uri(base).header(HttpHeaders.AUTHORIZATION, "Bearer $token").exchange().expectStatus().isForbidden
-        webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, "Bearer $token").exchange().expectStatus().isForbidden
+        verify(merchantKioskSettingsRepository, never()).save(any<MerchantKioskSettings>())
     }
 }
