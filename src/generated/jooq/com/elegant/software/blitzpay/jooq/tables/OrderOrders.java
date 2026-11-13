@@ -250,6 +250,11 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
      */
     public final TableField<OrderOrdersRecord, String> INVOICE_EMAIL_CONSENT_VERSION = createField(DSL.name("invoice_email_consent_version"), SQLDataType.VARCHAR(16), this, "");
 
+    /**
+     * The column <code>blitzpay.order_orders.fulfilment_type</code>.
+     */
+    public final TableField<OrderOrdersRecord, String> FULFILMENT_TYPE = createField(DSL.name("fulfilment_type"), SQLDataType.VARCHAR(16), this, "");
+
     private OrderOrders(Name alias, Table<OrderOrdersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -356,6 +361,7 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
     @Override
     public List<Check<OrderOrdersRecord>> getChecks() {
         return Arrays.asList(
+            Internal.createCheck(this, DSL.name("chk_order_orders_fulfilment_type"), "(((fulfilment_type)::text = ANY ((ARRAY['DINE_IN'::character varying, 'TAKE_AWAY'::character varying])::text[])))", true),
             Internal.createCheck(this, DSL.name("chk_order_orders_invoice_email_consent"), "(((invoice_email IS NULL) OR (invoice_email_consent_at IS NOT NULL)))", true)
         );
     }
