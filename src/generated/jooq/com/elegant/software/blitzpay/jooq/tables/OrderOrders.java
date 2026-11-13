@@ -255,6 +255,11 @@ public class OrderOrders extends TableImpl<OrderOrdersRecord> {
      */
     public final TableField<OrderOrdersRecord, String> FULFILMENT_TYPE = createField(DSL.name("fulfilment_type"), SQLDataType.VARCHAR(16), this, "");
 
+    /**
+     * The column <code>blitzpay.order_orders.origin</code>.
+     */
+    public final TableField<OrderOrdersRecord, String> ORIGIN = createField(DSL.name("origin"), SQLDataType.VARCHAR(16).nullable(false).defaultValue(DSL.field(DSL.raw("'STANDARD'::character varying"), SQLDataType.VARCHAR)), this, "");
+
     private OrderOrders(Name alias, Table<OrderOrdersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
