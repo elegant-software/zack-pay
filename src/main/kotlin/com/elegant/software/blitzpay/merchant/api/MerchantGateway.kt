@@ -21,6 +21,9 @@ interface MerchantGateway {
 
     /** Short-lived download URL of the logo of the Branch's Merchant, or null when none is set or the Branch is unknown. */
     fun findBranchLogoUrl(branchId: UUID): String?
+
+    /** ISO 639-1 Original Menu Language of the Branch's Merchant, or null when unset or the Branch is unknown. */
+    fun findBranchLanguage(branchId: UUID): String?
 }
 
 data class MerchantSummary(
