@@ -130,6 +130,34 @@ class KioskAccessServiceTest {
     }
 
     @Test
+    fun `a kiosk named Kitchen does not take the branch's kitchen login`() {
+        whenever(kiosks.findTopByBranchIdOrderByNumberDesc(branch.id)).thenReturn(null)
+        whenever(users.searchByUsername(any(), any())).thenReturn(emptyList())
+
+        storedUser("altstadt-kitchen-1")
+
+        service.create(branch, "Kitchen")
+
+        val saved = argumentCaptor<MerchantKiosk>().also { verify(kiosks).save(it.capture()) }.firstValue
+        assertEquals("altstadt-kitchen-1", saved.username)
+    }
+
+    @Test
+    fun `a username another merchant's user has gets the kiosk number appended`() {
+        whenever(kiosks.findTopByBranchIdOrderByNumberDesc(branch.id)).thenReturn(null)
+        whenever(users.searchByUsername(any(), any())).thenReturn(emptyList())
+        whenever(users.searchByUsername("altstadt-entrance", true))
+            .thenReturn(listOf(UserRepresentation().apply { id = "other"; username = "altstadt-entrance" }))
+
+        storedUser("altstadt-entrance-1")
+
+        service.create(branch, "Entrance")
+
+        val saved = argumentCaptor<MerchantKiosk>().also { verify(kiosks).save(it.capture()) }.firstValue
+        assertEquals("altstadt-entrance-1", saved.username)
+    }
+
+    @Test
     fun `deleting a kiosk removes its Keycloak user and its row`() {
         val kiosk = MerchantKiosk(branchId = branch.id, number = 1, name = "Kiosk 1", username = "kiosk-br-1a2b3c4d5e6f-1")
         whenever(kiosks.findByIdAndBranchId(kiosk.id, branch.id)).thenReturn(kiosk)

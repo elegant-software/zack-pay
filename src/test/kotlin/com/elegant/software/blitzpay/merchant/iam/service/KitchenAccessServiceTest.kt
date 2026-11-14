@@ -22,6 +22,7 @@ import org.keycloak.admin.client.resource.ClientsResource
 import org.keycloak.admin.client.resource.ProtocolMappersResource
 import org.keycloak.admin.client.resource.RealmResource
 import org.keycloak.admin.client.resource.UserResource
+import com.elegant.software.blitzpay.merchant.iam.web.KitchenAccessStatusResponse
 import org.keycloak.admin.client.resource.UsersResource
 import org.keycloak.representations.idm.ClientRepresentation
 import org.keycloak.representations.idm.ClientScopeRepresentation
@@ -342,13 +343,32 @@ class KitchenAccessServiceTest {
     }
 
     @Test
-    fun `refuses to reuse a username bound to another branch`() {
+    fun `uses the branch code username when another merchant's branch of the same name has the kitchen login`() {
         givenExistingClient()
         givenExistingUser()
         whenever(user.groups()).thenReturn(listOf(GroupRepresentation().apply { name = "branch_${UUID.randomUUID()}" }))
+        val withCode = "altstadt-br-1a2b3c4d5e6f-kitchen"
+        whenever(users.searchByUsername(withCode, true)).thenReturn(emptyList())
+        response(201, "https://auth.example/admin/realms/blitzpay/users/new-id").let { whenever(users.create(any())).thenReturn(it) }
+        val newUser = mock<UserResource>()
+        whenever(users.get("new-id")).thenReturn(newUser)
+        whenever(newUser.toRepresentation()).thenReturn(UserRepresentation().apply { id = "new-id"; username = withCode })
 
-        assertThrows<BranchLoginConflictException> { service.enable(branch) }
+        assertEquals(withCode, service.enable(branch).username)
         verify(user, never()).resetPassword(any())
+        verify(user, never()).update(any())
+    }
+
+    @Test
+    fun `status and disable ignore another branch's login of the same name`() {
+        givenExistingUser()
+        whenever(user.groups()).thenReturn(listOf(GroupRepresentation().apply { name = "branch_${UUID.randomUUID()}" }))
+        whenever(users.searchByUsername("altstadt-br-1a2b3c4d5e6f-kitchen", true)).thenReturn(emptyList())
+
+        assertEquals(KitchenAccessStatusResponse(enabled = false, username = null), service.status(branch))
+        service.disable(branch)
+        verify(user, never()).update(any())
+        verify(user, never()).logout()
     }
 
     @Test

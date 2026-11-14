@@ -38,7 +38,7 @@ class KioskAccessService(
     // ponytail: one Keycloak lookup per Kiosk; fine for the handful a Branch has
     @Transactional(readOnly = true)
     fun list(branch: MerchantBranch): List<KioskResponse> =
-        kiosks.findAllByBranchIdOrderByNumber(branch.id).map { it.toResponse(logins.find(it.username)?.isEnabled == true) }
+        kiosks.findAllByBranchIdOrderByNumber(branch.id).map { it.toResponse(logins.find(it.username, branch)?.isEnabled == true) }
 
     /** Adds a Kiosk and provisions its Kiosk Login with the admin's [password], or a generated one; returned once. */
     @Transactional
@@ -47,8 +47,10 @@ class KioskAccessService(
         val number = (kiosks.findTopByBranchIdOrderByNumberDesc(branch.id)?.number ?: 0) + 1
         val kioskName = name?.trim()?.takeIf { it.isNotEmpty() }?.take(100) ?: "Kiosk $number"
         val readable = kioskUsername(branch, kioskName)
-        // Same Kiosk name twice, or the same Branch name at another Merchant: keep it unique with the number.
-        val username = if (kiosks.existsByUsername(readable)) "$readable-$number" else readable
+        // Taken by another Kiosk, by this Branch's Kitchen Login (Kiosk named "Kitchen"), or by any other user of the
+        // business realm (same Branch name at another Merchant): keep it unique with the number.
+        val taken = kiosks.existsByUsername(readable) || readable == KitchenAccessService.kitchenUsername(branch) || logins.exists(readable)
+        val username = if (taken) "$readable-$number" else readable
         val kiosk = kiosks.save(MerchantKiosk(branchId = branch.id, number = number, name = kioskName, username = username))
         return provision(branch, kiosk, password)
     }
