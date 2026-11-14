@@ -278,5 +278,5 @@ keycloak:
       api-base-url: ${API_BASE_URL:${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}}
     kiosk:
       client-id: ${KEYCLOAK_IAM_KIOSK_CLIENT_ID:blitzpay-kiosk}
-      redirect-uri: ${KEYCLOAK_IAM_KIOSK_REDIRECT_URI:app://kiosk/renderer/index.html}
+      redirect-uri: ${KEYCLOAK_IAM_KIOSK_REDIRECT_URI:blitzpay-kiosk://oauth/callback}
       api-base-url: ${API_BASE_URL:${STRIPE_CONNECT_API_BASE_URL:http://localhost:8080}}
