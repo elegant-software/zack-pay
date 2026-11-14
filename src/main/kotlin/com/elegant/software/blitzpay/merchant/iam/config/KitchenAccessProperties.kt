@@ -27,7 +27,7 @@ data class KitchenAccessProperties(
 @ConfigurationProperties(prefix = "keycloak.iam.kiosk")
 data class KioskAccessProperties(
     override val clientId: String = KIOSK_CLIENT_ID,
-    override val redirectUri: String = "app://kiosk/renderer/index.html",
+    override val redirectUri: String = "blitzpay-kiosk://oauth/callback",
     override val apiBaseUrl: String = "http://localhost:8080",
     override val emailDomain: String = "kiosk.invalid",
 ) : BranchLoginProperties {
