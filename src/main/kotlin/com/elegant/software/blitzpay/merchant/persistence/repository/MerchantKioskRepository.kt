@@ -9,6 +9,7 @@ interface MerchantKioskRepository : JpaRepository<MerchantKiosk, UUID> {
     fun findAllByBranchIdOrderByNumber(branchId: UUID): List<MerchantKiosk>
     fun findByIdAndBranchId(id: UUID, branchId: UUID): MerchantKiosk?
     fun findTopByBranchIdOrderByNumberDesc(branchId: UUID): MerchantKiosk?
+    fun existsByUsername(username: String): Boolean
     fun deleteAllByBranchIdIn(branchIds: Collection<UUID>)
 }
 

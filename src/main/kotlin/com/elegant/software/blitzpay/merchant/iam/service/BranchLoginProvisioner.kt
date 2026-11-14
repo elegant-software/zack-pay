@@ -6,6 +6,7 @@ import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.outbound.KeycloakGroupNames
 import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import com.elegant.software.blitzpay.merchant.persistence.repository.MerchantRepository
+import jakarta.ws.rs.BadRequestException
 import jakarta.ws.rs.NotFoundException
 import jakarta.ws.rs.core.Response
 import org.keycloak.admin.client.Keycloak
@@ -17,6 +18,10 @@ import org.keycloak.representations.idm.ProtocolMapperRepresentation
 import org.keycloak.representations.idm.UserRepresentation
 import org.slf4j.Logger
 import org.springframework.http.HttpStatus
+import java.text.Normalizer
+
+/** Thrown when an admin-chosen device login password is unusable. */
+class BranchLoginPasswordException(message: String) : ApiException(HttpStatus.BAD_REQUEST, message, "INVALID_PASSWORD")
 
 /** Thrown when a device login username is already taken by a user bound to another Branch. */
 class BranchLoginConflictException(message: String) : ApiException(HttpStatus.CONFLICT, message)
@@ -31,7 +36,7 @@ data class ProvisionedLogin(val username: String, val password: String) {
  * group and a user in that group. Used for the Kitchen Login (one user per Branch) and Kiosk Logins (one user per
  * Kiosk), so both work the same way. Every step is idempotent.
  *
- * The generated password is returned to the caller only. It is never stored and never logged.
+ * The password, chosen by the admin or generated, is returned to the caller only. It is never stored and never logged.
  */
 class BranchLoginProvisioner(
     private val keycloak: Keycloak,
@@ -46,8 +51,13 @@ class BranchLoginProvisioner(
     private val passwordGenerator: KitchenPasswordGenerator,
     private val log: Logger,
 ) {
-    /** Creates or re-enables the user, puts it in the Branch group and gives it a new password. */
-    fun enable(branch: MerchantBranch, username: String, firstName: String, lastName: String): ProvisionedLogin {
+    /**
+     * Creates or re-enables the user, puts it in the Branch group and sets [password], or a generated one when null.
+     */
+    fun enable(branch: MerchantBranch, username: String, firstName: String, lastName: String, password: String? = null): ProvisionedLogin {
+        if (password != null && password.length !in PASSWORD_LENGTH) {
+            throw BranchLoginPasswordException("Password must be ${PASSWORD_LENGTH.first} to ${PASSWORD_LENGTH.last} characters")
+        }
         ensureClient()
 
         val merchantName = merchantRepository.findById(branch.merchantId)
@@ -61,14 +71,19 @@ class BranchLoginProvisioner(
         val storedUsername = user.toRepresentation().username ?: username
         user.joinGroup(branchGroupId)
 
-        val password = passwordGenerator.generate()
-        user.resetPassword(CredentialRepresentation().apply {
-            type = CredentialRepresentation.PASSWORD
-            value = password
-            isTemporary = false
-        })
+        val chosen = password ?: passwordGenerator.generate()
+        try {
+            user.resetPassword(CredentialRepresentation().apply {
+                type = CredentialRepresentation.PASSWORD
+                value = chosen
+                isTemporary = false
+            })
+        } catch (e: BadRequestException) {
+            // The realm's password policy refused it; only an admin-chosen password can realistically hit this.
+            throw BranchLoginPasswordException("Keycloak's password policy refused the password")
+        }
         log.info("{} provisioned branchId={} username={}", loginName, branch.id, storedUsername)
-        return ProvisionedLogin(storedUsername, password)
+        return ProvisionedLogin(storedUsername, chosen)
     }
 
     /**
@@ -254,10 +269,25 @@ class BranchLoginProvisioner(
         private const val GROUPS_CLAIM = "groups"
         private const val GROUP_MEMBERSHIP_MAPPER = "oidc-group-membership-mapper"
         private const val OFFLINE_ACCESS = "offline_access"
+        private val PASSWORD_LENGTH = 8..128
         private val NON_USERNAME_CHARS = Regex("[^a-z0-9._-]+")
+        private val COMBINING_MARKS = Regex("\\p{M}+")
 
-        /** Human-readable username from a prefix and the Branch Code (ADR-0012), e.g. `kitchen` + `BR-1A2B3C` → `kitchen-br-1a2b3c`. */
-        fun username(prefix: String, branchCode: String): String =
-            "$prefix-" + branchCode.lowercase().replace(NON_USERNAME_CHARS, "-").trim('-')
+        /** Lower-case, ASCII, dash-separated form of a name for a username, e.g. `Café Köln!` → `cafe-koln`. */
+        fun slug(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFKD).replace(COMBINING_MARKS, "")
+            .lowercase().replace(NON_USERNAME_CHARS, "-").trim('-')
+
+        /**
+         * Readable username from the Branch name and a device name, e.g. `Main St` + `Kitchen` → `main-st-kitchen`. The
+         * Branch Code stands in for a Branch name with no usable characters. No UUID in it (ADR-0012).
+         */
+        fun username(branchName: String, branchCode: String, deviceName: String): String {
+            val branch = slug(branchName).ifEmpty { slug(branchCode) }
+            val device = slug(deviceName).ifEmpty { "device" }
+            return "$branch-$device".take(MAX_USERNAME_LENGTH).trimEnd('-')
+        }
+
+        /** Fits the `merchant_kiosks.username` column. */
+        private const val MAX_USERNAME_LENGTH = 128
     }
 }

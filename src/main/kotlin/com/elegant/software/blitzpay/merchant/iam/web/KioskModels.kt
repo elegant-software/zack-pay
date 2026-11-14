@@ -18,9 +18,13 @@ data class KioskSettings(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CreateKioskRequest(
-    /** Shown in the web admin, e.g. "Entrance"; defaults to "Kiosk <number>". */
+    /** Shown in the web admin, e.g. "Entrance"; defaults to "Kiosk <number>". Also names the login: `<branch>-<kiosk>`. */
     val name: String? = null,
-)
+    /** Password the admin chose (8 to 128 characters); generated when absent. Returned once, never stored. */
+    val password: String? = null,
+) {
+    override fun toString(): String = "CreateKioskRequest(name=$name, password=${if (password == null) null else "****"})"
+}
 
 /** A Kiosk of a Branch. Never includes the password. */
 data class KioskResponse(

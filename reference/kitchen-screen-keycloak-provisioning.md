@@ -16,8 +16,9 @@ All three are under `/v1/merchant/branches/{branchId}/kitchen` and send `Cache-C
 
 - **Authorization**: the caller must be a Merchant Manager of the Branch's Merchant (`MerchantCallerResolver` / `MerchantCaller.isManagerFor`, the same rule as Branch opening hours and appearances). Otherwise `403`. Unknown Branch: `404`. Username already bound to another Branch's group: `409`.
 - **Enable is idempotent.** Calling it again resets the password, which is how "Reset password" works in the web admin.
-- **Password**: 24 bytes from `SecureRandom`, base64url (32 URL-safe characters). It exists only in the `enable` response. The backend never stores or logs it, and `KitchenLoginResponse.toString()` masks it. The web admin shows it once (masked, with a reveal toggle and a copy button). After that the only option is to reset it.
-- **Username**: `kitchen-<branch code, lower case>`, e.g. `kitchen-br-1a2b3c4d5e6f`. It contains no UUID (ADR-0012).
+- **Generated password**: 24 bytes from `SecureRandom`, base64url (32 URL-safe characters). It exists only in the `enable` response. The backend never stores or logs it, and `KitchenLoginResponse.toString()` masks it. The web admin shows it once (masked, with a reveal toggle and a copy button). After that the only option is to reset it.
+- **Username**: `<branch name>-kitchen`, lower case ASCII with dashes, e.g. Branch `Café Altstadt` → `cafe-altstadt-kitchen`. A Branch name with no usable characters falls back to the Branch Code. It contains no UUID (ADR-0012). The username follows the current Branch name, so disable the Kitchen Login before renaming a Branch. Two Merchants' Branches with the same name collide: the second enable gets `409`.
+- **Admin-set password**: `enable` takes an optional body `{ "password": "..." }` (8 to 128 characters, and Keycloak's password policy). Without it a password is generated as below. Either way it is returned once and never stored.
 
 ## Configuration
 
@@ -70,7 +71,7 @@ sequenceDiagram
     Note over B,K: 2. Branch group (MerchantGroupSyncService)
     B->>K: ensure /merchants/merchant_{merchantId}/branch_{branchId}
 
-    Note over B,K: 3. Kitchen user kitchen-<branchcode>
+    Note over B,K: 3. Kitchen user <branchname>-kitchen
     B->>K: GET /users?username=kitchen-…&exact=true
     alt user missing
         B->>K: POST /users (enabled, no required actions, verified placeholder email)
@@ -79,7 +80,7 @@ sequenceDiagram
         B->>K: PUT /users/{id} (enabled=true, required actions cleared)
     end
     B->>K: PUT /users/{id}/groups/{branchGroupId}
-    B->>B: generate password (SecureRandom, never stored or logged)
+    B->>B: admin's password, or generate one (SecureRandom); never stored or logged
     B->>K: PUT /users/{id}/reset-password (temporary=false)
 
     B-->>W: 200 Cache-Control: no-store<br/>{ username, password, keycloakUrl, realm, clientId, apiBaseUrl, branchId }
@@ -144,12 +145,13 @@ All under `/v1/merchant/branches/{branchId}`, same caller rule and `Cache-Contro
 | Method | Path | Response |
 |---|---|---|
 | `GET` | `/kiosks` | `[{ id, number, name, username, enabled }]` |
-| `POST` | `/kiosks` with optional `{ name }` | `201 { kioskId, name, username, password, keycloakUrl, realm, clientId, apiBaseUrl, branchId }` |
-| `POST` | `/kiosks/{kioskId}/enable` | Same as above: re-enables or resets, new password once |
+| `POST` | `/kiosks` with optional `{ name, password }` | `201 { kioskId, name, username, password, keycloakUrl, realm, clientId, apiBaseUrl, branchId }` |
+| `POST` | `/kiosks/{kioskId}/enable` with optional `{ password }` | Same as above: re-enables or resets, the password once |
 | `POST` | `/kiosks/{kioskId}/disable` | `{ id, number, name, username, enabled: false }`; sessions revoked |
 | `DELETE` | `/kiosks/{kioskId}` | `204`; the Keycloak user is deleted |
 | `GET` / `PUT` | `/kiosk/settings` | Kiosk Settings, shared by the Branch's Kiosks. A Kiosk of the Branch may `GET` them |
 
-- **Username**: `kiosk-<branch code, lower case>-<number>`, e.g. `kiosk-br-1a2b3c4d5e6f-2`. Numbers count up per Branch and are never reused while the Kiosk exists.
+- **Username**: `<branch name>-<kiosk name>`, e.g. `cafe-altstadt-entrance`, or `cafe-altstadt-kiosk-2` for an unnamed Kiosk. Fixed when the Kiosk is added. If it is already taken (same Kiosk name twice, or the same Branch name at another Merchant), the Kiosk number is appended: `cafe-altstadt-entrance-3`. Numbers count up per Branch and are never reused while the Kiosk exists.
+- **Password**: the admin may set it on add and on enable; otherwise it is generated, as for the Kitchen Login.
 - **Telling a Kiosk from the Kitchen Screen**: both users are in the Branch group, so the backend checks the token's `azp` (the client it was issued to). Only `blitzpay-kiosk` tokens place Kiosk Orders, and `blitzpay-kiosk` tokens are refused on the kitchen endpoints.
-- **Config**: `keycloak.iam.kiosk.client-id` (`KEYCLOAK_IAM_KIOSK_CLIENT_ID`, default `blitzpay-kiosk`), `keycloak.iam.kiosk.redirect-uri` (`KEYCLOAK_IAM_KIOSK_REDIRECT_URI`, default `app://kiosk/renderer/index.html`), `keycloak.iam.kiosk.api-base-url` (as for the kitchen), `keycloak.iam.kiosk.email-domain` (`kiosk.invalid`). The required admin roles are the same.
+- **Config**: `keycloak.iam.kiosk.client-id` (`KEYCLOAK_IAM_KIOSK_CLIENT_ID`, default `blitzpay-kiosk`), `keycloak.iam.kiosk.redirect-uri` (`KEYCLOAK_IAM_KIOSK_REDIRECT_URI`, default `blitzpay-kiosk://oauth/callback`, the Android app's deep link), `keycloak.iam.kiosk.api-base-url` (as for the kitchen), `keycloak.iam.kiosk.email-domain` (`kiosk.invalid`). The required admin roles are the same.

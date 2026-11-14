@@ -9,6 +9,8 @@ import com.elegant.software.blitzpay.merchant.persistence.model.MerchantBranch
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -62,7 +64,7 @@ class KitchenAccessContractTest : ContractVerifierBase() {
 
     @Test
     fun `enable returns the kitchen login once with no-store`() {
-        whenever(kitchenAccessService.enable(any())).thenReturn(
+        whenever(kitchenAccessService.enable(any(), anyOrNull())).thenReturn(
             KitchenLoginResponse(
                 username = "kitchen-br-1a2b3c4d5e6f",
                 password = "s3cret-Generated_Password-0123456",
@@ -126,7 +128,7 @@ class KitchenAccessContractTest : ContractVerifierBase() {
             webTestClient.post().uri("$base/disable").header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
             webTestClient.get().uri(base).header(HttpHeaders.AUTHORIZATION, token).exchange().expectStatus().isForbidden
         }
-        verify(kitchenAccessService, never()).enable(any())
+        verify(kitchenAccessService, never()).enable(any(), anyOrNull())
         verify(kitchenAccessService, never()).disable(any())
     }
 
@@ -134,7 +136,7 @@ class KitchenAccessContractTest : ContractVerifierBase() {
     fun `a platform admin without a Merchant assignment can read, enable and disable the kitchen login`() {
         whenever(merchantUserAssignmentRepository.findAllByKeycloakUserId(adminId)).thenReturn(emptyList())
         whenever(kitchenAccessService.status(any())).thenReturn(KitchenAccessStatusResponse(true, "kitchen-br-1a2b3c4d5e6f"))
-        whenever(kitchenAccessService.enable(any())).thenReturn(
+        whenever(kitchenAccessService.enable(any(), anyOrNull())).thenReturn(
             KitchenLoginResponse(
                 username = "kitchen-br-1a2b3c4d5e6f",
                 password = "s3cret-Generated_Password-0123456",
@@ -168,6 +170,19 @@ class KitchenAccessContractTest : ContractVerifierBase() {
     }
 
     @Test
+    fun `enable passes the password the admin chose`() {
+        whenever(kitchenAccessService.enable(any(), anyOrNull())).thenThrow(IllegalStateException("unexpected"))
+        whenever(kitchenAccessService.enable(any(), eq("test-pass-1"))).thenReturn(
+            KitchenLoginResponse("altstadt-kitchen", "test-pass-1", "https://auth.example", "blitzpay", "blitzpay-kitchen", "https://api.example", branch.id),
+        )
+        webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, platformAdmin)
+            .contentType(org.springframework.http.MediaType.APPLICATION_JSON).bodyValue("""{"password":"test-pass-1"}""")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody().jsonPath("$.username").isEqualTo("altstadt-kitchen")
+    }
+
+    @Test
     fun `unknown branch returns 404 for a platform admin too`() {
         val unknown = UUID.fromString("99999999-9999-9999-9999-999999999999")
         whenever(merchantBranchRepository.findById(unknown)).thenReturn(Optional.empty())
@@ -193,7 +208,7 @@ class KitchenAccessContractTest : ContractVerifierBase() {
 
     @Test
     fun `keycloak 403 on enable returns 502 with an actionable error`() {
-        whenever(kitchenAccessService.enable(any())).thenThrow(jakarta.ws.rs.ForbiddenException())
+        whenever(kitchenAccessService.enable(any(), anyOrNull())).thenThrow(jakarta.ws.rs.ForbiddenException())
 
         webTestClient.post().uri("$base/enable").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange()

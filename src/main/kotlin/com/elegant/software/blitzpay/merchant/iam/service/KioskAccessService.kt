@@ -40,25 +40,23 @@ class KioskAccessService(
     fun list(branch: MerchantBranch): List<KioskResponse> =
         kiosks.findAllByBranchIdOrderByNumber(branch.id).map { it.toResponse(logins.find(it.username)?.isEnabled == true) }
 
-    /** Adds a Kiosk and provisions its Kiosk Login; the password is returned once. */
+    /** Adds a Kiosk and provisions its Kiosk Login with the admin's [password], or a generated one; returned once. */
     @Transactional
-    fun create(branch: MerchantBranch, name: String?): KioskLoginResponse {
+    fun create(branch: MerchantBranch, name: String?, password: String? = null): KioskLoginResponse {
         // ponytail: two concurrent adds may pick the same number; the unique index rejects the second
         val number = (kiosks.findTopByBranchIdOrderByNumberDesc(branch.id)?.number ?: 0) + 1
-        val kiosk = kiosks.save(
-            MerchantKiosk(
-                branchId = branch.id,
-                number = number,
-                name = name?.trim()?.takeIf { it.isNotEmpty() }?.take(100) ?: "Kiosk $number",
-                username = kioskUsername(branch.branchCode, number),
-            ),
-        )
-        return provision(branch, kiosk)
+        val kioskName = name?.trim()?.takeIf { it.isNotEmpty() }?.take(100) ?: "Kiosk $number"
+        val readable = kioskUsername(branch, kioskName)
+        // Same Kiosk name twice, or the same Branch name at another Merchant: keep it unique with the number.
+        val username = if (kiosks.existsByUsername(readable)) "$readable-$number" else readable
+        val kiosk = kiosks.save(MerchantKiosk(branchId = branch.id, number = number, name = kioskName, username = username))
+        return provision(branch, kiosk, password)
     }
 
-    /** Enables the Kiosk's login again, or resets it: a new password, shown once. */
+    /** Enables the Kiosk's login again, or resets it: the admin's [password] or a generated one, shown once. */
     @Transactional(readOnly = true)
-    fun enable(branch: MerchantBranch, kioskId: UUID): KioskLoginResponse = provision(branch, kiosk(branch, kioskId))
+    fun enable(branch: MerchantBranch, kioskId: UUID, password: String? = null): KioskLoginResponse =
+        provision(branch, kiosk(branch, kioskId), password)
 
     /** Disables the Kiosk's login and revokes all its sessions, offline sessions included. */
     @Transactional(readOnly = true)
@@ -76,8 +74,8 @@ class KioskAccessService(
         kiosks.delete(kiosk)
     }
 
-    private fun provision(branch: MerchantBranch, kiosk: MerchantKiosk): KioskLoginResponse {
-        val login = logins.enable(branch, kiosk.username, kiosk.name, branch.name)
+    private fun provision(branch: MerchantBranch, kiosk: MerchantKiosk, password: String?): KioskLoginResponse {
+        val login = logins.enable(branch, kiosk.username, kiosk.name, branch.name, password)
         return KioskLoginResponse(
             kioskId = kiosk.id,
             name = kiosk.name,
@@ -97,7 +95,8 @@ class KioskAccessService(
     private fun MerchantKiosk.toResponse(enabled: Boolean) = KioskResponse(id, number, name, username, enabled)
 
     companion object {
-        /** E.g. Branch Code `BR-1A2B3C`, Kiosk 2 → `kiosk-br-1a2b3c-2`. */
-        fun kioskUsername(branchCode: String, number: Int): String = BranchLoginProvisioner.username("kiosk", branchCode) + "-$number"
+        /** E.g. Branch `Main St`, Kiosk `Entrance` → `main-st-entrance`. Fixed when the Kiosk is added. */
+        fun kioskUsername(branch: MerchantBranch, kioskName: String): String =
+            BranchLoginProvisioner.username(branch.name, branch.branchCode, kioskName)
     }
 }

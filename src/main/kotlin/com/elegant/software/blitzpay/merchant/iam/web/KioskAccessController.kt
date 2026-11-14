@@ -56,18 +56,19 @@ class KioskAccessController(
         @RequestHeader("Authorization", required = false) auth: String?,
         @AuthenticationPrincipal jwt: Jwt?,
     ): ResponseEntity<KioskLoginResponse> {
-        val login = access.create(managedBranch(branchId, auth, jwt), request?.name)
+        val login = access.create(managedBranch(branchId, auth, jwt), request?.name, request?.password)
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).header("Pragma", "no-cache").body(login)
     }
 
-    @Operation(summary = "Enable the Kiosk's login again, or reset it; returns a new password once")
+    @Operation(summary = "Enable the Kiosk's login again, or reset it; sets the given or a generated password and returns it once")
     @PostMapping("/kiosks/{kioskId}/enable")
     fun enable(
         @PathVariable branchId: UUID,
         @PathVariable kioskId: UUID,
+        @RequestBody(required = false) request: DeviceLoginPasswordRequest?,
         @RequestHeader("Authorization", required = false) auth: String?,
         @AuthenticationPrincipal jwt: Jwt?,
-    ): ResponseEntity<KioskLoginResponse> = noStore(access.enable(managedBranch(branchId, auth, jwt), kioskId))
+    ): ResponseEntity<KioskLoginResponse> = noStore(access.enable(managedBranch(branchId, auth, jwt), kioskId, request?.password))
 
     @Operation(summary = "Disable the Kiosk's login and revoke its sessions, offline sessions included")
     @PostMapping("/kiosks/{kioskId}/disable")
