@@ -71,8 +71,8 @@ class KitchenAccessServiceTest {
 
     private val merchantId = UUID.randomUUID()
     private val branch = MerchantBranch(merchantId = merchantId, name = "Altstadt", branchCode = "BR-1A2B3C4D5E6F")
-    private val username = "kitchen-br-1a2b3c4d5e6f"
-    private val emailUsername = "kitchen-br-1a2b3c4d5e6f@kitchen.invalid"
+    private val username = "altstadt-kitchen"
+    private val emailUsername = "altstadt-kitchen@kitchen.invalid"
     private val clientUuid = "client-uuid"
     private val userId = "user-id"
     private val branchGroupId = "branch-group-id"
@@ -364,9 +364,29 @@ class KitchenAccessServiceTest {
     }
 
     @Test
-    fun `username is derived from the branch code`() {
-        assertEquals("kitchen-br-1a2b3c4d5e6f", KitchenAccessService.kitchenUsername("BR-1A2B3C4D5E6F"))
-        assertEquals("kitchen-main-st", KitchenAccessService.kitchenUsername(" Main St! "))
+    fun `sets the password the admin chose`() {
+        givenExistingClient()
+        givenExistingUser()
+
+        val login = service.enable(branch, "test-pass-1")
+
+        val credential = argumentCaptor<CredentialRepresentation>()
+        verify(user).resetPassword(credential.capture())
+        assertEquals("test-pass-1", credential.firstValue.value)
+        assertEquals("test-pass-1", login.password)
+    }
+
+    @Test
+    fun `refuses a too short admin password before touching Keycloak`() {
+        assertThrows<BranchLoginPasswordException> { service.enable(branch, "short") }
+        verify(user, never()).resetPassword(any())
+    }
+
+    @Test
+    fun `username is the branch name plus kitchen`() {
+        assertEquals("altstadt-kitchen", KitchenAccessService.kitchenUsername(branch))
+        assertEquals("cafe-koln-main-st-kitchen", KitchenAccessService.kitchenUsername(MerchantBranch(merchantId = merchantId, name = " Café Köln — Main St! ", branchCode = branch.branchCode)))
+        assertEquals("br-1a2b3c4d5e6f-kitchen", KitchenAccessService.kitchenUsername(MerchantBranch(merchantId = merchantId, name = "東京", branchCode = branch.branchCode)))
     }
 
     // ── disable / status ────────────────────────────────────────────────────

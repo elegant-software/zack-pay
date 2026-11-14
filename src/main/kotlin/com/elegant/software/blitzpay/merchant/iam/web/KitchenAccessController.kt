@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -35,13 +36,14 @@ class KitchenAccessController(
     private val branchRepository: MerchantBranchRepository,
     private val callerResolver: MerchantCallerResolver,
 ) {
-    @Operation(summary = "Enable the Kitchen Screen for the Branch, or reset its login; returns a new password once")
+    @Operation(summary = "Enable the Kitchen Screen for the Branch, or reset its login; sets the given or a generated password and returns it once")
     @PostMapping("/enable")
     fun enable(
         @PathVariable branchId: UUID,
+        @RequestBody(required = false) request: DeviceLoginPasswordRequest?,
         @RequestHeader("Authorization", required = false) auth: String?,
         @AuthenticationPrincipal jwt: Jwt?,
-    ): ResponseEntity<KitchenLoginResponse> = noStore(service.enable(authorizedBranch(branchId, auth, jwt)))
+    ): ResponseEntity<KitchenLoginResponse> = noStore(service.enable(authorizedBranch(branchId, auth, jwt), request?.password))
 
     @Operation(summary = "Disable the Branch's Kitchen Login and revoke its sessions, offline sessions included")
     @PostMapping("/disable")

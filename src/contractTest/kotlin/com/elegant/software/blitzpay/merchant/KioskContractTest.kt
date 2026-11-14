@@ -72,7 +72,7 @@ class KioskContractTest : ContractVerifierBase() {
 
     @Test
     fun `adding a kiosk provisions its login and returns the password once`() {
-        whenever(kioskAccessService.create(any(), eq("Entrance"))).thenReturn(login("Entrance"))
+        whenever(kioskAccessService.create(any(), eq("Entrance"), anyOrNull())).thenReturn(login("Entrance"))
 
         webTestClient.post().uri("$base/kiosks").header(HttpHeaders.AUTHORIZATION, manager)
             .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"name":"Entrance"}""")
@@ -91,7 +91,7 @@ class KioskContractTest : ContractVerifierBase() {
 
     @Test
     fun `a kiosk can be added without a body`() {
-        whenever(kioskAccessService.create(any(), anyOrNull())).thenReturn(login())
+        whenever(kioskAccessService.create(any(), anyOrNull(), anyOrNull())).thenReturn(login())
 
         webTestClient.post().uri("$base/kiosks").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange().expectStatus().isCreated
@@ -120,7 +120,7 @@ class KioskContractTest : ContractVerifierBase() {
 
     @Test
     fun `enable resets the login, disable and delete revoke it`() {
-        whenever(kioskAccessService.enable(any(), eq(kioskId))).thenReturn(login())
+        whenever(kioskAccessService.enable(any(), eq(kioskId), anyOrNull())).thenReturn(login())
         whenever(kioskAccessService.disable(any(), eq(kioskId))).thenReturn(KioskResponse(kioskId, 1, "Kiosk 1", "kiosk-br-1a2b3c4d5e6f-1", enabled = false))
 
         webTestClient.post().uri("$base/kiosks/$kioskId/enable").header(HttpHeaders.AUTHORIZATION, manager)
@@ -145,7 +145,7 @@ class KioskContractTest : ContractVerifierBase() {
             webTestClient.put().uri("$base/kiosk/settings").header(HttpHeaders.AUTHORIZATION, token)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange().expectStatus().isForbidden
         }
-        verify(kioskAccessService, never()).create(any(), anyOrNull())
+        verify(kioskAccessService, never()).create(any(), anyOrNull(), anyOrNull())
         verify(merchantKioskSettingsRepository, never()).save(any<MerchantKioskSettings>())
     }
 
@@ -161,7 +161,7 @@ class KioskContractTest : ContractVerifierBase() {
     fun `unknown branch or kiosk is 404`() {
         val unknown = UUID.fromString("99999999-9999-9999-9999-999999999999")
         whenever(merchantBranchRepository.findById(unknown)).thenReturn(Optional.empty())
-        whenever(kioskAccessService.enable(any(), eq(unknown))).thenThrow(NoSuchElementException("Kiosk not found: $unknown"))
+        whenever(kioskAccessService.enable(any(), eq(unknown), anyOrNull())).thenThrow(NoSuchElementException("Kiosk not found: $unknown"))
 
         webTestClient.post().uri("/v1/merchant/branches/$unknown/kiosks").header(HttpHeaders.AUTHORIZATION, manager)
             .exchange().expectStatus().isNotFound

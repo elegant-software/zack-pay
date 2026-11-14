@@ -17,6 +17,7 @@ import org.keycloak.admin.client.resource.RealmResource
 import org.keycloak.admin.client.resource.UserResource
 import org.keycloak.admin.client.resource.UsersResource
 import org.keycloak.representations.idm.ClientRepresentation
+import org.keycloak.representations.idm.CredentialRepresentation
 import org.keycloak.representations.idm.UserRepresentation
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -81,11 +82,11 @@ class KioskAccessServiceTest {
         whenever(kiosks.findTopByBranchIdOrderByNumberDesc(branch.id)).thenReturn(
             MerchantKiosk(branchId = branch.id, number = 2, name = "Kiosk 2", username = "kiosk-br-1a2b3c4d5e6f-2"),
         )
-        storedUser("kiosk-br-1a2b3c4d5e6f-3")
+        storedUser("altstadt-kiosk-3")
 
         val login = service.create(branch, "  ")
 
-        assertEquals("kiosk-br-1a2b3c4d5e6f-3", login.username)
+        assertEquals("altstadt-kiosk-3", login.username)
         assertEquals("Kiosk 3", login.name)
         assertEquals("blitzpay-kiosk", login.clientId)
         assertEquals("https://api.example", login.apiBaseUrl)
@@ -93,8 +94,8 @@ class KioskAccessServiceTest {
         assertTrue(login.password.length >= 32)
         assertFalse(login.toString().contains(login.password))
         val created = argumentCaptor<UserRepresentation>().also { verify(users).create(it.capture()) }.firstValue
-        assertEquals("kiosk-br-1a2b3c4d5e6f-3", created.username)
-        assertEquals("kiosk-br-1a2b3c4d5e6f-3@kiosk.invalid", created.email)
+        assertEquals("altstadt-kiosk-3", created.username)
+        assertEquals("altstadt-kiosk-3@kiosk.invalid", created.email)
         verify(user).joinGroup("branch-group-id")
         verify(user).resetPassword(any())
         // The client already existed, so nothing was created
@@ -103,12 +104,29 @@ class KioskAccessServiceTest {
 
     @Test
     fun `the first kiosk of a branch is number 1 and keeps its given name`() {
-        storedUser("kiosk-br-1a2b3c4d5e6f-1")
+        storedUser("altstadt-entrance")
 
-        val login = service.create(branch, "Entrance")
+        val login = service.create(branch, "Entrance", "test-pass-1")
 
-        assertEquals("kiosk-br-1a2b3c4d5e6f-1", login.username)
+        assertEquals("altstadt-entrance", login.username)
         assertEquals("Entrance", login.name)
+        assertEquals("test-pass-1", login.password)
+        val credential = argumentCaptor<CredentialRepresentation>().also { verify(user).resetPassword(it.capture()) }.firstValue
+        assertEquals("test-pass-1", credential.value)
+    }
+
+    @Test
+    fun `a taken username gets the kiosk number appended`() {
+        whenever(kiosks.existsByUsername("altstadt-entrance")).thenReturn(true)
+        whenever(kiosks.findTopByBranchIdOrderByNumberDesc(branch.id)).thenReturn(
+            MerchantKiosk(branchId = branch.id, number = 1, name = "Entrance", username = "altstadt-entrance"),
+        )
+        storedUser("altstadt-entrance-2")
+
+        service.create(branch, "Entrance")
+
+        val saved = argumentCaptor<MerchantKiosk>().also { verify(kiosks).save(it.capture()) }.firstValue
+        assertEquals("altstadt-entrance-2", saved.username)
     }
 
     @Test
@@ -133,8 +151,8 @@ class KioskAccessServiceTest {
     }
 
     @Test
-    fun `kiosk usernames come from the branch code and the kiosk number`() {
-        assertEquals("kiosk-br-1a2b3c-2", KioskAccessService.kioskUsername("BR-1A2B3C", 2))
-        assertEquals("kiosk-main-st-1", KioskAccessService.kioskUsername(" Main St! ", 1))
+    fun `kiosk usernames are the branch name and the kiosk name`() {
+        assertEquals("altstadt-entrance", KioskAccessService.kioskUsername(branch, "Entrance"))
+        assertEquals("main-st-kiosk-1", KioskAccessService.kioskUsername(MerchantBranch(merchantId = merchantId, name = " Main St! ", branchCode = branch.branchCode), "Kiosk 1"))
     }
 }

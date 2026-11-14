@@ -3240,8 +3240,8 @@ paths:
     post:
       tags:
       - Kitchen Access
-      summary: "Enable the Kitchen Screen for the Branch, or reset its login; returns\
-        \ a new password once"
+      summary: "Enable the Kitchen Screen for the Branch, or reset its login; sets the given or a generated\
+        \ password and returns it once"
       operationId: enable_1
       parameters:
       - name: branchId
@@ -3255,6 +3255,11 @@ paths:
         required: false
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceLoginPasswordRequest"
       responses:
         "200":
           description: OK
@@ -3348,8 +3353,8 @@ paths:
     post:
       tags:
       - Kiosk Access
-      summary: "Enable the Kiosk's login again, or reset it; returns a new password\
-        \ once"
+      summary: "Enable the Kiosk's login again, or reset it; sets the given or a generated\
+        \ password and returns it once"
       operationId: enable_2
       parameters:
       - name: branchId
@@ -3369,6 +3374,11 @@ paths:
         required: false
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceLoginPasswordRequest"
       responses:
         "200":
           description: OK
@@ -9270,6 +9280,21 @@ components:
           type:
           - string
           - "null"
+        password:
+          type:
+          - string
+          - "null"
+          description: "Password the admin chose, 8 to 128 characters; generated\
+            \ when absent. Returned once, never stored."
+    DeviceLoginPasswordRequest:
+      type: object
+      properties:
+        password:
+          type:
+          - string
+          - "null"
+          description: "Password the admin chose, 8 to 128 characters; generated\
+            \ when absent. Returned once, never stored."
     KioskLoginResponse:
       type: object
       properties:

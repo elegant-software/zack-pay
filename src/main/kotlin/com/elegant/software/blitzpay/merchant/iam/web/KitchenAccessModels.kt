@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.merchant.iam.web
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.util.UUID
 
 /**
@@ -26,3 +27,12 @@ data class KitchenAccessStatusResponse(
     val username: String?,
 )
 
+
+/**
+ * Optional body of the Kitchen and Kiosk login enable/reset calls: the password the admin chose (8 to 128 characters).
+ * Without it a strong password is generated. Either way it is returned once and never stored.
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class DeviceLoginPasswordRequest(val password: String? = null) {
+    override fun toString(): String = "DeviceLoginPasswordRequest(password=${if (password == null) null else "****"})"
+}
