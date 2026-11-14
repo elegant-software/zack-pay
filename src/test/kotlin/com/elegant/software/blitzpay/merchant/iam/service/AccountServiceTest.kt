@@ -16,8 +16,10 @@ import org.keycloak.admin.client.resource.RealmResource
 import org.keycloak.admin.client.resource.UserResource
 import org.keycloak.admin.client.resource.UsersResource
 import org.keycloak.representations.idm.UserRepresentation
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.context.ApplicationEventPublisher
@@ -33,7 +35,7 @@ class AccountServiceTest {
     private val consents = mock<AccountConsentRepository>()
     private val events = mock<ApplicationEventPublisher>()
     private val service = AccountService(
-        keycloak, KeycloakProperties("https://auth.example", "blitzpay", "admin", "secret"), assignments, consents, events,
+        keycloak, keycloak, KeycloakProperties("https://auth.example", "blitzpay", "admin", "secret"), assignments, consents, events,
     )
     private val userId = UUID.randomUUID()
     private val assignment = MerchantUserAssignment(
@@ -57,7 +59,7 @@ class AccountServiceTest {
         whenever(consents.findAllByKeycloakUserId(userId)) doReturn
             listOf(AccountConsent(keycloakUserId = userId, termsVersion = "2026-11-08"))
 
-        val export = service.export(userId)
+        val export = service.export(userId, BUSINESS_ISSUER)
 
         assertEquals("ada@example.com", export.email)
         assertEquals("MERCHANT_MANAGER", export.assignments.single().role)
@@ -68,7 +70,7 @@ class AccountServiceTest {
     fun `delete erases assignments, consents and the login and tells other modules`() {
         whenever(users.delete(userId.toString())) doReturn Response.noContent().build()
 
-        service.delete(userId)
+        service.delete(userId, BUSINESS_ISSUER)
 
         verify(assignments).deleteAll(listOf(assignment))
         verify(consents).deleteAllByKeycloakUserId(userId)
@@ -80,6 +82,30 @@ class AccountServiceTest {
     fun `failed Keycloak deletion fails the request so the transaction rolls back`() {
         whenever(users.delete(userId.toString())) doReturn Response.serverError().build()
 
-        assertThrows<IllegalStateException> { service.delete(userId) }
+        assertThrows<IllegalStateException> { service.delete(userId, BUSINESS_ISSUER) }
+    }
+
+    @Test
+    fun `a customer realm token deletes the login in the customer realm`() {
+        val customerKeycloak = mock<Keycloak>()
+        val customerRealm = mock<RealmResource>()
+        val customerUsers = mock<UsersResource>()
+        whenever(customerKeycloak.realm("blitzpay-customers")) doReturn customerRealm
+        whenever(customerRealm.users()) doReturn customerUsers
+        whenever(customerUsers.delete(userId.toString())) doReturn Response.noContent().build()
+        val split = AccountService(
+            keycloak, customerKeycloak,
+            KeycloakProperties("https://auth.example", "blitzpay", "admin", "secret", customerRealm = "blitzpay-customers"),
+            assignments, consents, events,
+        )
+
+        split.delete(userId, "https://auth.example/realms/blitzpay-customers")
+
+        verify(customerUsers).delete(userId.toString())
+        verify(users, never()).delete(any())
+    }
+
+    private companion object {
+        const val BUSINESS_ISSUER = "https://auth.example/realms/blitzpay"
     }
 }

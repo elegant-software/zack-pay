@@ -69,7 +69,8 @@ export class AppStack extends cdk.Stack {
         STORAGE_BUCKET: props.storageBucket.bucketName,
         SPRING_DATASOURCE_URL: `jdbc:postgresql://${props.db.dbInstanceEndpointAddress}:5432/zackpay`,
         KEYCLOAK_IAM_SERVER_URL: 'https://auth.zackpay.de',
-        KEYCLOAK_IAM_REALM: 'blitzpay',
+        KEYCLOAK_IAM_REALM: 'blitzpay-business',
+        KEYCLOAK_IAM_CUSTOMER_REALM: 'blitzpay-customers',
         FRONTEND_ORIGIN: 'https://admin.zackpay.de',
       },
       secrets: {

@@ -43,7 +43,7 @@ class SignupServiceTest {
     private val branches = mock<MerchantBranchService>()
     private val consents = mock<AccountConsentRepository>()
     private val service = SignupService(
-        keycloak,
+        keycloak, keycloak,
         KeycloakProperties("https://auth.example", "blitzpay", "admin", "secret"),
         registration, branches, mock(), mock(), consents,
     )

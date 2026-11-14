@@ -113,7 +113,7 @@ Bind in `application.yml`:
 keycloak:
   iam:
     server-url: ${KEYCLOAK_IAM_SERVER_URL:https://keycloak.example.com}
-    realm: ${KEYCLOAK_IAM_REALM:blitzpay}
+    realm: ${KEYCLOAK_IAM_REALM:blitzpay-business}
     admin-client-id: ${KEYCLOAK_IAM_ADMIN_CLIENT_ID:}
     admin-client-secret: ${KEYCLOAK_IAM_ADMIN_CLIENT_SECRET:}
 ```

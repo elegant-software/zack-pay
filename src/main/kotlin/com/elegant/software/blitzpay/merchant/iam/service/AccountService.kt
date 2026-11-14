@@ -1,11 +1,13 @@
 package com.elegant.software.blitzpay.merchant.iam.service
 
 import com.elegant.software.blitzpay.merchant.api.AccountDeleted
+import com.elegant.software.blitzpay.merchant.iam.config.KeycloakAdminClientConfig
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.repository.AccountConsentRepository
 import com.elegant.software.blitzpay.merchant.iam.repository.MerchantUserAssignmentRepository
 import org.keycloak.admin.client.Keycloak
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
@@ -27,11 +29,15 @@ data class AccountExport(
     data class Consent(val termsVersion: String, val acceptedAt: Instant)
 }
 
-/** The signed-in user's own account: data export (GDPR Art. 15/20) and erasure (Art. 17). */
+/**
+ * The signed-in user's own account: data export (GDPR Art. 15/20) and erasure (Art. 17).
+ * [issuer] is the token's `iss`: it decides whether the account lives in the customer or the business realm.
+ */
 @Service
 @Profile("!contract-test")
 class AccountService(
     private val keycloak: Keycloak,
+    @Qualifier(KeycloakAdminClientConfig.CUSTOMER_KEYCLOAK) private val customerKeycloak: Keycloak,
     private val keycloakProperties: KeycloakProperties,
     private val assignments: MerchantUserAssignmentRepository,
     private val consents: AccountConsentRepository,
@@ -39,8 +45,8 @@ class AccountService(
 ) {
     private val log = LoggerFactory.getLogger(AccountService::class.java)
 
-    fun export(userId: UUID): AccountExport {
-        val user = users().get(userId.toString()).toRepresentation()
+    fun export(userId: UUID, issuer: String?): AccountExport {
+        val user = users(issuer).get(userId.toString()).toRepresentation()
         return AccountExport(
             userId = userId,
             email = user.email,
@@ -61,15 +67,17 @@ class AccountService(
      */
     // ponytail: the last manager of a merchant may delete themselves; platform admins can still manage that merchant.
     @Transactional
-    fun delete(userId: UUID) {
+    fun delete(userId: UUID, issuer: String?) {
         assignments.deleteAll(assignments.findAllByKeycloakUserId(userId))
         consents.deleteAllByKeycloakUserId(userId)
         events.publishEvent(AccountDeleted(userId.toString()))
         // Last, so a failure above leaves a working login the user can retry with.
-        val status = users().delete(userId.toString()).use { it.status }
+        val status = users(issuer).delete(userId.toString()).use { it.status }
         check(status in 200..299 || status == 404) { "Keycloak user deletion failed with HTTP $status" }
         log.info("account deleted by its owner userId={}", userId)
     }
 
-    private fun users() = keycloak.realm(keycloakProperties.realm).users()
+    private fun users(issuer: String?) =
+        if (keycloakProperties.isCustomerIssuer(issuer)) customerKeycloak.realm(keycloakProperties.customerRealm).users()
+        else keycloak.realm(keycloakProperties.realm).users()
 }

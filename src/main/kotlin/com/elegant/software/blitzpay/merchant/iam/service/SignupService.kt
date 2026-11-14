@@ -2,6 +2,7 @@ package com.elegant.software.blitzpay.merchant.iam.service
 
 import com.elegant.software.blitzpay.merchant.api.CreateBranchRequest
 import com.elegant.software.blitzpay.merchant.api.RegisterMerchantRequest
+import com.elegant.software.blitzpay.merchant.iam.config.KeycloakAdminClientConfig
 import com.elegant.software.blitzpay.merchant.iam.config.KeycloakProperties
 import com.elegant.software.blitzpay.merchant.iam.domain.AccountConsent
 import com.elegant.software.blitzpay.merchant.iam.domain.MerchantOperationsRole
@@ -12,9 +13,11 @@ import com.elegant.software.blitzpay.merchant.service.MerchantBranchService
 import com.elegant.software.blitzpay.merchant.service.MerchantRegistrationService
 import jakarta.ws.rs.core.Response
 import org.keycloak.admin.client.Keycloak
+import org.keycloak.admin.client.resource.UsersResource
 import org.keycloak.representations.idm.CredentialRepresentation
 import org.keycloak.representations.idm.UserRepresentation
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -24,13 +27,14 @@ class EmailConflictException : RuntimeException("email already registered")
 
 /**
  * Self-service signup from the shopper and merchant apps: creates the Keycloak user the apps then
- * log in with (password grant). A merchant signup also creates the Merchant, a first (inactive) Branch
+ * log in with (password grant). Shoppers go to the customer realm, merchant owners to the business realm. A merchant signup also creates the Merchant, a first (inactive) Branch
  * and a MERCHANT_MANAGER assignment, because the merchant app requires a Branch membership to sign in.
  */
 @Service
 @Profile("!contract-test")
 class SignupService(
     private val keycloak: Keycloak,
+    @Qualifier(KeycloakAdminClientConfig.CUSTOMER_KEYCLOAK) private val customerKeycloak: Keycloak,
     private val keycloakProperties: KeycloakProperties,
     private val merchantRegistrationService: MerchantRegistrationService,
     private val merchantBranchService: MerchantBranchService,
@@ -42,18 +46,19 @@ class SignupService(
 
     @Transactional
     fun signupShopper(name: String, email: String, password: String, termsVersion: String? = null): UUID {
-        val userId = createUser(name, email, password)
+        val users = customerUsers()
+        val userId = createUser(users, name, email, password)
         try {
-            val groupId = keycloak.realm(keycloakProperties.realm).groups()
+            val groupId = customerKeycloak.realm(keycloakProperties.customerRealm).groups()
                 .groups(KeycloakGroupNames.MOBILE_USERS, true, 0, 10, false)
                 .firstOrNull { it.name == KeycloakGroupNames.MOBILE_USERS && it.path == "/${KeycloakGroupNames.MOBILE_USERS}" }
                 ?.id ?: error("Keycloak group '/${KeycloakGroupNames.MOBILE_USERS}' not found")
-            users().get(userId.toString()).joinGroup(groupId)
+            users.get(userId.toString()).joinGroup(groupId)
             termsVersion?.let { consents.save(AccountConsent(keycloakUserId = userId, termsVersion = it)) }
             return userId
         } catch (e: Exception) {
             runCatching {
-                users().delete(userId.toString()).use { response ->
+                users.delete(userId.toString()).use { response ->
                     check(response.status in 200..299) { "Keycloak user deletion failed with HTTP ${response.status}" }
                 }
             }.onFailure { log.error("failed to remove keycloak user {} after shopper signup failure", userId, it) }
@@ -65,7 +70,7 @@ class SignupService(
     fun signupMerchant(
         ownerName: String, merchantName: String, email: String, password: String, businessType: String, termsVersion: String,
     ): UUID {
-        val userId = createUser(ownerName, email, password)
+        val userId = createUser(users(), ownerName, email, password)
         try {
             consents.save(AccountConsent(keycloakUserId = userId, termsVersion = termsVersion))
             // ponytail: operating country fixed to DE until signup asks for it
@@ -89,7 +94,7 @@ class SignupService(
         }
     }
 
-    private fun createUser(name: String, email: String, password: String): UUID {
+    private fun createUser(users: UsersResource, name: String, email: String, password: String): UUID {
         val parts = name.trim().split(Regex("\\s+"), limit = 2)
         val rep = UserRepresentation().apply {
             username = email
@@ -104,7 +109,7 @@ class SignupService(
                 isTemporary = false
             })
         }
-        val (status, location) = users().create(rep).use { it.status to it.getHeaderString("Location") }
+        val (status, location) = users.create(rep).use { it.status to it.getHeaderString("Location") }
         if (status == Response.Status.CONFLICT.statusCode) throw EmailConflictException()
         // 400 here is usually the realm password policy rejecting the password.
         require(status in 200..299) { "Keycloak user creation failed with HTTP $status" }
@@ -114,4 +119,6 @@ class SignupService(
     }
 
     private fun users() = keycloak.realm(keycloakProperties.realm).users()
+
+    private fun customerUsers() = customerKeycloak.realm(keycloakProperties.customerRealm).users()
 }
