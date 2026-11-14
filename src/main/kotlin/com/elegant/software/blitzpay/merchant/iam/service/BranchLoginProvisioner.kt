@@ -91,7 +91,7 @@ class BranchLoginProvisioner(
      * null when the user doesn't exist.
      */
     fun disable(branch: MerchantBranch, username: String): String? {
-        val existing = findUser(username) ?: return null
+        val existing = find(username, branch) ?: return null
         val user = realm().users().get(existing.id)
 
         user.update(user.toRepresentation().apply { isEnabled = false })
@@ -108,13 +108,24 @@ class BranchLoginProvisioner(
 
     /** Deletes the user, which ends all its sessions. Does nothing when the user doesn't exist. */
     fun delete(branch: MerchantBranch, username: String) {
-        val existing = findUser(username) ?: return
+        val existing = find(username, branch) ?: return
         realm().users().delete(existing.id).close()
         log.info("{} deleted branchId={} username={}", loginName, branch.id, username)
     }
 
-    /** The user as Keycloak has it, or null when it was never provisioned. */
-    fun find(username: String): UserRepresentation? = findUser(username)
+    /**
+     * The user as Keycloak has it, or null when it was never provisioned or belongs to another Branch. Usernames are
+     * unique across the whole business realm, so another Merchant's Branch of the same name may own [username].
+     */
+    fun find(username: String, branch: MerchantBranch): UserRepresentation? =
+        findUser(username)?.takeUnless { boundToOtherBranch(it.id, branch) }
+
+    /** True when [username] belongs to another Branch's device login. */
+    fun isTakenByOtherBranch(username: String, branch: MerchantBranch): Boolean =
+        findUser(username)?.let { boundToOtherBranch(it.id, branch) } == true
+
+    /** True when any Keycloak user has [username], whichever Branch or person it belongs to. */
+    fun exists(username: String): Boolean = findUser(username) != null
 
     // ── realm client ────────────────────────────────────────────────────────
 
@@ -229,17 +240,20 @@ class BranchLoginProvisioner(
             ?: throw IllegalStateException("$loginName user not found after 409: $username")
         val resource = users.get(user.id)
 
-        val expectedGroup = KeycloakGroupNames.branchGroup(branch.id)
-        val otherBranch = resource.groups().firstOrNull {
-            val name = it.name.orEmpty()
-            name.startsWith(KeycloakGroupNames.BRANCH_PREFIX) && !name.equals(expectedGroup, ignoreCase = true)
-        }
-        if (otherBranch != null) {
+        if (boundToOtherBranch(user.id, branch)) {
             throw BranchLoginConflictException("Username $username is already used by another Branch's $loginName")
         }
 
         resource.update(userRep(resource.toRepresentation(), username, firstName, lastName))
         return user.id
+    }
+
+    private fun boundToOtherBranch(userId: String, branch: MerchantBranch): Boolean {
+        val expectedGroup = KeycloakGroupNames.branchGroup(branch.id)
+        return realm().users().get(userId).groups().any {
+            val name = it.name.orEmpty()
+            name.startsWith(KeycloakGroupNames.BRANCH_PREFIX) && !name.equals(expectedGroup, ignoreCase = true)
+        }
     }
 
     private fun userRep(rep: UserRepresentation, username: String, firstName: String, lastName: String) = rep.apply {
@@ -252,7 +266,7 @@ class BranchLoginProvisioner(
         isEmailVerified = true
     }
 
-    /** By username, else by the placeholder email: realms with "Email as username" store the email as username. */
+    /** By username, else by the placeholder email: a realm with "Email as username" (oracle-dev's `blitzpay`) stores the email as username. */
     private fun findUser(username: String): UserRepresentation? {
         val users = realm().users()
         val email = placeholderEmail(username)

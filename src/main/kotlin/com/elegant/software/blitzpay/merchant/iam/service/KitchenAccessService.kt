@@ -29,7 +29,7 @@ class KitchenAccessService(
 
     /** Creates or resets the Kitchen Login with the admin's [password], or a generated one when null. */
     fun enable(branch: MerchantBranch, password: String? = null): KitchenLoginResponse {
-        val login = logins.enable(branch, kitchenUsername(branch), "Kitchen", branch.name, password)
+        val login = logins.enable(branch, username(branch), "Kitchen", branch.name, password)
         return KitchenLoginResponse(
             username = login.username,
             password = login.password,
@@ -43,13 +43,20 @@ class KitchenAccessService(
 
     /** Disables the kitchen user and revokes all its sessions, offline sessions included. */
     fun disable(branch: MerchantBranch): KitchenAccessStatusResponse =
-        KitchenAccessStatusResponse(enabled = false, username = logins.disable(branch, kitchenUsername(branch)))
+        KitchenAccessStatusResponse(enabled = false, username = logins.disable(branch, username(branch)))
 
     fun status(branch: MerchantBranch): KitchenAccessStatusResponse {
-        val user = logins.find(kitchenUsername(branch))
+        val user = logins.find(username(branch), branch)
             ?: return KitchenAccessStatusResponse(enabled = false, username = null)
         return KitchenAccessStatusResponse(enabled = user.isEnabled == true, username = user.username)
     }
+
+    /**
+     * `<branch>-kitchen`, or `<branch>-<branch code>-kitchen` when another Merchant's Branch of the same name already
+     * has `<branch>-kitchen`: usernames are unique across the whole business realm.
+     */
+    private fun username(branch: MerchantBranch): String =
+        kitchenUsername(branch).takeUnless { logins.isTakenByOtherBranch(it, branch) } ?: kitchenUsernameWithCode(branch)
 
     companion object {
         /**
@@ -57,5 +64,9 @@ class KitchenAccessService(
          */
         // ponytail: renaming the Branch orphans its Kitchen Login (status shows none); disable before renaming, or store the username if that bites
         fun kitchenUsername(branch: MerchantBranch): String = BranchLoginProvisioner.username(branch.name, branch.branchCode, "kitchen")
+
+        /** E.g. Branch `Main St`, Branch Code `BR-1A2B` → `main-st-br-1a2b-kitchen`. */
+        fun kitchenUsernameWithCode(branch: MerchantBranch): String =
+            BranchLoginProvisioner.username("${branch.name} ${branch.branchCode}", branch.branchCode, "kitchen")
     }
 }
