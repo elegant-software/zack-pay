@@ -1,6 +1,7 @@
 package com.elegant.software.blitzpay.merchant.iam.web
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.UUID
 
 /** What a Merchant Manager configures for one Branch's Kiosks. */
@@ -14,7 +15,22 @@ data class KioskSettings(
     val languages: List<String> = emptyList(),
     /** Advertised Products: active Products of the Branch; empty = the Kiosk falls back to Products with images. */
     val advertisedProductIds: List<String> = emptyList(),
-)
+    /** Write-only Admin PIN (4 to 8 digits) that opens the Kiosks' admin menu. Absent = unchanged, "" = removed. Stored hashed. */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    val adminPin: String? = null,
+    /** Read-only: whether an Admin PIN is set. */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    val adminPinSet: Boolean = false,
+) {
+    override fun toString(): String =
+        "KioskSettings(paymentChoices=$paymentChoices, resetSeconds=$resetSeconds, languages=$languages, " +
+            "advertisedProductIds=$advertisedProductIds, adminPin=${if (adminPin == null) null else "****"}, adminPinSet=$adminPinSet)"
+}
+
+/** A Kiosk asking to open its admin menu. */
+data class KioskAdminUnlockRequest(val pin: String = "") {
+    override fun toString(): String = "KioskAdminUnlockRequest(pin=****)"
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CreateKioskRequest(

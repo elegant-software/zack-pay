@@ -227,4 +227,29 @@ class KioskContractTest : ContractVerifierBase() {
         put("""{"advertisedProductIds":["${UUID.randomUUID()}"]}""", 422, "KIOSK_ADVERTISED_PRODUCT_INVALID")
         verify(merchantKioskSettingsRepository, never()).save(any<MerchantKioskSettings>())
     }
+
+    @Test
+    fun `a manager sets the admin pin, which is never returned, and only the branch's kiosk can unlock with it`() {
+        webTestClient.put().uri("$base/kiosk/settings").header(HttpHeaders.AUTHORIZATION, manager)
+            .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"adminPin":"4821"}""")
+            .exchange().expectStatus().isOk
+            .expectBody().jsonPath("$.adminPinSet").isEqualTo(true).jsonPath("$.adminPin").doesNotExist()
+
+        fun unlock(token: String, pin: String) = webTestClient.post().uri("$base/kiosk/admin-unlock").header(HttpHeaders.AUTHORIZATION, token)
+            .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"pin":"$pin"}""").exchange()
+
+        unlock(kiosk(branch.id), "4821").expectStatus().isNoContent
+        unlock(kiosk(branch.id), "0000").expectStatus().isForbidden.expectBody().jsonPath("$.code").isEqualTo("KIOSK_ADMIN_PIN_WRONG")
+        listOf(kiosk(otherBranchId), kiosk(branch.id, azp = "blitzpay-kitchen"), manager).forEach { unlock(it, "4821").expectStatus().isForbidden }
+    }
+
+    @Test
+    fun `unlocking without an admin pin is 409 and a malformed pin is rejected`() {
+        webTestClient.post().uri("$base/kiosk/admin-unlock").header(HttpHeaders.AUTHORIZATION, kiosk(branch.id))
+            .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"pin":"1234"}""")
+            .exchange().expectStatus().isEqualTo(409).expectBody().jsonPath("$.code").isEqualTo("KIOSK_ADMIN_PIN_NOT_SET")
+        webTestClient.put().uri("$base/kiosk/settings").header(HttpHeaders.AUTHORIZATION, manager)
+            .contentType(MediaType.APPLICATION_JSON).bodyValue("""{"adminPin":"12a"}""")
+            .exchange().expectStatus().isBadRequest.expectBody().jsonPath("$.code").isEqualTo("KIOSK_ADMIN_PIN_INVALID")
+    }
 }

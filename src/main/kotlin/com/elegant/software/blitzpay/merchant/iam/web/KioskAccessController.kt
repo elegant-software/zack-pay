@@ -112,6 +112,19 @@ class KioskAccessController(
         @AuthenticationPrincipal jwt: Jwt?,
     ): ResponseEntity<KioskSettings> = noStore(settings.updateSettings(managedBranch(branchId, auth, jwt), request))
 
+    @Operation(summary = "A Kiosk of the Branch checks its Admin PIN: 204 if right, 403 if wrong, 429 after too many wrong PINs, 409 if none is set")
+    @PostMapping("/kiosk/admin-unlock")
+    fun unlockAdmin(
+        @PathVariable branchId: UUID,
+        @RequestBody request: KioskAdminUnlockRequest,
+        @AuthenticationPrincipal jwt: Jwt?,
+    ): ResponseEntity<Void> {
+        val branch = branch(branchId)
+        if (!(settings.isKioskToken(jwt) && isBranchMember(jwt, branchId))) throw KioskAccessDeniedException("Only a Kiosk of this Branch may unlock its admin menu")
+        settings.unlockAdmin(branch.id, request.pin)
+        return ResponseEntity.noContent().build()
+    }
+
     private fun branch(branchId: UUID): MerchantBranch =
         branchRepository.findById(branchId).orElseThrow { NoSuchElementException("Branch not found: $branchId") }
 
