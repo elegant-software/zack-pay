@@ -90,7 +90,7 @@ class OrderInvoiceProvider(
                     InvoiceLineItem(
                         description = item.productName,
                         quantity = item.quantity.toBigDecimal(),
-                        unitPrice = item.effectiveUnitPriceMinor.toMajor(),
+                        unitPrice = item.effectiveUnitPriceMinor.toNet(vatPercent),
                         vatPercent = vatPercent,
                     )
                 }
@@ -99,7 +99,7 @@ class OrderInvoiceProvider(
                     InvoiceLineItem(
                         description = "Order ${source.orderId}",
                         quantity = BigDecimal.ONE,
-                        unitPrice = source.totalAmountMinor.toMajor(),
+                        unitPrice = source.totalAmountMinor.toNet(vatPercent),
                         vatPercent = vatPercent,
                     )
                 )
@@ -108,6 +108,9 @@ class OrderInvoiceProvider(
         )
     }
 
-    private fun Long.toMajor(): BigDecimal = toBigDecimal().movePointLeft(2).setScale(2, RoundingMode.HALF_UP)
+    // Order prices are gross (German B2C, PAngV); the invoice generator adds VAT on top of net unit prices.
+    private fun Long.toNet(vatPercent: BigDecimal): BigDecimal =
+        toBigDecimal().movePointLeft(2)
+            .divide(BigDecimal.ONE + vatPercent.movePointLeft(2), 4, RoundingMode.HALF_UP)
 
 }
