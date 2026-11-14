@@ -35,8 +35,9 @@ TRUELAYER_MERCHANT_ACCOUNT_ID
 TRUELAYER_PRIVATE_KEY_PATH   # path to PEM private key
 EXPO_ACCESS_TOKEN            # Expo Push access token (payments.push module)
 KEYCLOAK_IAM_SERVER_URL      # Keycloak server base URL (merchant.iam module)
-KEYCLOAK_IAM_REALM           # Keycloak realm for merchant/branch groups
-KEYCLOAK_IAM_ADMIN_CLIENT_ID # service account client ID with realm-management roles
+KEYCLOAK_IAM_REALM           # business realm: merchants, admins, Kitchen/Kiosk Logins (default blitzpay-business)
+KEYCLOAK_IAM_CUSTOMER_REALM  # customer realm: shoppers, email as username (default blitzpay-customers)
+KEYCLOAK_IAM_ADMIN_CLIENT_ID # service account client ID with realm-management roles, same client and secret in both realms
 KEYCLOAK_IAM_ADMIN_CLIENT_SECRET # service account client secret
 ```
 

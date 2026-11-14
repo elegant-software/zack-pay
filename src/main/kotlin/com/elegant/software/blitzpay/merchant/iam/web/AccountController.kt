@@ -24,10 +24,10 @@ class AccountController(private val service: AccountService) {
 
     @Operation(summary = "Download everything stored about the signed-in account (GDPR Art. 15/20)")
     @GetMapping("/data-export")
-    fun export(@AuthenticationPrincipal jwt: Jwt): AccountExport = service.export(UUID.fromString(jwt.subject))
+    fun export(@AuthenticationPrincipal jwt: Jwt): AccountExport = service.export(UUID.fromString(jwt.subject), jwt.issuer?.toString())
 
     @Operation(summary = "Delete the signed-in account and its personal data (GDPR Art. 17)")
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun delete(@AuthenticationPrincipal jwt: Jwt) = service.delete(UUID.fromString(jwt.subject))
+    fun delete(@AuthenticationPrincipal jwt: Jwt) = service.delete(UUID.fromString(jwt.subject), jwt.issuer?.toString())
 }

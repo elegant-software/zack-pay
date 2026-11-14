@@ -25,3 +25,6 @@ management:
 keycloak:
   iam:
     server-url: https://oc-auth.zackpay.de
+    # ponytail: oracle-dev Keycloak still has the single "blitzpay" realm; split it like auth.zackpay.de when needed
+    realm: blitzpay
+    customer-realm: blitzpay

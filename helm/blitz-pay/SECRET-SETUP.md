@@ -43,8 +43,8 @@ kubectl create secret generic blitz-pay-secrets \
   --from-literal=KEYCLOAK_IAM_ADMIN_CLIENT_SECRET="<keycloak-admin-client-secret>"
 ```
 
-> **Keycloak**: `KEYCLOAK_IAM_ADMIN_CLIENT_*` is the service-account client in the
-> `blitzpay` realm (realm-management roles `manage-users`, `query-groups`, and `manage-clients`
+> **Keycloak**: `KEYCLOAK_IAM_ADMIN_CLIENT_*` is the service-account client `blitzpay-api`. It exists with the
+> same secret in both the `blitzpay-business` and `blitzpay-customers` realms (ADR-0026; realm-management roles `manage-users`, `query-groups`, and `manage-clients`
 > for Kitchen Screen provisioning, see `reference/kitchen-screen-keycloak-provisioning.md`).
 > Merchant and branch creation sync Keycloak groups and fail with 401 if these are missing. Add to an
 > existing secret with:

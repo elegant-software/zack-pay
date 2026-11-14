@@ -1,5 +1,6 @@
 package com.elegant.software.blitzpay.config
 
+import com.nimbusds.jwt.JWTParser
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -9,14 +10,34 @@ import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.oauth2.jwt.BadJwtException
 import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.jwt.JwtDecoder
+import org.springframework.security.oauth2.jwt.JwtDecoders
+import org.springframework.security.oauth2.jwt.SupplierJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
     @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}") private val issuerUri: String,
+    @Value("\${keycloak.iam.customer-realm}") private val customerRealm: String,
 ) {
+
+    /**
+     * Accepts tokens from the business realm ([issuerUri]) and the customer realm on the same Keycloak server.
+     * Picks the realm's decoder by the unverified `iss` claim; that decoder then verifies signature and issuer.
+     */
+    @Bean
+    fun jwtDecoder(): JwtDecoder {
+        val customerIssuer = issuerUri.substringBeforeLast("/realms/") + "/realms/" + customerRealm
+        val decoders = listOf(issuerUri, customerIssuer).distinct()
+            .associateWith { issuer -> SupplierJwtDecoder { JwtDecoders.fromIssuerLocation<JwtDecoder>(issuer) } }
+        return JwtDecoder { token ->
+            val issuer = runCatching { JWTParser.parse(token).jwtClaimsSet.issuer }.getOrNull()
+            (decoders[issuer] ?: throw BadJwtException("Untrusted token issuer")).decode(token)
+        }
+    }
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =

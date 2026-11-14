@@ -5,6 +5,7 @@ import org.keycloak.admin.client.KeycloakBuilder
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.springframework.context.annotation.Profile
 
 @Configuration
@@ -12,13 +13,25 @@ import org.springframework.context.annotation.Profile
 @EnableConfigurationProperties(KeycloakProperties::class, KitchenAccessProperties::class, KioskAccessProperties::class)
 class KeycloakAdminClientConfig {
 
+    /** Admin client for the business realm (merchant users, groups, Kitchen and Kiosk Logins). */
     @Bean
-    fun keycloakAdminClient(properties: KeycloakProperties): Keycloak =
+    @Primary
+    fun keycloakAdminClient(properties: KeycloakProperties): Keycloak = build(properties, properties.realm)
+
+    /** Admin client for the customer realm (shopper signup, shopper account export and deletion). */
+    @Bean(CUSTOMER_KEYCLOAK)
+    fun customerKeycloakAdminClient(properties: KeycloakProperties): Keycloak = build(properties, properties.customerRealm)
+
+    private fun build(properties: KeycloakProperties, realm: String): Keycloak =
         KeycloakBuilder.builder()
             .serverUrl(properties.serverUrl)
-            .realm(properties.realm)
+            .realm(realm)
             .clientId(properties.adminClientId)
             .clientSecret(properties.adminClientSecret)
             .grantType("client_credentials")
             .build()
+
+    companion object {
+        const val CUSTOMER_KEYCLOAK = "customerKeycloak"
+    }
 }
