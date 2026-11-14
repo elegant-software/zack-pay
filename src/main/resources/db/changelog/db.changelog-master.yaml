@@ -165,3 +165,5 @@ databaseChangeLog:
       file: db/changelog/20261112-001-orders-fulfilment-type.sql
   - include:
       file: db/changelog/20261112-001-kiosk.sql
+  - include:
+      file: db/changelog/20261114-001-kiosk-admin-pin.sql

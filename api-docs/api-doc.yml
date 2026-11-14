@@ -3293,6 +3293,34 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/KitchenAccessStatusResponse"
+  /{version}/merchant/branches/{branchId}/kiosk/admin-unlock:
+    post:
+      tags:
+      - Kiosk Access
+      summary: "A Kiosk of the Branch checks its Admin PIN: 204 if right, 403 if wrong, 429 after too many wrong PINs, 409 if none is set"
+      operationId: unlockAdmin
+      parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KioskAdminUnlockRequest"
+        required: true
+      responses:
+        "204":
+          description: PIN accepted
+        "403":
+          description: "Wrong PIN (KIOSK_ADMIN_PIN_WRONG), or the caller is not a Kiosk of this Branch"
+        "409":
+          description: No Admin PIN is set (KIOSK_ADMIN_PIN_NOT_SET)
+        "429":
+          description: Too many wrong PINs (KIOSK_ADMIN_PIN_LOCKED)
   /{version}/merchant/branches/{branchId}/kiosks:
     get:
       tags:
@@ -7145,11 +7173,28 @@ components:
           type: array
           items:
             type: string
+        adminPin:
+          type:
+          - string
+          - "null"
+          writeOnly: true
+          description: "Admin PIN (4 to 8 digits) that opens the Kiosks' admin menu. Absent = unchanged, empty = removed. Stored hashed."
+        adminPinSet:
+          type: boolean
+          readOnly: true
+          description: Whether an Admin PIN is set.
       required:
       - advertisedProductIds
       - languages
       - paymentChoices
       - resetSeconds
+    KioskAdminUnlockRequest:
+      type: object
+      properties:
+        pin:
+          type: string
+      required:
+      - pin
     VoiceTranscriptionResponse:
       type: object
       properties:

@@ -149,4 +149,30 @@ class KioskServiceTest {
         apiError { service.updateSettings(branch, KioskSettings(resetSeconds = 1)) }
         assertEquals(99, service.settings(branch.id).resetSeconds)
     }
+
+    @Test
+    fun `the admin pin is stored hashed, kept when absent and removed when empty`() {
+        service.updateSettings(branch, KioskSettings(adminPin = "4821"))
+        val hash = stored!!.adminPinHash!!
+        assertFalse(hash.contains("4821"))
+        assertTrue(service.settings(branch.id).adminPinSet)
+
+        service.updateSettings(branch, KioskSettings())
+        assertEquals(hash, stored!!.adminPinHash)
+
+        service.updateSettings(branch, KioskSettings(adminPin = ""))
+        assertEquals(null, stored!!.adminPinHash)
+    }
+
+    @Test
+    fun `too many wrong admin pins lock the branch out, even for the right pin`() {
+        service.updateSettings(branch, KioskSettings(adminPin = "4821"))
+        service.unlockAdmin(branch.id, "4821")
+
+        repeat(KioskService.MAX_PIN_FAILURES) {
+            assertEquals(KioskService.ADMIN_PIN_WRONG, apiError { service.unlockAdmin(branch.id, "0000") }.code)
+        }
+        val locked = apiError { service.unlockAdmin(branch.id, "4821") }
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, locked.status)
+    }
 }

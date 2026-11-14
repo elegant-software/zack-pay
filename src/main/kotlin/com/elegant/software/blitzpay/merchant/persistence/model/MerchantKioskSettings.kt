@@ -34,6 +34,10 @@ class MerchantKioskSettings(
     @Column(name = "advertised_product_ids", nullable = false, columnDefinition = "jsonb")
     var advertisedProductIds: List<String> = emptyList(),
 
+    /** BCrypt hash of the Admin PIN; null = no PIN set, so no Kiosk of the Branch can open its admin menu. */
+    @Column(name = "admin_pin_hash")
+    var adminPinHash: String? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 
