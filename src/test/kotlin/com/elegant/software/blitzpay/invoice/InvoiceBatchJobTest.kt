@@ -145,7 +145,9 @@ class InvoiceBatchJobTest {
             issueDate == LocalDate.parse("2026-10-30") && dueDate == issueDate &&
                 buyer.name == "Alice Smith" &&
                 lineItems.single().description == "Croissant" &&
-                lineItems.single().vatPercent == BigDecimal("20.00")
+                lineItems.single().vatPercent == BigDecimal("20.00") &&
+                // 3.50 gross at 20% VAT -> 2.9167 net, so the invoice total equals the order total
+                lineItems.single().unitPrice == BigDecimal("2.9167")
         })
     }
 
@@ -179,7 +181,7 @@ class InvoiceBatchJobTest {
         verify(invoiceService).generatePdf(argThat {
             buyer.name == "—" && dueDate == LocalDate.parse("2026-11-14") &&
                 lineItems.single().description == "Order $orderId" &&
-                lineItems.single().unitPrice == BigDecimal("7.00")
+                lineItems.single().unitPrice == BigDecimal("5.8333")
         })
         verify(orderInvoiceRepository).save(any<OrderInvoice>())
     }
