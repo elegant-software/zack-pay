@@ -139,6 +139,7 @@ class BranchLoginProvisioner(
         val internalId = createClient(applyClientConfig(ClientRepresentation())) ?: return
         val client = realm().clients().get(internalId)
         ensureGroupsMapper(client)
+        ensureMerchantIdMapper(client)
         ensureOfflineAccessOptional(client)
         log.info("keycloak {} client created clientId={}", loginName, properties.clientId)
     }
@@ -214,6 +215,34 @@ class BranchLoginProvisioner(
         )
     }
 
+    /** Emits the user's `merchant_id` attribute as a claim: the `groups` claim only carries `branch_<id>`, not the Merchant. */
+    private fun ensureMerchantIdMapper(client: ClientResource) {
+        val mappers = client.protocolMappers
+        val existing = mappers.mappers.firstOrNull { it.name == MERCHANT_ID_CLAIM }
+        if (existing != null) {
+            mappers.update(existing.id, merchantIdMapper().apply { id = existing.id })
+        } else {
+            mappers.createMapper(merchantIdMapper()).use { response ->
+                check(response.status in 200..299) { "Keycloak merchant_id mapper creation failed with HTTP ${response.status}" }
+            }
+        }
+    }
+
+    private fun merchantIdMapper() = ProtocolMapperRepresentation().apply {
+        name = MERCHANT_ID_CLAIM
+        protocol = OIDC
+        protocolMapper = USER_ATTRIBUTE_MAPPER
+        config = mapOf(
+            "user.attribute" to MERCHANT_ID_CLAIM,
+            "claim.name" to MERCHANT_ID_CLAIM,
+            "jsonType.label" to "String",
+            "access.token.claim" to "true",
+            "id.token.claim" to "true",
+            "userinfo.token.claim" to "true",
+            "introspection.token.claim" to "true",
+        )
+    }
+
     private fun ensureOfflineAccessOptional(client: ClientResource) {
         val scopeId = realm().clientScopes().findAll().firstOrNull { it.name == OFFLINE_ACCESS }?.id
             ?: throw IllegalStateException("Keycloak realm has no '$OFFLINE_ACCESS' client scope")
@@ -228,7 +257,7 @@ class BranchLoginProvisioner(
         val users = realm().users()
         val existing = findUser(username)
         if (existing == null) {
-            val (status, location) = users.create(userRep(UserRepresentation(), username, firstName, lastName))
+            val (status, location) = users.create(userRep(UserRepresentation(), username, branch, firstName, lastName))
                 .use { it.status to it.getHeaderString("Location") }
             if (status != Response.Status.CONFLICT.statusCode) {
                 check(status in 200..299) { "Keycloak $loginName user creation failed with HTTP $status" }
@@ -244,7 +273,7 @@ class BranchLoginProvisioner(
             throw BranchLoginConflictException("Username $username is already used by another Branch's $loginName")
         }
 
-        resource.update(userRep(resource.toRepresentation(), username, firstName, lastName))
+        resource.update(userRep(resource.toRepresentation(), username, branch, firstName, lastName))
         return user.id
     }
 
@@ -256,7 +285,7 @@ class BranchLoginProvisioner(
         }
     }
 
-    private fun userRep(rep: UserRepresentation, username: String, firstName: String, lastName: String) = rep.apply {
+    private fun userRep(rep: UserRepresentation, username: String, branch: MerchantBranch, firstName: String, lastName: String) = rep.apply {
         this.username = username
         isEnabled = true
         requiredActions = emptyList()
@@ -264,6 +293,8 @@ class BranchLoginProvisioner(
         this.lastName = lastName
         email = placeholderEmail(username)
         isEmailVerified = true
+        // Read by the `merchant_id` mapper; the groups claim alone doesn't tell the app its Merchant.
+        attributes = (rep.attributes ?: emptyMap()) + (MERCHANT_ID_CLAIM to listOf(branch.merchantId.toString().lowercase()))
     }
 
     /** By username, else by the placeholder email: a realm with "Email as username" (oracle-dev's `blitzpay`) stores the email as username. */
@@ -282,6 +313,8 @@ class BranchLoginProvisioner(
         private const val OIDC = "openid-connect"
         private const val GROUPS_CLAIM = "groups"
         private const val GROUP_MEMBERSHIP_MAPPER = "oidc-group-membership-mapper"
+        private const val MERCHANT_ID_CLAIM = "merchant_id"
+        private const val USER_ATTRIBUTE_MAPPER = "oidc-usermodel-attribute-mapper"
         private const val OFFLINE_ACCESS = "offline_access"
         private val PASSWORD_LENGTH = 8..128
         private val NON_USERNAME_CHARS = Regex("[^a-z0-9._-]+")

@@ -31,6 +31,7 @@ import org.keycloak.representations.idm.GroupRepresentation
 import org.keycloak.representations.idm.ProtocolMapperRepresentation
 import org.keycloak.representations.idm.UserRepresentation
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -202,9 +203,10 @@ class KitchenAccessServiceTest {
         service.enable(branch)
 
         val captor = argumentCaptor<ProtocolMapperRepresentation>()
-        verify(mappers).createMapper(captor.capture())
+        // The groups mapper and the merchant_id mapper
+        verify(mappers, times(2)).createMapper(captor.capture())
         verify(mappers, never()).update(any(), any())
-        with(captor.firstValue) {
+        with(captor.allValues.single { it.name == "groups" }) {
             assertEquals("groups", name)
             assertEquals("oidc-group-membership-mapper", protocolMapper)
             assertEquals("groups", config["claim.name"])
@@ -223,7 +225,8 @@ class KitchenAccessServiceTest {
 
         val captor = argumentCaptor<ProtocolMapperRepresentation>()
         verify(mappers).update(eq("mapper-1"), captor.capture())
-        verify(mappers, never()).createMapper(any<ProtocolMapperRepresentation>())
+        // Only the merchant_id mapper is new
+        verify(mappers).createMapper(argThat<ProtocolMapperRepresentation> { name == "merchant_id" })
         verify(mappers, never()).delete(any())
         assertEquals("mapper-1", captor.firstValue.id)
         assertEquals("true", captor.firstValue.config["access.token.claim"])
@@ -249,7 +252,8 @@ class KitchenAccessServiceTest {
         verify(mappers, never()).delete("named")
         verify(mappers, never()).delete("wrong-type")
         verify(mappers).update(eq("named"), any())
-        verify(mappers, never()).createMapper(any<ProtocolMapperRepresentation>())
+        // Only the merchant_id mapper is new
+        verify(mappers).createMapper(argThat<ProtocolMapperRepresentation> { name == "merchant_id" })
     }
 
     @Test
